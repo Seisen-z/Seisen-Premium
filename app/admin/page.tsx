@@ -7,7 +7,6 @@ import Button from '@/components/ui/Button';
 import { getApiUrl, copyToClipboard } from '@/lib/utils';
 import Link from 'next/link';
 import Image from 'next/image';
-import { fetchScripts } from '@/lib/scripts';
 
 interface Payment {
   transaction_id: string;
@@ -217,8 +216,9 @@ export default function AdminPage() {
 
   const loadScriptData = async () => {
     try {
-      // Fetch scripts from GitHub
-      const scriptsData = await fetchScripts();
+      // Fetch scripts from API
+      const scriptsRes = await fetch('/api/scripts');
+      const scriptsData = await scriptsRes.json();
       setScripts(scriptsData);
 
       // Fetch existing metadata from database
