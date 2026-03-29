@@ -67,7 +67,8 @@ export class PayPalSDK {
                     return_url: returnUrl,
                     cancel_url: cancelUrl,
                     brand_name: 'Seisen Hub',
-                    user_action: 'PAY_NOW'
+                    user_action: 'PAY_NOW',
+                    shipping_preference: 'NO_SHIPPING'
                 }
             };
 
@@ -97,6 +98,32 @@ export class PayPalSDK {
         } catch (error: any) {
             console.error('PayPal capture error:', error.response?.data || error.message);
             throw new Error('Failed to capture PayPal payment');
+        }
+    }
+
+    async addTrackingToReleaseFunds(transactionId: string) {
+        try {
+            const token = await this.getAccessToken();
+            const payload = {
+                trackers: [
+                    {
+                        transaction_id: transactionId,
+                        status: "SHIPPED",
+                        notify_buyer: false
+                    }
+                ]
+            };
+
+            const response = await axios.post(
+                `${this.baseUrl}/v1/shipping/trackers-batch`,
+                payload,
+                { headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } }
+            );
+            return response.data;
+        } catch (error: any) {
+            console.error('PayPal add tracking error:', error.response?.data?.details || error.response?.data || error.message);
+            // We return null so it doesn't interrupt the main flow if tracking fails
+            return null;
         }
     }
 
