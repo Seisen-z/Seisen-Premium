@@ -42,10 +42,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Auto-mark as shipped to release funds (specifically for digital goods/services)
-    // Run this in the background / don't block
-    paypal.addTrackingToReleaseFunds(paymentInfo.transactionId).catch(err => {
-        console.error('Failed to auto-mark tracking:', err);
-    });
+    // Await it so it completes in serverless environments. It catches its own errors.
+    await paypal.addTrackingToReleaseFunds(paymentInfo.transactionId);
 
     // FIX: Override amount with Base Price (Pre-Tax) for DB and Display
     // We only want to charge VAT on PayPal, but record the base price internally.
