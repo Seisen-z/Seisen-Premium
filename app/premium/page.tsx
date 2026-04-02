@@ -307,9 +307,9 @@ function PremiumContent() {
         return;
       }
 
-      let productId = 16906166414; // Default Lifetime
-      if (plan === 'weekly') productId = 16902313522;
-      if (plan === 'monthly') productId = 16902308978;
+      let productId = 1781366430; // Default Lifetime
+      if (plan === 'weekly') productId = 1779578553;
+      if (plan === 'monthly') productId = 1781384489;
 
       setRobuxDetails({ plan, price, productId });
       setRobloxUsername(''); 
@@ -786,12 +786,12 @@ function PremiumContent() {
                           <p>
                               <strong>Product:</strong>{' '}
                               <a 
-                                  href={`https://www.roblox.com/catalog/${robuxDetails.productId}`} 
+                                href={`https://www.roblox.com/game-pass/${robuxDetails.productId}`} 
                                   target="_blank" 
                                   rel="noopener noreferrer"
                                   className="accent-text font-mono hover:underline"
                               >
-                                  Click here to Buy Item ({robuxDetails.productId})
+                                Click here to Buy Game Pass ({robuxDetails.productId})
                               </a>
                           </p>
                           
