@@ -144,9 +144,9 @@ export async function POST(req: Request) {
 
         // Robux prices per tier (in Robux)
         const robuxPriceMap: Record<string, number> = {
-            weekly: 500,
-            monthly: 800,
-            lifetime: 1600
+            weekly: 750,
+            monthly: 1400,
+            lifetime: 2600
         };
         const robuxAmount = robuxPriceMap[tier] ?? 0;
 

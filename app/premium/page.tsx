@@ -56,7 +56,7 @@ const robuxPlans = [
   {
     title: 'Weekly',
     badge: '7 Days',
-    price: 500,
+    price: 750,
     currency: '',
     period: '',
     features: ['All premium scripts', 'No key system', 'Priority support', 'Early access'],
@@ -65,7 +65,7 @@ const robuxPlans = [
   {
     title: 'Monthly',
     badge: '30 Days',
-    price: 800,
+    price: 1400,
     currency: '',
     period: '',
     features: ['All premium scripts', 'No key system', 'Priority support', 'Early access', 'Exclusive updates'],
@@ -75,8 +75,8 @@ const robuxPlans = [
     title: 'Lifetime',
     badge: '16% OFF',
     badgeVariant: 'best-value' as const,
-    price: 1600,
-    originalPrice: 1900,
+    price: 2600,
+    originalPrice: 3100,
     currency: '',
     period: '',
     features: ['All premium scripts', 'No key system', 'Priority support', 'Early access', 'Exclusive updates', 'Lifetime access'],
