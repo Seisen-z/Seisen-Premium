@@ -169,9 +169,10 @@ function PremiumContent() {
   useEffect(() => {
     // Check for PayPal return
     const token = searchParams.get('token');
-    const status = searchParams.get('status');
 
     if (token && !isProcessing) {
+      // Immediately clear the token from the URL so a page refresh won't re-trigger capture
+      router.replace('/premium', { scroll: false });
       capturePayPalOrder(token);
     }
   }, [searchParams]);
@@ -268,15 +269,18 @@ function PremiumContent() {
          }, 1000);
 
       } else {
-         // EXPOSE THE ERROR TO THE USER
-         const errorMessage = data.junkieError || data.error || 'No key returned from server';
-         const errorDetails = data.junkieDetails ? JSON.stringify(data.junkieDetails) : undefined;
+         // Sanitize error — never show raw HTML to the user
+         let rawError: string = data.junkieError || data.error || 'No key returned from server';
+         if (typeof rawError === 'string' && rawError.trim().startsWith('<')) {
+             rawError = 'The key service is currently unavailable. Please contact support with your PayPal transaction ID.';
+         }
+         const errorDetails = data.junkieDetails != null ? `${data.junkieDetails}` : undefined;
          
          setStatusModal({
              isOpen: true,
              type: 'error',
              title: 'Activation Failed',
-             message: errorMessage,
+             message: rawError,
              details: errorDetails
          });
          setIsProcessing(false); // Stop loading to show error

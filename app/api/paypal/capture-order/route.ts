@@ -4,6 +4,7 @@ import { JunkieKeySystem } from '@/lib/server/junkie';
 import { TicketDatabase } from '@/lib/server/db';
 import { EmailService } from '@/lib/server/email';
 import { VatCalculator } from '@/lib/server/vat';
+import { sendDiscordWebhook } from '@/lib/server/discord';
 
 export async function POST(req: NextRequest) {
   try {
@@ -140,7 +141,31 @@ export async function POST(req: NextRequest) {
             paymentInfo.tier,
             paymentInfo.transactionId
         );
-        // Discord webhook is sent after the user completes game selection (see /api/orders/[id]/game-selection)
+    }
+
+    // 6. Send Discord webhook immediately on confirmed payment
+    try {
+        const tier = (paymentInfo.tier || 'N/A').toUpperCase();
+        const keyDisplay = keys.length > 0 ? `||${keys[0]}||` : '⚠️ Key generation failed — check Junkie webhook';
+        const amountDisplay = `€${baseAmount}`;
+
+        await sendDiscordWebhook(
+            `<@442317061104861184> 💰 New Premium Purchase!`,
+            [{
+                title: '💎 New Premium Purchase (PayPal)',
+                color: 0xfbbf24,
+                fields: [
+                    { name: 'Tier',           value: tier,                         inline: true },
+                    { name: 'Amount',         value: amountDisplay,                inline: true },
+                    { name: 'Transaction ID', value: paymentInfo.transactionId,    inline: false },
+                    { name: 'Customer Email', value: paymentInfo.payerEmail || 'N/A', inline: false },
+                    { name: 'License Key',    value: keyDisplay,                   inline: false },
+                ],
+                timestamp: new Date().toISOString(),
+            }]
+        );
+    } catch (webhookErr: any) {
+        console.error('Discord webhook error (non-fatal):', webhookErr.message);
     }
 
     return NextResponse.json({
