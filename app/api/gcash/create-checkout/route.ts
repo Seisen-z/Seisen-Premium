@@ -33,17 +33,20 @@ export async function POST(req: NextRequest) {
                 return NextResponse.json({ error: 'Invalid plan' }, { status: 400 });
         }
 
-        if (!process.env.PAYMONGO_SECRET_KEY) {
+        const key = process.env.PAYMONGO_SECRET_KEY;
+        if (!key) {
+             console.error('PAYMONGO_SECRET_KEY is missing from environment variables');
              return NextResponse.json({ error: 'Server configuration error: missing payment keys' }, { status: 500 });
         }
 
-        // Base64 encode secret key for HTTP Basic Auth
-        const base64Auth = Buffer.from(process.env.PAYMONGO_SECRET_KEY + ':').toString('base64');
+        // Log key presence for debugging (masked)
+        console.log(`Using PayMongo Key: ${key.substring(0, 7)}...${key.substring(key.length - 4)}`);
 
-        // Build an email prefix for the reference number  
+        // Base64 encode secret key for HTTP Basic Auth
+        const base64Auth = Buffer.from(key + ':').toString('base64');
+
         const emailPrefix = email ? email.substring(0, 12).replace('@', '_') : 'customer';
         const referenceNumber = `${plan.toUpperCase()}_${quantity}_${emailPrefix}_${Date.now()}`;
-
         const origin = req.headers.get('origin') || 'https://seisenpremium.com';
 
         const payload = {
@@ -83,16 +86,17 @@ export async function POST(req: NextRequest) {
         const data = await res.json();
 
         if (!res.ok) {
-            console.error('PayMongo Checkout Error:', JSON.stringify(data));
+            console.error('PayMongo API Error Details:', JSON.stringify(data));
             return NextResponse.json({ 
-                error: data?.errors?.[0]?.detail || 'Payment gateway error' 
+                error: data?.errors?.[0]?.detail || 'Payment gateway error',
+                paymongo_errors: data?.errors 
             }, { status: res.status });
         }
 
         return NextResponse.json({ checkoutUrl: data.data.attributes.checkout_url });
 
     } catch (error: any) {
-        console.error('Checkout API error:', error);
+        console.error('Checkout API crash:', error);
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
