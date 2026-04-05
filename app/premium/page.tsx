@@ -741,8 +741,9 @@ function PremiumContent() {
               const justAdded = addedFeedback === plan.plan;
 
               return (
-                <div key={plan.plan} className="flex flex-col gap-2">
+                <div key={plan.plan} className="flex flex-col gap-2 h-full">
                   <PricingCard
+                    className="flex-1"
                     title={plan.title}
                     badge={plan.badge}
                     badgeVariant={plan.badgeVariant}
@@ -753,7 +754,7 @@ function PremiumContent() {
                     period={plan.period}
                     features={plan.features}
                     featured={plan.featured}
-                    stockStatusText={isOutOfStock ? undefined : stockStatusText}
+                    stockStatusText={isOutOfStock ? 'Currently out of stock' : stockStatusText}
                     stockStatusVariant={isOutOfStock ? 'out-of-stock' : tierStock <= 5 ? 'low-stock' : 'in-stock'}
                     isOutOfStock={isOutOfStock}
                     buttonText={isOutOfStock ? 'Out of Stock' : isPayPal ? `Pay with PayPal${qty > 1 ? ` (×${qty})` : ''}` : 'Verify & Get Key'}
@@ -779,8 +780,8 @@ function PremiumContent() {
                   />
 
                   {/* PayPal-only: Quantity stepper + Add to Cart */}
-                  {isPayPal && !isOutOfStock && (
-                    <div className="flex items-center gap-2 px-1">
+                  {isPayPal && (
+                    <div className={`flex items-center gap-2 px-1 ${isOutOfStock ? 'invisible select-none pointer-events-none' : ''}`}>
                       <div className="flex items-center gap-2 flex-1">
                         <span className="text-xs text-gray-500">Qty:</span>
                         <QuantityStepper

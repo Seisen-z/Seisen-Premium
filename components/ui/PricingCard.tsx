@@ -20,6 +20,7 @@ interface PricingCardProps {
   stockStatusText?: string;
   stockStatusVariant?: 'in-stock' | 'low-stock' | 'out-of-stock';
   isOutOfStock?: boolean;
+  className?: string;
 }
 
 export default function PricingCard({
@@ -40,6 +41,7 @@ export default function PricingCard({
   stockStatusText,
   stockStatusVariant = 'in-stock',
   isOutOfStock = false,
+  className = '',
 }: PricingCardProps) {
   const stockStatusStyles =
     stockStatusVariant === 'out-of-stock'
@@ -51,7 +53,7 @@ export default function PricingCard({
   return (
     <Card
       variant={featured ? 'featured' : 'hover'}
-      className="relative p-6 flex flex-col"
+      className={`relative p-6 flex flex-col h-full ${className}`}
     >
       {/* Featured Badge */}
       {featured && (
