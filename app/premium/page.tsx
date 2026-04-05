@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { Crown, Check, HelpCircle, History, CreditCard, Copy, X, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
+import { Crown, Check, HelpCircle, CreditCard, Copy, X, Loader2, AlertCircle, CheckCircle, ShoppingCart, Plus, Minus, Trash2 } from 'lucide-react';
 import PricingCard from '@/components/ui/PricingCard';
 import PurchaseCounter from '@/components/ui/PurchaseCounter';
 import { Card } from '@/components/ui/Card';
@@ -9,6 +9,16 @@ import Button from '@/components/ui/Button';
 import { getApiUrl, copyToClipboard } from '@/lib/utils';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import {
+  CartItem,
+  getCart,
+  addToCart,
+  removeFromCart,
+  updateCartItemQuantity,
+  clearCart,
+  getCartTotal,
+  getCartCount,
+} from '@/lib/client/cart';
 
 type PaymentMethod = 'paypal' | 'robux' | 'gcash';
 type PremiumTier = 'weekly' | 'monthly' | 'lifetime';
@@ -20,7 +30,7 @@ const defaultMethodStockMap = (): MethodStockMap => ({
   gcash:  { weekly: 0, monthly: 0, lifetime: 0 },
 });
 
-// ... (Plans data same as before, I will include them to be safe)
+// Updated PayPal prices: Monthly €6, Lifetime €12
 const paypalPlans = [
   {
     title: 'Weekly',
@@ -34,7 +44,7 @@ const paypalPlans = [
   {
     title: 'Monthly',
     badge: '30 Days',
-    price: 5,
+    price: 6,
     currency: '€',
     period: '/month',
     features: ['All premium scripts', 'No key system', 'Priority support', 'Early access', 'Exclusive updates'],
@@ -44,9 +54,8 @@ const paypalPlans = [
     title: 'Lifetime',
     features: ['All premium scripts', 'No key system', 'Priority support', 'Early access', 'Exclusive updates', 'Lifetime access'],
     plan: 'lifetime',
-    price: 10,
-    originalPrice: 12,
-    badge: '17% OFF',
+    price: 12,
+    badge: 'Best Value',
     badgeVariant: 'best-value' as const,
     featured: true,
   },
@@ -137,22 +146,190 @@ const faqs = [
   },
 ];
 
+// ─── Quantity Stepper ─────────────────────────────────────────────────────────
+function QuantityStepper({
+  value,
+  onChange,
+  max,
+}: {
+  value: number;
+  onChange: (v: number) => void;
+  max?: number;
+}) {
+  const maxVal = max ?? 10;
+  return (
+    <div className="flex items-center gap-1 bg-[#0d0d0d] border border-[#2a2a2a] rounded-lg p-1">
+      <button
+        onClick={() => onChange(Math.max(1, value - 1))}
+        className="w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:text-white hover:bg-[#2a2a2a] transition-colors disabled:opacity-30"
+        disabled={value <= 1}
+      >
+        <Minus className="w-3 h-3" />
+      </button>
+      <span className="w-6 text-center text-white text-sm font-mono font-medium select-none">
+        {value}
+      </span>
+      <button
+        onClick={() => onChange(Math.min(maxVal, value + 1))}
+        className="w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:text-white hover:bg-[#2a2a2a] transition-colors disabled:opacity-30"
+        disabled={value >= maxVal}
+      >
+        <Plus className="w-3 h-3" />
+      </button>
+    </div>
+  );
+}
+
+// ─── Cart Drawer ───────────────────────────────────────────────────────────────
+function CartDrawer({
+  isOpen,
+  cart,
+  onClose,
+  onRemove,
+  onUpdateQty,
+  onCheckout,
+  onClear,
+  isProcessing,
+}: {
+  isOpen: boolean;
+  cart: CartItem[];
+  onClose: () => void;
+  onRemove: (plan: string) => void;
+  onUpdateQty: (plan: string, qty: number) => void;
+  onCheckout: () => void;
+  onClear: () => void;
+  isProcessing: boolean;
+}) {
+  const total = getCartTotal(cart);
+  const count = getCartCount(cart);
+
+  return (
+    <>
+      {/* Backdrop */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black/60 z-40 backdrop-blur-sm"
+          onClick={onClose}
+        />
+      )}
+
+      {/* Drawer */}
+      <div
+        className={`fixed right-0 top-0 h-full w-full max-w-sm bg-[#111] border-l border-[#2a2a2a] z-50 flex flex-col shadow-2xl transition-transform duration-300 ${
+          isOpen ? 'translate-x-0' : 'translate-x-full'
+        }`}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#2a2a2a]">
+          <h2 className="text-white font-bold text-lg flex items-center gap-2">
+            <ShoppingCart className="w-5 h-5 accent-text" />
+            Cart
+            {count > 0 && (
+              <span className="accent-bg text-white text-xs px-2 py-0.5 rounded-full font-medium ml-1">
+                {count}
+              </span>
+            )}
+          </h2>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center rounded text-gray-400 hover:text-white hover:bg-[#2a2a2a] transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Items */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          {cart.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-48 text-gray-600">
+              <ShoppingCart className="w-12 h-12 mb-3 opacity-30" />
+              <p className="text-sm">Your cart is empty</p>
+              <p className="text-xs mt-1 opacity-60">Add PayPal plans to checkout</p>
+            </div>
+          ) : (
+            cart.map(item => (
+              <div
+                key={item.plan}
+                className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-4 space-y-3"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="text-white font-semibold capitalize">{item.title} Plan</p>
+                    <p className="text-gray-500 text-xs">€{item.pricePerUnit} / key</p>
+                  </div>
+                  <button
+                    onClick={() => onRemove(item.plan)}
+                    className="w-7 h-7 flex items-center justify-center rounded text-gray-600 hover:text-red-400 hover:bg-red-500/10 transition-colors flex-shrink-0"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <QuantityStepper
+                    value={item.quantity}
+                    onChange={qty => onUpdateQty(item.plan, qty)}
+                    max={10}
+                  />
+                  <span className="text-white font-mono font-semibold">
+                    €{(item.pricePerUnit * item.quantity).toFixed(2)}
+                  </span>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Footer */}
+        {cart.length > 0 && (
+          <div className="border-t border-[#2a2a2a] p-4 space-y-3">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-400">Subtotal ({count} {count === 1 ? 'key' : 'keys'})</span>
+              <span className="text-white font-bold text-lg">€{total.toFixed(2)}</span>
+            </div>
+            <p className="text-xs text-gray-600 text-center">+ VAT if applicable</p>
+
+            <Button
+              className="w-full"
+              onClick={onCheckout}
+              disabled={isProcessing || cart.length === 0}
+            >
+              {isProcessing ? (
+                <><Loader2 className="w-4 h-4 animate-spin" /> Processing...</>
+              ) : (
+                <><CreditCard className="w-4 h-4" /> Checkout with PayPal</>
+              )}
+            </Button>
+
+            <button
+              onClick={onClear}
+              className="w-full text-xs text-gray-600 hover:text-gray-400 transition-colors py-1"
+            >
+              Clear cart
+            </button>
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
+// ─── Main Component ────────────────────────────────────────────────────────────
 function PremiumContent() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('paypal');
   const [showTosModal, setShowTosModal] = useState(false);
   const [tosAccepted, setTosAccepted] = useState(false);
-  const [pendingPlan, setPendingPlan] = useState<{ plan: string; amount: number; price: number } | null>(null);
-  
+  const [pendingPlan, setPendingPlan] = useState<{ plan: string; amount: number; price: number; quantity: number } | null>(null);
+
   const [showRobuxModal, setShowRobuxModal] = useState(false);
   const [robloxUsername, setRobloxUsername] = useState('');
-  const [email, setEmail] = useState(''); // NEW POINTER: Email State
+  const [email, setEmail] = useState('');
   const [robuxDetails, setRobuxDetails] = useState<{ plan: string; price: number; productId: number } | null>(null);
-  
+
   const [showTicketModal, setShowTicketModal] = useState(false);
   const [ticketDetails, setTicketDetails] = useState<{ plan: string; amount: number; currency: string } | null>(null);
 
   const [isProcessing, setIsProcessing] = useState(false);
-  // NEW: Status Modal State
   const [statusModal, setStatusModal] = useState<{
       isOpen: boolean;
       type: 'success' | 'error';
@@ -160,18 +337,29 @@ function PremiumContent() {
       message: string;
       details?: string;
   }>({ isOpen: false, type: 'success', title: '', message: '' });
+
   const [stockMap, setStockMap] = useState<MethodStockMap>(defaultMethodStockMap());
   const [stockLoading, setStockLoading] = useState(true);
+
+  // Per-card quantity state (PayPal only) — keyed by plan
+  const [quantities, setQuantities] = useState<Record<string, number>>({ weekly: 1, monthly: 1, lifetime: 1 });
+
+  // Cart state
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [cartOpen, setCartOpen] = useState(false);
+  const [addedFeedback, setAddedFeedback] = useState<string | null>(null);
 
   const searchParams = useSearchParams();
   const router = useRouter();
 
+  // Load cart from localStorage on mount
   useEffect(() => {
-    // Check for PayPal return
-    const token = searchParams.get('token');
+    setCart(getCart());
+  }, []);
 
+  useEffect(() => {
+    const token = searchParams.get('token');
     if (token && !isProcessing) {
-      // Immediately clear the token from the URL so a page refresh won't re-trigger capture
       router.replace('/premium', { scroll: false });
       capturePayPalOrder(token);
     }
@@ -210,6 +398,44 @@ function PremiumContent() {
     return 0;
   };
 
+  // ─── Cart helpers ────────────────────────────────────────────────────────────
+  const handleAddToCart = (plan: string, pricePerUnit: number, title: string) => {
+    const qty = quantities[plan] || 1;
+    const updated = addToCart({ plan, title, quantity: qty, pricePerUnit, currency: 'EUR' });
+    setCart(updated);
+    setAddedFeedback(plan);
+    setTimeout(() => setAddedFeedback(null), 1500);
+  };
+
+  const handleCartRemove = (plan: string) => {
+    setCart(removeFromCart(plan));
+  };
+
+  const handleCartUpdateQty = (plan: string, qty: number) => {
+    setCart(updateCartItemQuantity(plan, qty));
+  };
+
+  const handleCartClear = () => {
+    clearCart();
+    setCart([]);
+  };
+
+  // Checkout all cart items as ONE PayPal order per item (sequential) or as a single order
+  // We do one PayPal order per cart item for simplicity and stock correctness
+  const handleCartCheckout = () => {
+    if (cart.length === 0) return;
+    // Use TOS modal with the first item — we'll iterate after TOS acceptance
+    const firstItem = cart[0];
+    setPendingPlan({
+      plan: firstItem.plan,
+      amount: firstItem.pricePerUnit,
+      price: firstItem.pricePerUnit,
+      quantity: firstItem.quantity,
+    });
+    setShowTosModal(true);
+  };
+
+  // ─── PayPal capture ──────────────────────────────────────────────────────────
   const capturePayPalOrder = async (orderId: string) => {
     setIsProcessing(true);
     try {
@@ -221,292 +447,184 @@ function PremiumContent() {
       });
 
       const data = await response.json();
-      
-      // Check if we actually got a key
-      if (data.success && data.keys && data.keys.length > 0 && data.keys[0]) {
-         const generatedKey = String(data.keys[0]);
-         
-         // Custom Modal instead of alert
-         setStatusModal({
-             isOpen: true,
-             type: 'success',
-             title: 'Purchase Successful!',
-             message: 'Your key has been generated. Redirecting you to the receipt...'
-         });
 
-         const successParams = {
-             orderId: data.transactionId || 'PAYPAL',
-             dbOrderId: data.orderId,
-             tier: data.tier,
-             amount: String(data.amount),
-             currency: String(data.currency),
-             key: generatedKey,
-             method: 'paypal',
-             email: data.payerEmail || '',
-             payerId: data.payerId || '',
-             payerName: data.payerName || '',
-         };
+      if (data.success && data.keys && data.keys.length > 0) {
+        // Clear cart on success
+        clearCart();
+        setCart([]);
 
-         // Auto-Login the user for Client Area
-         localStorage.setItem('client_email', data.payerEmail || '');
-         // Verification is implicit since they just paid
-         localStorage.setItem('client_auth', 'true'); 
+        setStatusModal({
+          isOpen: true,
+          type: 'success',
+          title: 'Purchase Successful!',
+          message: `${data.keys.length > 1 ? `${data.keys.length} keys have` : 'Your key has'} been generated. Redirecting you to the receipt...`
+        });
 
-         // Redirect to Success Page
-         setTimeout(() => {
-             const params = new URLSearchParams({
-                 orderId: successParams.orderId,
-                 tier: successParams.tier,
-                 amount: successParams.amount,
-                 currency: successParams.currency,
-                 key: successParams.key,
-                 email: successParams.email,
-                 payerId: successParams.payerId,
-                 method: successParams.method,
-                 date: new Date().toISOString()
-             });
-             router.push(`/success?${params.toString()}`);
-         }, 1000);
+        // Auto-Login
+        localStorage.setItem('client_email', data.payerEmail || '');
+        localStorage.setItem('client_auth', 'true');
+
+        setTimeout(() => {
+          const params = new URLSearchParams({
+            orderId: data.transactionId || 'PAYPAL',
+            tier: data.tier,
+            amount: String(data.amount),
+            currency: String(data.currency),
+            key: JSON.stringify(data.keys),   // Pass all keys as JSON
+            email: data.payerEmail || '',
+            payerId: data.payerId || '',
+            method: 'paypal',
+            date: new Date().toISOString()
+          });
+          router.push(`/success?${params.toString()}`);
+        }, 1000);
 
       } else {
-         // Sanitize error — never show raw HTML to the user
-         let rawError: string = data.junkieError || data.error || 'No key returned from server';
-         if (typeof rawError === 'string' && rawError.trim().startsWith('<')) {
-             rawError = 'The key service is currently unavailable. Please contact support with your PayPal transaction ID.';
-         }
-         const errorDetails = data.junkieDetails != null ? `${data.junkieDetails}` : undefined;
-         
-         setStatusModal({
-             isOpen: true,
-             type: 'error',
-             title: 'Activation Failed',
-             message: rawError,
-             details: errorDetails
-         });
-         setIsProcessing(false); // Stop loading to show error
+        let rawError: string = data.junkieError || data.error || 'No key returned from server';
+        if (typeof rawError === 'string' && rawError.trim().startsWith('<')) {
+          rawError = 'The key service is currently unavailable. Please contact support with your PayPal transaction ID.';
+        }
+        const errorDetails = data.junkieDetails != null ? `${data.junkieDetails}` : undefined;
+
+        setStatusModal({
+          isOpen: true,
+          type: 'error',
+          title: 'Activation Failed',
+          message: rawError,
+          details: errorDetails
+        });
+        setIsProcessing(false);
       }
     } catch (error: any) {
       console.error('Capture error:', error);
       setStatusModal({
-         isOpen: true,
-         type: 'error',
-         title: 'System Error',
-         message: 'An unexpected error occurred while processing your payment.',
-         details: error.message
+        isOpen: true,
+        type: 'error',
+        title: 'System Error',
+        message: 'An unexpected error occurred while processing your payment.',
+        details: error.message
       });
       setIsProcessing(false);
     }
   };
 
-
-
   const handleRobuxPayment = (plan: string, price: number) => {
-      if (getTierStock(plan) <= 0) {
-        setStatusModal({
-          isOpen: true,
-          type: 'error',
-          title: 'Out of Stock',
-          message: 'This premium plan is currently out of stock.'
-        });
-        return;
-      }
-
-      let productId = 1781366430; // Default Lifetime
-      if (plan === 'weekly') productId = 1779578553;
-      if (plan === 'monthly') productId = 1781384489;
-
-      setRobuxDetails({ plan, price, productId });
-      setRobloxUsername(''); 
-      setEmail(''); // Reset email
-      setShowRobuxModal(true);
+    if (getTierStock(plan) <= 0) {
+      setStatusModal({ isOpen: true, type: 'error', title: 'Out of Stock', message: 'This premium plan is currently out of stock.' });
+      return;
+    }
+    let productId = 1781366430;
+    if (plan === 'weekly') productId = 1779578553;
+    if (plan === 'monthly') productId = 1781384489;
+    setRobuxDetails({ plan, price, productId });
+    setRobloxUsername('');
+    setEmail('');
+    setShowRobuxModal(true);
   };
 
   const verifyRobuxPurchase = async () => {
-    if (!robuxDetails || !robloxUsername.trim() || !email.trim()) return; // Validate email
-    
+    if (!robuxDetails || !robloxUsername.trim() || !email.trim()) return;
     setIsProcessing(true);
-    setShowRobuxModal(false); 
-
+    setShowRobuxModal(false);
     try {
-        const apiUrl = getApiUrl();
-        const response = await fetch(`${apiUrl}/api/roblox/verify`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                username: robloxUsername,
-                email: email, // Send email
-                tier: robuxDetails.plan
-            }),
-        });
-
-        const data = await response.json();
-
-        if (data.success && data.keys && data.keys.length > 0) {
-             const generatedKey = String(data.keys[0]);
-             
-             setStatusModal({
-                 isOpen: true,
-                 type: 'success',
-                 title: data.isRenewal ? 'Renewal Successful!' : 'Verification Successful!',
-                 message: data.message || 'Key generated successfully. Redirecting you to the receipt...'
-             });
-
-             const successParams = {
-                 orderId: data.transactionId || `ROBLOX-${data.userId}-${data.tier}`,
-                 dbOrderId: data.transactionId || `ROBLOX-${data.userId}-${data.tier}`,
-                 tier: data.tier,
-                 amount: String(robuxDetails.price),
-                 currency: 'ROBUX',
-                 key: generatedKey,
-                 method: 'robux',
-                 email: `${data.username}@roblox.com`, 
-                 payerId: `ROBLOX_${data.userId}`, 
-                 payerName: data.username, 
-             };
-
-             // Auto-Login
-             // Use the email user ENTERED, not the fallback roblox one, so it matches their input
-             localStorage.setItem('client_email', email);
-             localStorage.setItem('client_auth', 'true');
-
-             setTimeout(() => {
-                 // specific query params for success page
-                 const params = new URLSearchParams({
-                     orderId: successParams.orderId,
-                     tier: successParams.tier,
-                     amount: successParams.amount,
-                     currency: successParams.currency,
-                     key: successParams.key,
-                     email: email, // Use input email
-                     payerId: successParams.payerId,
-                     method: successParams.method,
-                     date: new Date().toISOString()
-                 });
-
-                 router.push(`/success?${params.toString()}`);
-             }, 1000);
-
-               loadPremiumStocks();
-
-        } else {
-             setStatusModal({
-                 isOpen: true,
-                 type: 'error',
-                 title: 'Verification Failed',
-                 message: data.error || 'Could not verify ownership.',
-                 details: data.details
-             });
-        }
+      const apiUrl = getApiUrl();
+      const response = await fetch(`${apiUrl}/api/roblox/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: robloxUsername, email, tier: robuxDetails.plan }),
+      });
+      const data = await response.json();
+      if (data.success && data.keys && data.keys.length > 0) {
+        const generatedKey = String(data.keys[0]);
+        setStatusModal({ isOpen: true, type: 'success', title: data.isRenewal ? 'Renewal Successful!' : 'Verification Successful!', message: data.message || 'Key generated successfully. Redirecting you to the receipt...' });
+        localStorage.setItem('client_email', email);
+        localStorage.setItem('client_auth', 'true');
+        setTimeout(() => {
+          const params = new URLSearchParams({
+            orderId: data.transactionId || `ROBLOX-${data.userId}-${data.tier}`,
+            tier: data.tier,
+            amount: String(robuxDetails.price),
+            currency: 'ROBUX',
+            key: generatedKey,
+            email,
+            payerId: `ROBLOX_${data.userId}`,
+            method: 'robux',
+            date: new Date().toISOString()
+          });
+          router.push(`/success?${params.toString()}`);
+        }, 1000);
+        loadPremiumStocks();
+      } else {
+        setStatusModal({ isOpen: true, type: 'error', title: 'Verification Failed', message: data.error || 'Could not verify ownership.', details: data.details });
+      }
     } catch (error: any) {
-        console.error('Verification error:', error);
-        setStatusModal({
-             isOpen: true,
-             type: 'error',
-             title: 'System Error',
-             message: 'An unexpected error occurred.',
-             details: error.message
-        });
+      setStatusModal({ isOpen: true, type: 'error', title: 'System Error', message: 'An unexpected error occurred.', details: error.message });
     } finally {
-        setIsProcessing(false);
+      setIsProcessing(false);
     }
   };
 
   const handlePayPalPayment = (plan: string, amount: number) => {
-    if (getTierStock(plan) <= 0) {
-      setStatusModal({
-        isOpen: true,
-        type: 'error',
-        title: 'Out of Stock',
-        message: 'This premium plan is currently out of stock.'
-      });
+    const qty = quantities[plan] || 1;
+    if (getTierStock(plan) < qty) {
+      setStatusModal({ isOpen: true, type: 'error', title: 'Not Enough Stock', message: `Only ${getTierStock(plan)} left for this plan.` });
       return;
     }
-
-    setPendingPlan({ plan, amount, price: amount });
+    setPendingPlan({ plan, amount, price: amount, quantity: qty });
     setShowTosModal(true);
   };
 
   const handleTicketPayment = (plan: string, amount: number, currency: string) => {
     if (getTierStock(plan) <= 0) {
-      setStatusModal({
-        isOpen: true,
-        type: 'error',
-        title: 'Out of Stock',
-        message: 'This premium plan is currently out of stock.'
-      });
+      setStatusModal({ isOpen: true, type: 'error', title: 'Out of Stock', message: 'This premium plan is currently out of stock.' });
       return;
     }
-
     setTicketDetails({ plan, amount, currency });
-    setPendingPlan({ plan, amount, price: amount }); // Just for TOS context
+    setPendingPlan({ plan, amount, price: amount, quantity: 1 });
     setShowTosModal(true);
   };
 
   const proceedWithPayment = async () => {
     if (!pendingPlan) return;
-    
     setShowTosModal(false);
-    
+
     if (paymentMethod === 'paypal') {
-        try {
-            // Show processing immediately
-            setIsProcessing(true);
-            
-            const apiUrl = getApiUrl();
-            const response = await fetch(`${apiUrl}/api/paypal/create-order`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                tier: pendingPlan.plan,
-                amount: pendingPlan.amount,
-                currency: 'EUR',
-                description: 'Seisen Hub Premium Access',
-                }),
-            });
-            
-            const data = await response.json();
+      try {
+        setIsProcessing(true);
+        const apiUrl = getApiUrl();
+        const response = await fetch(`${apiUrl}/api/paypal/create-order`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            tier: pendingPlan.plan,
+            amount: pendingPlan.amount,
+            quantity: pendingPlan.quantity,
+            currency: 'EUR',
+            description: 'Seisen Hub Premium Access',
+          }),
+        });
+        const data = await response.json();
 
-            if (!response.ok) {
-              setIsProcessing(false);
-              setStatusModal({
-                  isOpen: true,
-                  type: 'error',
-                  title: 'Purchase Blocked',
-                  message: data.error || 'Unable to continue checkout.',
-              });
-              loadPremiumStocks();
-              return;
-            }
-
-            const approvalLink = data.links?.find((link: any) => link.rel === 'approve');
-            
-            if (approvalLink) {
-                window.location.href = approvalLink.href;
-            } else {
-                console.error('PayPal response:', data);
-                setIsProcessing(false);
-                setStatusModal({
-                    isOpen: true,
-                    type: 'error',
-                    title: 'PayPal Error',
-                    message: 'Failed to create PayPal order. Please try again.',
-                    details: 'No approval link returned'
-                });
-            }
-        } catch (error: any) {
-            console.error('Payment error:', error);
-            setIsProcessing(false);
-            setStatusModal({
-                isOpen: true,
-                type: 'error',
-                title: 'Connection Error',
-                message: 'Failed to initiate payment.',
-                details: error.message
-            });
+        if (!response.ok) {
+          setIsProcessing(false);
+          setStatusModal({ isOpen: true, type: 'error', title: 'Purchase Blocked', message: data.error || 'Unable to continue checkout.' });
+          loadPremiumStocks();
+          return;
         }
+
+        const approvalLink = data.links?.find((link: any) => link.rel === 'approve');
+        if (approvalLink) {
+          window.location.href = approvalLink.href;
+        } else {
+          setIsProcessing(false);
+          setStatusModal({ isOpen: true, type: 'error', title: 'PayPal Error', message: 'Failed to create PayPal order. Please try again.', details: 'No approval link returned' });
+        }
+      } catch (error: any) {
+        setIsProcessing(false);
+        setStatusModal({ isOpen: true, type: 'error', title: 'Connection Error', message: 'Failed to initiate payment.', details: error.message });
+      }
     } else {
-        // Show ticket modal
-        if (ticketDetails) setShowTicketModal(true);
+      if (ticketDetails) setShowTicketModal(true);
     }
   };
 
@@ -519,16 +637,18 @@ function PremiumContent() {
   };
 
   const copyTicketDetails = async () => {
-      if (!ticketDetails) return;
-      const text = `Premium Purchase Request\n\nPlan: ${ticketDetails.plan}\nAmount: ${ticketDetails.amount} ${ticketDetails.currency}\nMethod: ${ticketDetails.currency}`;
-      await copyToClipboard(text);
-      alert('Details copied to clipboard!'); 
-      // Keep simple alert for copy for now, or use a toast if available. keeping simple to minimize diffs unless requested.
+    if (!ticketDetails) return;
+    const text = `Premium Purchase Request\n\nPlan: ${ticketDetails.plan}\nAmount: ${ticketDetails.amount} ${ticketDetails.currency}\nMethod: ${ticketDetails.currency}`;
+    await copyToClipboard(text);
+    alert('Details copied to clipboard!');
   };
+
+  const cartCount = getCartCount(cart);
 
   return (
     <div className="min-h-screen py-8 px-4 md:px-8">
       <div className="max-w-5xl mx-auto space-y-12">
+
         {/* Header */}
         <section className="text-center animate-fade-in">
           <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center rounded-2xl bg-gradient-to-br from-yellow-500 to-orange-500 shadow-lg shadow-yellow-500/30">
@@ -541,12 +661,31 @@ function PremiumContent() {
         </section>
 
         <section className="flex justify-center -mt-8 mb-8">
-            <PurchaseCounter />
+          <PurchaseCounter />
         </section>
 
-        {/* Payment Method Selection */}
+        {/* Payment Method + Cart Button */}
         <section>
-          <h3 className="text-sm font-medium text-gray-400 mb-3">Payment Method:</h3>
+          <div className="flex items-end justify-between mb-3 flex-wrap gap-3">
+            <h3 className="text-sm font-medium text-gray-400">Payment Method:</h3>
+
+            {/* Cart button — PayPal only */}
+            {paymentMethod === 'paypal' && (
+              <button
+                onClick={() => setCartOpen(true)}
+                className="relative flex items-center gap-2 px-3 py-2 rounded-lg bg-[#1a1a1a] border border-[#2a2a2a] text-gray-400 hover:text-white hover:border-[#3a3a3a] transition-all text-sm"
+              >
+                <ShoppingCart className="w-4 h-4" />
+                Cart
+                {cartCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 accent-bg text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold leading-none">
+                    {cartCount}
+                  </span>
+                )}
+              </button>
+            )}
+          </div>
+
           <div className="flex gap-2">
             <button
               onClick={() => setPaymentMethod('paypal')}
@@ -557,11 +696,7 @@ function PremiumContent() {
               }`}
               title="PayPal"
             >
-              <img 
-                src="/images/paypal.png" 
-                alt="PayPal" 
-                className="w-5 h-5 object-contain"
-              />
+              <img src="/images/paypal.png" alt="PayPal" className="w-5 h-5 object-contain" />
             </button>
             <button
               onClick={() => setPaymentMethod('robux')}
@@ -572,11 +707,7 @@ function PremiumContent() {
               }`}
               title="Robux"
             >
-              <img 
-                src="https://upload.wikimedia.org/wikipedia/commons/c/c7/Robux_2019_Logo_gold.svg" 
-                alt="Robux" 
-                className="w-5 h-5"
-              />
+              <img src="https://upload.wikimedia.org/wikipedia/commons/c/c7/Robux_2019_Logo_gold.svg" alt="Robux" className="w-5 h-5" />
             </button>
             <button
               onClick={() => setPaymentMethod('gcash')}
@@ -587,11 +718,7 @@ function PremiumContent() {
               }`}
               title="GCash"
             >
-              <img 
-                 src="/images/gcash.png" 
-                 alt="GCash" 
-                 className="w-6 h-6 object-contain"
-               />
+              <img src="/images/gcash.png" alt="GCash" className="w-6 h-6 object-contain" />
             </button>
           </div>
         </section>
@@ -608,47 +735,84 @@ function PremiumContent() {
                     ? `${tierStock} left (low stock)`
                     : `${tierStock} in stock`;
 
+              const qty = quantities[plan.plan] || 1;
+              const isPayPal = paymentMethod === 'paypal';
+              const cartIncludes = cart.some(c => c.plan === plan.plan);
+              const justAdded = addedFeedback === plan.plan;
+
               return (
-            <PricingCard
-              key={plan.plan}
-              title={plan.title}
-              badge={plan.badge}
-              badgeVariant={plan.badgeVariant}
-              price={plan.price}
-              // @ts-ignore
-              originalPrice={plan.originalPrice}
-              currency={plan.currency}
-              period={plan.period}
-              features={plan.features}
-              featured={plan.featured}
-              stockStatusText={isOutOfStock ? undefined : stockStatusText}
-              stockStatusVariant={isOutOfStock ? 'out-of-stock' : tierStock <= 5 ? 'low-stock' : 'in-stock'}
-              isOutOfStock={isOutOfStock}
-              buttonText={isOutOfStock ? 'Out of Stock' : paymentMethod === 'paypal' ? 'Pay with PayPal' : 'Verify & Get Key'}
-              buttonIcon={
-                paymentMethod === 'paypal' && !isOutOfStock ? (
-                  <CreditCard className="w-4 h-4" />
-                ) : null
-              }
-              onButtonClick={() => {
-                if (paymentMethod === 'paypal') {
-                  handlePayPalPayment(plan.plan, plan.price);
-                } else if (paymentMethod === 'robux') {
-                  handleRobuxPayment(plan.plan, plan.price);
-                } else {
-                  handleTicketPayment(plan.plan, plan.price, 'GCash');
-                }
-              }}
-              priceIcon={
-                paymentMethod === 'robux' ? (
-                  <img 
-                    src="https://upload.wikimedia.org/wikipedia/commons/c/c7/Robux_2019_Logo_gold.svg" 
-                    alt="R$" 
-                    className="w-6 h-6 mr-1 object-contain"
+                <div key={plan.plan} className="flex flex-col gap-2">
+                  <PricingCard
+                    title={plan.title}
+                    badge={plan.badge}
+                    badgeVariant={plan.badgeVariant}
+                    price={plan.price}
+                    // @ts-ignore
+                    originalPrice={plan.originalPrice}
+                    currency={plan.currency}
+                    period={plan.period}
+                    features={plan.features}
+                    featured={plan.featured}
+                    stockStatusText={isOutOfStock ? undefined : stockStatusText}
+                    stockStatusVariant={isOutOfStock ? 'out-of-stock' : tierStock <= 5 ? 'low-stock' : 'in-stock'}
+                    isOutOfStock={isOutOfStock}
+                    buttonText={isOutOfStock ? 'Out of Stock' : isPayPal ? `Pay with PayPal${qty > 1 ? ` (×${qty})` : ''}` : 'Verify & Get Key'}
+                    buttonIcon={isPayPal && !isOutOfStock ? <CreditCard className="w-4 h-4" /> : null}
+                    onButtonClick={() => {
+                      if (paymentMethod === 'paypal') {
+                        handlePayPalPayment(plan.plan, plan.price);
+                      } else if (paymentMethod === 'robux') {
+                        handleRobuxPayment(plan.plan, plan.price);
+                      } else {
+                        handleTicketPayment(plan.plan, plan.price, 'GCash');
+                      }
+                    }}
+                    priceIcon={
+                      paymentMethod === 'robux' ? (
+                        <img
+                          src="https://upload.wikimedia.org/wikipedia/commons/c/c7/Robux_2019_Logo_gold.svg"
+                          alt="R$"
+                          className="w-6 h-6 mr-1 object-contain"
+                        />
+                      ) : undefined
+                    }
                   />
-                ) : undefined
-              }
-            />
+
+                  {/* PayPal-only: Quantity stepper + Add to Cart */}
+                  {isPayPal && !isOutOfStock && (
+                    <div className="flex items-center gap-2 px-1">
+                      <div className="flex items-center gap-2 flex-1">
+                        <span className="text-xs text-gray-500">Qty:</span>
+                        <QuantityStepper
+                          value={qty}
+                          onChange={v => setQuantities(q => ({ ...q, [plan.plan]: v }))}
+                          max={Math.min(10, tierStock)}
+                        />
+                        {qty > 1 && (
+                          <span className="text-xs text-gray-400 font-mono">
+                            = €{(plan.price * qty).toFixed(2)}
+                          </span>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => handleAddToCart(plan.plan, plan.price, plan.title)}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                          justAdded
+                            ? 'accent-bg accent-text border-transparent'
+                            : cartIncludes
+                            ? 'bg-[#1a1a1a] border-[var(--accent)] accent-text'
+                            : 'bg-[#1a1a1a] border-[#2a2a2a] text-gray-400 hover:text-white hover:border-[#3a3a3a]'
+                        }`}
+                      >
+                        {justAdded ? (
+                          <><CheckCircle className="w-3 h-3" /> Added!</>
+                        ) : (
+                          <><ShoppingCart className="w-3 h-3" /> Add to Cart</>
+                        )}
+                      </button>
+                    </div>
+                  )}
+                </div>
               );
             })()
           ))}
@@ -671,48 +835,60 @@ function PremiumContent() {
         </section>
       </div>
 
+      {/* Cart Drawer */}
+      <CartDrawer
+        isOpen={cartOpen}
+        cart={cart}
+        onClose={() => setCartOpen(false)}
+        onRemove={handleCartRemove}
+        onUpdateQty={handleCartUpdateQty}
+        onCheckout={() => { setCartOpen(false); handleCartCheckout(); }}
+        onClear={handleCartClear}
+        isProcessing={isProcessing}
+      />
+
       {/* Processing Modal */}
       {isProcessing && !statusModal.isOpen && (
-          <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center">
-              <div className="text-center animate-fade-in">
-                  <Loader2 className="w-12 h-12 accent-text animate-spin mx-auto mb-4" />
-                  <h2 className="text-2xl font-bold text-white mb-2">Processing Payment...</h2>
-                  <p className="text-gray-500 max-w-sm mx-auto">
-                      Please do not close this window or refresh the page. This may take a few seconds.
-                  </p>
-              </div>
+        <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center">
+          <div className="text-center animate-fade-in">
+            <Loader2 className="w-12 h-12 accent-text animate-spin mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-white mb-2">Processing Payment...</h2>
+            <p className="text-gray-500 max-w-sm mx-auto">
+              Please do not close this window or refresh the page. This may take a few seconds.
+            </p>
           </div>
+        </div>
       )}
 
       {/* Status Modal */}
       {statusModal.isOpen && (
-          <div className="fixed inset-0 bg-black/90 z-[60] flex items-center justify-center p-4 animate-in fade-in zoom-in duration-200">
-              <Card className="w-full max-w-md p-6 text-center border shadow-2xl relative">
-                  <div className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center ${
-                      statusModal.type === 'success' ? 'accent-bg accent-text' : 'bg-red-500/20 text-red-500'
-                  }`}>
-                      {statusModal.type === 'success' ? <CheckCircle className="w-8 h-8"/> : <AlertCircle className="w-8 h-8"/>}
-                  </div>
-                  
-                  <h2 className="text-2xl font-bold text-white mb-2">{statusModal.title}</h2>
-                  <p className="text-gray-400 mb-6">{statusModal.message}</p>
-                  
-                  {statusModal.details && (
-                      <div className="bg-[#0a0a0a] p-3 rounded text-left mb-6 overflow-hidden">
-                          <p className="text-xs text-gray-500 mb-1 font-mono uppercase">Error Details:</p>
-                          <code className="text-xs text-red-400 block break-words">{statusModal.details}</code>
-                      </div>
-                  )}
+        <div className="fixed inset-0 bg-black/90 z-[60] flex items-center justify-center p-4 animate-in fade-in zoom-in duration-200">
+          <Card className="w-full max-w-md p-6 text-center border shadow-2xl relative">
+            <div className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center ${
+              statusModal.type === 'success' ? 'accent-bg accent-text' : 'bg-red-500/20 text-red-500'
+            }`}>
+              {statusModal.type === 'success' ? <CheckCircle className="w-8 h-8" /> : <AlertCircle className="w-8 h-8" />}
+            </div>
 
-                  <Button 
-                      onClick={() => setStatusModal({ ...statusModal, isOpen: false })}
-                      className="w-full"
-                      variant={statusModal.type === 'success' ? 'primary' : 'secondary'}
-                  >
-                      {statusModal.type === 'success' ? 'Continue' : 'Close and Try Again'}
-                  </Button>
-              </Card>
-          </div>
+            <h2 className="text-2xl font-bold text-white mb-2">{statusModal.title}</h2>
+            <p className="text-gray-400 mb-6">{statusModal.message}</p>
+
+            {statusModal.details && (
+              <div className="bg-[#0a0a0a] p-3 rounded text-left mb-6 overflow-hidden">
+                <p className="text-xs text-gray-500 mb-1 font-mono uppercase">Error Details:</p>
+                <code className="text-xs text-red-400 block break-words">{statusModal.details}</code>
+              </div>
+            )}
+
+            <Button
+              onClick={() => setStatusModal({ ...statusModal, isOpen: false })}
+              className="w-full"
+              variant={statusModal.type === 'success' ? 'primary' : 'secondary'}
+            >
+              {statusModal.type === 'success' ? 'Continue' : 'Close and Try Again'}
+            </Button>
+          </Card>
+        </div>
       )}
 
       {/* TOS Modal */}
@@ -723,17 +899,25 @@ function PremiumContent() {
               <HelpCircle className="w-5 h-5 accent-text" />
               Terms of Service
             </h2>
-            
+
             <p className="text-gray-400 text-sm mb-4">
               Before purchasing premium access, you must read and agree to our Terms of Service.
             </p>
-            
+
             <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 mb-4">
               <p className="text-red-400 text-sm">
                 <strong>⚠️ Important:</strong> All sales are final. No refunds will be issued.
               </p>
             </div>
-            
+
+            {pendingPlan && pendingPlan.quantity > 1 && (
+              <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg p-3 mb-4 text-sm text-gray-300">
+                <p><strong>Plan:</strong> <span className="text-white capitalize">{pendingPlan.plan}</span></p>
+                <p><strong>Quantity:</strong> <span className="text-white">{pendingPlan.quantity} keys</span></p>
+                <p><strong>Total:</strong> <span className="accent-text font-semibold">€{(pendingPlan.price * pendingPlan.quantity).toFixed(2)}</span></p>
+              </div>
+            )}
+
             <label className="flex items-start gap-3 cursor-pointer mb-6">
               <input
                 type="checkbox"
@@ -748,15 +932,12 @@ function PremiumContent() {
                 </a>.
               </span>
             </label>
-            
+
             <div className="flex gap-3">
               <Button
                 variant="secondary"
                 className="flex-1"
-                onClick={() => {
-                  setShowTosModal(false);
-                  setTosAccepted(false);
-                }}
+                onClick={() => { setShowTosModal(false); setTosAccepted(false); }}
               >
                 Cancel
               </Button>
@@ -773,118 +954,114 @@ function PremiumContent() {
         </div>
       )}
 
-
-
       {/* Robux Verification Modal */}
       {showRobuxModal && robuxDetails && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 animate-in fade-in duration-200">
-              <Card className="w-full max-w-md p-6 relative">
-                  <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                       <span className="text-2xl">🎮</span>
-                       Verify Ownership
-                  </h2>
-                  
-                  <div className="space-y-4 mb-6">
-                      <div className="bg-[#1a1a1a] p-4 rounded-lg space-y-2 text-sm text-gray-300">
-                          <p><strong>Plan:</strong> <span className="text-white capitalize">{robuxDetails.plan}</span></p>
-                          <p>
-                              <strong>Product:</strong>{' '}
-                              <a 
-                                href={`https://www.roblox.com/game-pass/${robuxDetails.productId}`} 
-                                  target="_blank" 
-                                  rel="noopener noreferrer"
-                                  className="accent-text font-mono hover:underline"
-                              >
-                                Click here to Buy Game Pass ({robuxDetails.productId})
-                              </a>
-                          </p>
-                          
-                          <div className="bg-orange-500/10 border border-orange-500/20 p-3 rounded mt-3">
-                                <p className="text-xs text-orange-200 font-medium mb-1">⚠️ Renewal / Additional Purchase:</p>
-                                <p className="text-xs text-orange-200/80">
-                                    To <strong>Renew</strong> (Weekly/Monthly) or buy an <strong>Additional Key</strong> (Lifetime), you <strong>MUST DELETE</strong> the item from your Roblox inventory and <strong>BUY IT AGAIN</strong>.
-                                    <br/><br/>
-                                    <strong>Existing Lifetime users:</strong> To just get your <em>current</em> key, simply click Verify without rebuying.
-                                </p>
-                          </div>
-                      </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 animate-in fade-in duration-200">
+          <Card className="w-full max-w-md p-6 relative">
+            <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+              <span className="text-2xl">🎮</span>
+              Verify Ownership
+            </h2>
 
-                          <div className="space-y-3">
-                              <div>
-                                  <label className="block text-sm font-medium text-gray-400 mb-1">Roblox Username</label>
-                                  <input 
-                                      type="text" 
-                                      value={robloxUsername}
-                                      onChange={(e) => setRobloxUsername(e.target.value)}
-                                      placeholder="Enter your Roblox username..."
-                                      className="w-full bg-[#0a0a0a] border border-[#2a2a2a] rounded-lg px-4 py-2 text-white focus:outline-none focus-visible:border-[var(--accent)] transition-colors"
-                                  />
-                              </div>
-                              <div>
-                                  <label className="block text-sm font-medium text-gray-400 mb-1">Email Address</label>
-                                  <input 
-                                      type="email" 
-                                      value={email}
-                                      onChange={(e) => setEmail(e.target.value)}
-                                      placeholder="Enter your email for backup..."
-                                      className="w-full bg-[#0a0a0a] border border-[#2a2a2a] rounded-lg px-4 py-2 text-white focus:outline-none focus-visible:border-[var(--accent)] transition-colors"
-                                  />
-                                  <p className="text-xs text-gray-500 mt-1">We'll save your key to this email as a backup.</p>
-                              </div>
-                          </div>
-                  </div>
+            <div className="space-y-4 mb-6">
+              <div className="bg-[#1a1a1a] p-4 rounded-lg space-y-2 text-sm text-gray-300">
+                <p><strong>Plan:</strong> <span className="text-white capitalize">{robuxDetails.plan}</span></p>
+                <p>
+                  <strong>Product:</strong>{' '}
+                  <a
+                    href={`https://www.roblox.com/game-pass/${robuxDetails.productId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="accent-text font-mono hover:underline"
+                  >
+                    Click here to Buy Game Pass ({robuxDetails.productId})
+                  </a>
+                </p>
+              </div>
 
-                  <div className="flex gap-3">
-                      <Button variant="secondary" className="flex-1" onClick={() => setShowRobuxModal(false)}>
-                          Cancel
-                      </Button>
-                      <Button className="flex-1" onClick={verifyRobuxPurchase} disabled={!robloxUsername.trim() || !email.trim()}>
-                          <Check className="w-4 h-4" />
-                          Verify
-                      </Button>
-                  </div>
-              </Card>
-          </div>
+              <div className="bg-orange-500/10 border border-orange-500/20 p-3 rounded mt-3">
+                <p className="text-xs text-orange-200 font-medium mb-1">⚠️ Renewal / Additional Purchase:</p>
+                <p className="text-xs text-orange-200/80">
+                  To <strong>Renew</strong> (Weekly/Monthly) or buy an <strong>Additional Key</strong> (Lifetime), you <strong>MUST DELETE</strong> the item from your Roblox inventory and <strong>BUY IT AGAIN</strong>.
+                  <br /><br />
+                  <strong>Existing Lifetime users:</strong> To just get your <em>current</em> key, simply click Verify without rebuying.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-1">Roblox Username</label>
+                  <input
+                    type="text"
+                    value={robloxUsername}
+                    onChange={(e) => setRobloxUsername(e.target.value)}
+                    placeholder="Enter your Roblox username..."
+                    className="w-full bg-[#0a0a0a] border border-[#2a2a2a] rounded-lg px-4 py-2 text-white focus:outline-none focus-visible:border-[var(--accent)] transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-1">Email Address</label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Enter your email for backup..."
+                    className="w-full bg-[#0a0a0a] border border-[#2a2a2a] rounded-lg px-4 py-2 text-white focus:outline-none focus-visible:border-[var(--accent)] transition-colors"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">We'll save your key to this email as a backup.</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <Button variant="secondary" className="flex-1" onClick={() => setShowRobuxModal(false)}>
+                Cancel
+              </Button>
+              <Button className="flex-1" onClick={verifyRobuxPurchase} disabled={!robloxUsername.trim() || !email.trim()}>
+                <Check className="w-4 h-4" />
+                Verify
+              </Button>
+            </div>
+          </Card>
+        </div>
       )}
 
       {/* Ticket Modal */}
       {showTicketModal && ticketDetails && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 animate-in fade-in duration-200">
-              <Card className="w-full max-w-md p-6 relative">
-                  <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                      <CreditCard className="w-5 h-5 accent-text" />
-                      Complete Purchase
-                  </h2>
-                  
-                  <div className="space-y-4 mb-6">
-                      <div className="bg-[#1a1a1a] p-4 rounded-lg space-y-2 text-sm text-gray-300">
-                          <p><strong>Plan:</strong> <span className="text-white capitalize">{ticketDetails.plan}</span></p>
-                          <p><strong>Amount:</strong> <span className="text-white">{ticketDetails.amount} {ticketDetails.currency}</span></p>
-                          <p><strong>Method:</strong> <span className="text-white capitalize">{ticketDetails.currency === 'Robux' ? 'Robux' : 'GCash'}</span></p>
-                      </div>
-                      
-                      <p className="text-sm text-gray-400">
-                          To complete your purchase, please open a ticket in our Discord server and provide proof of payment.
-                      </p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 animate-in fade-in duration-200">
+          <Card className="w-full max-w-md p-6 relative">
+            <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+              <CreditCard className="w-5 h-5 accent-text" />
+              Complete Purchase
+            </h2>
 
-                      <Button variant="secondary" className="w-full" onClick={copyTicketDetails}>
-                          <Copy className="w-4 h-4" />
-                          Copy Ticket Details
-                      </Button>
-                  </div>
+            <div className="space-y-4 mb-6">
+              <div className="bg-[#1a1a1a] p-4 rounded-lg space-y-2 text-sm text-gray-300">
+                <p><strong>Plan:</strong> <span className="text-white capitalize">{ticketDetails.plan}</span></p>
+                <p><strong>Amount:</strong> <span className="text-white">{ticketDetails.amount} {ticketDetails.currency}</span></p>
+                <p><strong>Method:</strong> <span className="text-white capitalize">{ticketDetails.currency === 'Robux' ? 'Robux' : 'GCash'}</span></p>
+              </div>
 
-                  <div className="flex gap-3">
-                      <Button variant="secondary" className="flex-1" onClick={() => setShowTicketModal(false)}>
-                          Close
-                      </Button>
-                      <a href="https://discord.gg/F4sAf6z8Ph" target="_blank" className="flex-1">
-                          <Button className="w-full">
-                               Open Discord
-                          </Button>
-                      </a>
-                  </div>
-              </Card>
-          </div>
+              <p className="text-sm text-gray-400">
+                To complete your purchase, please open a ticket in our Discord server and provide proof of payment.
+              </p>
+
+              <Button variant="secondary" className="w-full" onClick={copyTicketDetails}>
+                <Copy className="w-4 h-4" />
+                Copy Ticket Details
+              </Button>
+            </div>
+
+            <div className="flex gap-3">
+              <Button variant="secondary" className="flex-1" onClick={() => setShowTicketModal(false)}>
+                Close
+              </Button>
+              <a href="https://discord.gg/F4sAf6z8Ph" target="_blank" className="flex-1">
+                <Button className="w-full">Open Discord</Button>
+              </a>
+            </div>
+          </Card>
+        </div>
       )}
     </div>
   );
@@ -892,7 +1069,7 @@ function PremiumContent() {
 
 export default function PremiumPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin accent-text"/></div>}>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin accent-text" /></div>}>
       <PremiumContent />
     </Suspense>
   );

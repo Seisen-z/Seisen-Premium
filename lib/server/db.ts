@@ -91,7 +91,6 @@ export class TicketDatabase {
   async addReply(ticketId: string | number, replyData: any) {
     let ticketNumber = ticketId;
     
-    // Logic to ensure we use ticket_number string, not internal ID
     if (!isNaN(Number(ticketId))) {
       const { data: ticket } = await this.client
         .from('tickets')
@@ -116,7 +115,6 @@ export class TicketDatabase {
       throw error;
     }
 
-    // Update ticket's updated_at
     await this.client
       .from('tickets')
       .update({ updated_at: new Date().toISOString() })
@@ -139,7 +137,6 @@ export class TicketDatabase {
     return data;
   }
 
-  // --- Payment Methods ---
   async transactionExists(transactionId: string) {
     const { data, error } = await this.client
       .from('payments')
@@ -197,16 +194,14 @@ export class TicketDatabase {
   }
   
   async updatePaymentKeys(transactionId: string, keys: string[]) {
-    // Update legacy column
     await this.client
       .from('payments')
       .update({ 
-        generated_keys: JSON.stringify(keys), // Legacy
+        generated_keys: JSON.stringify(keys),
         updated_at: new Date().toISOString()
       })
       .eq('transaction_id', transactionId);
 
-    // Insert into new table
     await this.saveKeys(transactionId, keys);
   }
 
@@ -215,7 +210,7 @@ export class TicketDatabase {
       .from('payments')
       .update({ 
         roblox_uaid: uaid,
-        created_at: new Date().toISOString(), // Reset creation time for renewal
+        created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })
       .eq('transaction_id', transactionId);
@@ -253,7 +248,6 @@ export class TicketDatabase {
     if (error && error.code !== 'PGRST116') console.error('Error fetching payment:', error);
 
     if (payment) {
-        // Normalize keys
         if (payment.license_keys?.length) {
             payment.generated_keys = payment.license_keys.map((k: any) => k.key_value);
         } else if (typeof payment.generated_keys === 'string') {
@@ -309,7 +303,7 @@ export class TicketDatabase {
   async getPurchaseCount() {
     const { count, error } = await this.client
       .from('payments')
-      .select('*', { count: 'exact', head: true }); // Head request for count only
+      .select('*', { count: 'exact', head: true });
 
     if (error) {
       console.error('Error fetching purchase count:', error);
@@ -318,14 +312,11 @@ export class TicketDatabase {
     return count || 0;
   }
 
-  // --- Premium Stock Methods ---
   private normalizeTier(tier: string) {
     const normalized = (tier || '').toLowerCase();
     return this.premiumTiers.includes(normalized) ? normalized : null;
   }
 
-
-  // --- Per-payment-method stock ---
   private readonly paymentMethods = ['robux', 'paypal', 'gcash'];
 
   private normalizeMethod(method: string) {
@@ -356,7 +347,6 @@ export class TicketDatabase {
       }
     }
 
-    // Ensure all rows exist (seed missing ones)
     const existing = new Set((data || []).map((r: any) => `${r.tier}:${r.payment_method}`));
     const missing: { tier: string; payment_method: string; stock: number }[] = [];
     for (const tier of this.premiumTiers) {
@@ -401,9 +391,6 @@ export class TicketDatabase {
     return data;
   }
 
-
-
-
   async decrementPaymentMethodStock(tier: string, method: string): Promise<boolean> {
     const normalizedTier = this.normalizeTier(tier);
     const normalizedMethod = this.normalizeMethod(method);
@@ -445,63 +432,38 @@ export class TicketDatabase {
     return false;
   }
 
-
   async getVisitorStats() {
-    // We now use a single 'global_counter' row for all stats
-    // But we might want to respect legacy data if we want.
-    // For simplicity and per request "remove unique", we will just read the global counter 
-    // OR sum everything if we want to include legacy counts + new global count.
-    
-    // Simplest: Sum everything, as 'global_counter' will just be a large entry.
     const { data, error } = await this.client.from('visitors').select('visit_count');
     if (error) return { totalVisits: 0, uniqueVisitors: 0 };
     
     const totalVisits = data.reduce((sum: number, v: any) => sum + v.visit_count, 0);
     return {
         totalVisits,
-        uniqueVisitors: 0, // Removed per request
+        uniqueVisitors: 0,
         lastUpdated: new Date().toISOString()
     };
   }
 
-  // --- Admin Auth ---
   async validateAdminPassword(previewPassword: string): Promise<boolean> {
     if (!previewPassword) return false;
 
     try {
-        // Table: admin_credentials
-        // Columns: password (text)
         const { data, error } = await this.client
             .from('admin_credentials')
             .select('password')
             .single();
-        
-        console.log('🔍 Admin Auth Debug:', { 
-            foundData: !!data, 
-            hasError: !!error, 
-            errorMsg: error?.message,
-            inputLen: previewPassword.length,
-            dbPassLen: data?.password?.length
-        });
 
         if (!error && data) {
-            const match = previewPassword === data.password;
-            console.log('🔍 Password Match Result:', match);
-            return match;
+            return previewPassword === data.password;
         }
     } catch (e: any) {
         console.error('⚠️ Admin Auth Exception:', e.message);
     }
 
-    // Fallback to Environment Variable
-    const envMatch = previewPassword === process.env.ADMIN_PASSWORD;
-    console.log('🔍 fallback Env Match:', envMatch);
-    return envMatch;
+    return previewPassword === process.env.ADMIN_PASSWORD;
   }
 
   async recordVisit(ipAddress: string, userAgent: string) {
-    // IGNORE IP -> Use 'global_counter' equivalent
-    // usage of '0.0.0.0' fits IP constraints if any
     const GLOBAL_ID = '0.0.0.0'; 
 
     const { data: existing } = await this.client
@@ -528,11 +490,10 @@ export class TicketDatabase {
                 visit_count: 1
             }]);
     }
-
+    
     return await this.getVisitorStats();
   }
 
-  // --- Ticket Methods ---
   async updateStatus(ticketId: string | number, status: string) {
     const query = !isNaN(Number(ticketId))
         ? this.client.from('tickets').update({ status, updated_at: new Date().toISOString() }).eq('id', ticketId)
@@ -544,9 +505,32 @@ export class TicketDatabase {
       throw error;
     }
   }
-  // --- Auth & Verification ---
+
+  async deletePayment(transactionId: string) {
+    const { error } = await this.client
+        .from('payments')
+        .delete()
+        .eq('transaction_id', transactionId);
+
+    if (error) {
+        console.error('Error deleting payment:', error);
+        throw error;
+    }
+  }
+
+  async deleteTicket(ticketNumber: string) {
+    const { error } = await this.client
+        .from('tickets')
+        .delete()
+        .eq('ticket_number', ticketNumber);
+
+    if (error) {
+        console.error('Error deleting ticket:', error);
+        throw error;
+    }
+  }
+
   async checkUserExists(email: string) {
-    // Check if this email has ever made a successful payment
     const { data, error } = await this.client
         .from('payments')
         .select('id')
@@ -562,7 +546,6 @@ export class TicketDatabase {
   }
 
   async createVerificationCode(email: string, code: string) {
-    // Expires in 15 minutes
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
 
     const { error } = await this.client
@@ -599,7 +582,6 @@ export class TicketDatabase {
         return { success: false, error: 'Invalid code' };
     }
 
-    // Success! Delete the code so it can't be reused
     await this.client.from('verification_codes').delete().eq('email', email);
     
     return { success: true };

@@ -6,13 +6,16 @@ import { TicketDatabase } from '@/lib/server/db';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { tier } = body;
+    const { tier, quantity: rawQuantity } = body;
 
-    // Pricing (Server-side validation)
+    // Validate quantity (1–10)
+    const quantity = Math.max(1, Math.min(10, parseInt(String(rawQuantity || '1'), 10) || 1));
+
+    // Pricing (Server-side validation) — Updated: Monthly €6, Lifetime €12
     const pricing: Record<string, number> = {
         weekly: 3,
-        monthly: 5,
-        lifetime: 10
+        monthly: 6,
+        lifetime: 12
     };
 
     if (!tier || !pricing[tier]) {
@@ -22,15 +25,16 @@ export async function POST(req: NextRequest) {
         const db = new TicketDatabase();
         const methodStocks = await db.getPaymentMethodStocks();
         const currentStock = methodStocks[tier]?.paypal ?? 0;
-        if (currentStock <= 0) {
-            return NextResponse.json({ error: 'This premium plan is out of stock' }, { status: 409 });
+        if (currentStock < quantity) {
+            return NextResponse.json({ error: `Not enough stock. Only ${currentStock} left for this plan.` }, { status: 409 });
         }
 
     const baseAmount = pricing[tier];
+    const totalBaseAmount = baseAmount * quantity;
 
-    // VAT Calculation
+    // VAT Calculation (on total)
     const country = VatCalculator.getCountryFromRequest(req);
-    const taxDetails = VatCalculator.calculateTax(baseAmount, country);
+    const taxDetails = VatCalculator.calculateTax(totalBaseAmount, country);
 
     const paypal = new PayPalSDK({
         clientId: process.env.PAYPAL_CLIENT_ID || '',
@@ -39,21 +43,23 @@ export async function POST(req: NextRequest) {
     });
 
     // Dynamic Frontend URL for Redirects
-    // Always use the origin of the request to ensure the user is returned to the correct domain they are visiting.
     const frontendUrl = req.nextUrl.origin;
 
     const returnUrl = `${frontendUrl}/premium`;
     const cancelUrl = `${frontendUrl}/premium?canceled=true`;
+
+    // Encode quantity into custom_id so capture-order can read it: "lifetime:3"
+    const customId = `${tier}:${quantity}`;
     
     const orderData = {
         amount: taxDetails.totalAmount,
         currency: 'EUR',
-        description: 'Seisen Hub Premium Key',
-        tier,
+        description: quantity > 1 ? `Seisen Hub Premium Key x${quantity}` : 'Seisen Hub Premium Key',
+        tier: customId,  // custom_id carries "tier:quantity"
         returnUrl,
         cancelUrl,
         breakdown: {
-            item_total: { currency_code: 'EUR', value: baseAmount.toFixed(2) },
+            item_total: { currency_code: 'EUR', value: totalBaseAmount.toFixed(2) },
             tax_total: { currency_code: 'EUR', value: taxDetails.taxAmount.toFixed(2) }
         }
     };

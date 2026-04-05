@@ -60,7 +60,18 @@ export default function TicketDetailPage() {
           const data = await res.json();
           
           if (data.success) {
-              setTicket(data.ticket);
+              let fetchedTicket = data.ticket;
+              
+              if (fetchedTicket.status === 'replied') {
+                 fetchedTicket.status = 'open';
+                 fetch(`${apiUrl}/api/tickets/${id}`, {
+                     method: 'PATCH',
+                     headers: { 'Content-Type': 'application/json' },
+                     body: JSON.stringify({ action: 'mark_read' })
+                 }).catch(console.error);
+              }
+
+              setTicket(fetchedTicket);
               setReplies(data.replies || []);
           } else {
               // Handle not found

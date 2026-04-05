@@ -58,7 +58,12 @@ export default function AdminPage() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [stats, setStats] = useState<Stats>({ totalPurchases: 0, paypalPurchases: 0, robloxPurchases: 0, paypalRevenue: 0, robloxRevenue: 0 });
   const [searchQuery, setSearchQuery] = useState('');
+  const [ticketSearch, setTicketSearch] = useState('');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+
+  const [isComposeOpen, setIsComposeOpen] = useState(false);
+  const [composeData, setComposeData] = useState({ email: '', subject: '', message: '' });
+  const [isComposing, setIsComposing] = useState(false);
   
   // Script metadata state
   const [scripts, setScripts] = useState<any[]>([]);
@@ -295,6 +300,91 @@ export default function AdminPage() {
     }
   };
 
+  const deletePayment = async (transactionId: string) => {
+    if (!confirm('Are you sure you want to delete this payment?')) return;
+    try {
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch('/api/admin/payments', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ transactionId })
+      });
+      if (!res.ok) throw new Error('Failed to delete payment');
+      setPayments(payments.filter(p => p.transaction_id !== transactionId));
+    } catch (err) {
+      console.error(err);
+      alert('Error deleting payment');
+    }
+  };
+
+  const deleteTicket = async (ticketNumber: string) => {
+    if (!confirm('Are you sure you want to delete this ticket?')) return;
+    try {
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch('/api/admin/tickets', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ ticketNumber })
+      });
+      if (!res.ok) throw new Error('Failed to delete ticket');
+      setTickets(tickets.filter(t => t.ticket_number !== ticketNumber));
+    } catch (err) {
+      console.error(err);
+      alert('Error deleting ticket');
+    }
+  };
+
+  const handleComposeSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsComposing(true);
+    try {
+      const res = await fetch('/api/tickets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: composeData.email,
+          subject: composeData.subject,
+          category: 'other',
+          message: composeData.message
+        })
+      });
+      if (!res.ok) throw new Error('Failed to create conversation');
+      
+      const { ticket } = await res.json();
+      
+      const token = localStorage.getItem('adminToken');
+      await fetch(`/api/admin/tickets/${ticket.ticketNumber}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ status: 'replied' })
+      });
+
+      setTickets([{
+        id: ticket.id,
+        ticket_number: ticket.ticketNumber,
+        user_name: composeData.email.split('@')[0],
+        user_email: composeData.email,
+        subject: composeData.subject,
+        status: 'replied',
+        created_at: new Date().toISOString()
+      }, ...tickets]);
+      
+      setIsComposeOpen(false);
+      setComposeData({ email: '', subject: '', message: '' });
+    } catch (error) {
+      console.error(error);
+      alert('Error starting conversation');
+    } finally {
+      setIsComposing(false);
+    }
+  };
+
   // Script metadata functions
   const saveMetadata = async (scriptName: string) => {
     try {
@@ -414,8 +504,18 @@ export default function AdminPage() {
     paymentsPage * TABLE_ITEMS_PER_PAGE
   );
 
-  const totalTicketPages = Math.max(1, Math.ceil(tickets.length / TABLE_ITEMS_PER_PAGE));
-  const paginatedTickets = tickets.slice(
+  const filteredTickets = tickets.filter(t => {
+    const search = ticketSearch.toLowerCase();
+    return (
+      (t.user_email || '').toLowerCase().includes(search) ||
+      (t.user_name || '').toLowerCase().includes(search) ||
+      (t.ticket_number || '').toLowerCase().includes(search) ||
+      (t.subject || '').toLowerCase().includes(search)
+    );
+  });
+
+  const totalTicketPages = Math.max(1, Math.ceil(filteredTickets.length / TABLE_ITEMS_PER_PAGE));
+  const paginatedTickets = filteredTickets.slice(
     (ticketsPage - 1) * TABLE_ITEMS_PER_PAGE,
     ticketsPage * TABLE_ITEMS_PER_PAGE
   );
@@ -427,6 +527,10 @@ export default function AdminPage() {
   useEffect(() => {
     setPaymentsPage(1);
   }, [payments.length]);
+
+  useEffect(() => {
+    setTicketsPage(1);
+  }, [ticketSearch]);
 
   useEffect(() => {
     setTicketsPage(1);
@@ -630,15 +734,25 @@ export default function AdminPage() {
                                         </div>
                                     </td>
                                     <td className="p-4 text-right">
-                                        <Link 
-                                          href={`/success?orderId=${p.transaction_id}&tier=${p.tier}&amount=${p.amount}&currency=${p.currency}&key=${key}&email=${p.payer_email || ''}&payerId=${p.payer_email || ''}&date=${p.created_at}&method=${p.currency === 'ROBUX' ? 'Robux' : 'PayPal'}&admin=1`}
-                                          target="_blank"
-                                        >
-                                          <Button size="sm" variant="secondary" className="h-8 px-2 flex items-center justify-center gap-1">
-                                            <Eye className="w-3.5 h-3.5" />
-                                            View
-                                          </Button>
-                                        </Link>
+                                        <div className="flex justify-end items-center gap-2">
+                                            <Link 
+                                              href={`/success?orderId=${p.transaction_id}&tier=${p.tier}&amount=${p.amount}&currency=${p.currency}&key=${key}&email=${p.payer_email || ''}&payerId=${p.payer_email || ''}&date=${p.created_at}&method=${p.currency === 'ROBUX' ? 'Robux' : 'PayPal'}&admin=1`}
+                                              target="_blank"
+                                            >
+                                              <Button size="sm" variant="secondary" className="h-8 px-2 flex items-center justify-center gap-1">
+                                                <Eye className="w-3.5 h-3.5" />
+                                                View
+                                              </Button>
+                                            </Link>
+                                            <Button 
+                                              size="sm" 
+                                              variant="secondary" 
+                                              onClick={() => deletePayment(p.transaction_id)}
+                                              className="h-8 px-2 flex items-center justify-center gap-1 text-red-500 hover:text-red-400 hover:bg-red-500/10"
+                                            >
+                                                <Trash2 className="w-3.5 h-3.5" />
+                                            </Button>
+                                        </div>
                                     </td>
                                 </tr>
                             );
@@ -694,6 +808,22 @@ export default function AdminPage() {
 
         {activeTab === 'tickets' && (
           <div className="space-y-4">
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                <input
+                  type="text"
+                  placeholder="Search tickets by ID, name, email, or subject..."
+                  className="w-full pl-10 pr-4 h-10 bg-[#0a0a0a] border border-[#252525] rounded-md text-sm text-gray-200 placeholder:text-gray-600 focus:outline-none focus:border-[#444] focus:ring-1 focus:ring-[#444] transition-all"
+                  value={ticketSearch}
+                  onChange={(e) => setTicketSearch(e.target.value)}
+                />
+              </div>
+              <Button onClick={() => setIsComposeOpen(true)} className="flex items-center gap-2 whitespace-nowrap h-10 px-4 text-emerald-100 bg-emerald-600 hover:bg-emerald-700">
+                <MessageSquare className="w-4 h-4" />
+                New Message
+              </Button>
+            </div>
              <Card className="overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -734,12 +864,22 @@ export default function AdminPage() {
                                     {new Date(t.created_at).toLocaleDateString()}
                                 </td>
                                  <td className="p-4">
-                                     <Link href={`/admin/tickets/${t.ticket_number}`}>
-                                         <Button size="sm" variant="secondary" className="h-8 px-2 flex items-center justify-center gap-1">
-                                             <Eye className="w-3.5 h-3.5" />
-                                             View
+                                     <div className="flex items-center gap-2">
+                                         <Link href={`/admin/tickets/${t.ticket_number}`}>
+                                             <Button size="sm" variant="secondary" className="h-8 px-2 flex items-center justify-center gap-1">
+                                                 <Eye className="w-3.5 h-3.5" />
+                                                 View
+                                             </Button>
+                                         </Link>
+                                         <Button 
+                                             size="sm" 
+                                             variant="secondary" 
+                                             onClick={() => deleteTicket(t.ticket_number)}
+                                             className="h-8 px-2 flex items-center justify-center gap-1 text-red-500 hover:text-red-400 hover:bg-red-500/10"
+                                         >
+                                             <Trash2 className="w-3.5 h-3.5" />
                                          </Button>
-                                     </Link>
+                                     </div>
                                  </td>
                             </tr>
                         ))
@@ -1170,6 +1310,67 @@ export default function AdminPage() {
             </Card>
         )}
       </div>
+
+      {isComposeOpen && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
+          <Card className="w-full max-w-lg p-6 bg-[#0a0a0a] border-[#252525]">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold flex items-center gap-2">
+                <MessageSquare className="w-5 h-5 text-emerald-500" />
+                Message Customer
+              </h3>
+              <button 
+                onClick={() => setIsComposeOpen(false)} 
+                className="text-gray-500 hover:text-white transition-colors"
+                title="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleComposeSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-1">Customer Email</label>
+                <input
+                  type="email"
+                  required
+                  className="w-full h-10 px-3 bg-[#111] border border-[#333] rounded-md text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors"
+                  value={composeData.email}
+                  onChange={e => setComposeData({...composeData, email: e.target.value})}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-1">Subject</label>
+                <input
+                  type="text"
+                  required
+                  className="w-full h-10 px-3 bg-[#111] border border-[#333] rounded-md text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors"
+                  value={composeData.subject}
+                  onChange={e => setComposeData({...composeData, subject: e.target.value})}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-1">Message</label>
+                <textarea
+                  required
+                  rows={5}
+                  className="w-full p-3 bg-[#111] border border-[#333] rounded-md text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors resize-none"
+                  value={composeData.message}
+                  onChange={e => setComposeData({...composeData, message: e.target.value})}
+                ></textarea>
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <Button type="button" variant="secondary" onClick={() => setIsComposeOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isComposing} className="flex items-center gap-2">
+                  {isComposing ? <Loader2 className="w-4 h-4 animate-spin" /> : <MessageSquare className="w-4 h-4" />}
+                  {isComposing ? 'Sending...' : 'Send Message'}
+                </Button>
+              </div>
+            </form>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

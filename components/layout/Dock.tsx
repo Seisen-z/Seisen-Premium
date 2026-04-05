@@ -107,6 +107,22 @@ export default function Dock() {
   const pathname = usePathname();
   const dockRef = useRef<HTMLDivElement>(null);
   const [isOpen, setIsOpen] = useState(false);
+  const [hasUnread, setHasUnread] = useState(false);
+
+  // Check unread tickets
+  useEffect(() => {
+    const email = localStorage.getItem('client_email');
+    if (email) {
+      fetch(`/api/tickets?email=${email}`)
+        .then(r => r.json())
+        .then(d => {
+          if (d.success && d.tickets) {
+             setHasUnread(d.tickets.some((t: any) => t.status === 'replied'));
+          }
+        })
+        .catch(console.error);
+    }
+  }, [pathname]);
 
   // Close menu when route changes
   useEffect(() => {
@@ -188,6 +204,12 @@ export default function Dock() {
                       : 'bg-white/5 text-white/50 hover:bg-white/10 hover:text-white hover:scale-110'
                   }`}
                 >
+                  {hasUnread && (
+                    <span className="absolute top-2 right-2 flex h-2 w-2 z-10">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    </span>
+                  )}
                   <div className="w-5 h-5 flex items-center justify-center">
                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
                       <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
@@ -239,6 +261,12 @@ export default function Dock() {
           {/* Client Area */}
           <Link href="/client/dashboard">
             <div className="relative flex flex-col items-center transition-transform duration-200 hover:scale-110">
+              {hasUnread && (
+                <span className="absolute top-0 right-0 flex h-2.5 w-2.5 z-10 translate-x-1 -translate-y-1">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                </span>
+              )}
               <div
                 className="flex items-center justify-center w-10 h-10 rounded-full transition-all"
                 style={pathname.startsWith('/client')

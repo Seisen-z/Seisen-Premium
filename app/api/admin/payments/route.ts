@@ -27,7 +27,6 @@ export async function GET(req: NextRequest) {
         const payments = await db.getAllPayments();
         const stats = await db.getVisitorStats(); 
         
-        // Calculate revenue stats
         const paypalPayments = payments.filter((p: any) => p.currency !== 'ROBUX');
         const robloxPayments = payments.filter((p: any) => p.currency === 'ROBUX');
         const paypalRevenue = paypalPayments.reduce((sum: number, p: any) => sum + (p.amount || 0), 0);
@@ -45,6 +44,26 @@ export async function GET(req: NextRequest) {
             }
         });
 
+    } catch (error: any) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+}
+
+export async function DELETE(req: NextRequest) {
+    const authorized = await isAdmin(req);
+    if (!authorized) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    try {
+        const { transactionId } = await req.json();
+        if (!transactionId) {
+            return NextResponse.json({ error: 'transactionId required' }, { status: 400 });
+        }
+
+        const db = new TicketDatabase();
+        await db.deletePayment(transactionId);
+        return NextResponse.json({ success: true });
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }

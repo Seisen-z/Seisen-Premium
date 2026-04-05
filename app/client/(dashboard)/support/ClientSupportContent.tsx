@@ -118,7 +118,14 @@ export default function ClientSupportContent() {
     <div className="p-8 max-w-7xl mx-auto space-y-6">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
-                <h1 className="text-2xl font-bold text-white">Support Tickets</h1>
+                <h1 className="text-2xl font-bold text-white flex items-center gap-3">
+                    Support Tickets
+                    {tickets.filter(t => t.status === 'replied').length > 0 && (
+                        <span className="bg-emerald-500/20 text-emerald-500 text-xs px-2.5 py-0.5 rounded-full border border-emerald-500/20 font-medium">
+                            {tickets.filter(t => t.status === 'replied').length} New Action Required
+                        </span>
+                    )}
+                </h1>
                 <p className="text-gray-500 text-sm">Manage your support tickets and get help from our team</p>
             </div>
              <Button 
