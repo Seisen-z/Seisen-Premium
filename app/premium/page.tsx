@@ -365,6 +365,21 @@ function PremiumContent() {
     }
   }, [searchParams]);
 
+  useEffect(() => {
+    const paymentSuccess = searchParams.get('payment_success');
+    const method = searchParams.get('method');
+    if (paymentSuccess === 'true' && method === 'gcash') {
+      router.replace('/premium', { scroll: false });
+      setStatusModal({
+        isOpen: true,
+        type: 'success',
+        title: 'Payment Successful! 🎉',
+        message: 'Your GCash payment was received! Your premium key will be sent to your email shortly. Check your inbox (and spam folder).'
+      });
+      loadPremiumStocks();
+    }
+  }, [searchParams]);
+
   const loadPremiumStocks = async () => {
     try {
       const response = await fetch('/api/premium-stock', { cache: 'no-store' });
@@ -574,6 +589,35 @@ function PremiumContent() {
     setShowTosModal(true);
   };
 
+  const handleGCashPayment = async (plan: string, amount: number) => {
+    if (getTierStock(plan) <= 0) {
+      setStatusModal({ isOpen: true, type: 'error', title: 'Out of Stock', message: 'This premium plan is currently out of stock.' });
+      return;
+    }
+    setIsProcessing(true);
+    try {
+      const apiUrl = getApiUrl();
+      const res = await fetch(`${apiUrl}/api/gcash/create-checkout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          plan, 
+          qty: 1,
+          email: localStorage.getItem('client_email') || undefined
+        })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.checkoutUrl) {
+        throw new Error(data.error || 'Failed to create checkout session');
+      }
+      // Redirect to PayMongo hosted checkout page
+      window.location.href = data.checkoutUrl;
+    } catch (error: any) {
+      setIsProcessing(false);
+      setStatusModal({ isOpen: true, type: 'error', title: 'GCash Error', message: error.message || 'Could not start GCash checkout.' });
+    }
+  };
+
   const handleTicketPayment = (plan: string, amount: number, currency: string) => {
     if (getTierStock(plan) <= 0) {
       setStatusModal({ isOpen: true, type: 'error', title: 'Out of Stock', message: 'This premium plan is currently out of stock.' });
@@ -757,15 +801,15 @@ function PremiumContent() {
                     stockStatusText={isOutOfStock ? 'Currently out of stock' : stockStatusText}
                     stockStatusVariant={isOutOfStock ? 'out-of-stock' : tierStock <= 5 ? 'low-stock' : 'in-stock'}
                     isOutOfStock={isOutOfStock}
-                    buttonText={isOutOfStock ? 'Out of Stock' : isPayPal ? `Pay with PayPal${qty > 1 ? ` (×${qty})` : ''}` : 'Verify & Get Key'}
-                    buttonIcon={isPayPal && !isOutOfStock ? <CreditCard className="w-4 h-4" /> : null}
+                    buttonText={isOutOfStock ? 'Out of Stock' : isPayPal ? `Pay with PayPal${qty > 1 ? ` (×${qty})` : ''}` : paymentMethod === 'gcash' ? 'Pay with GCash' : 'Verify & Get Key'}
+                    buttonIcon={!isOutOfStock && (isPayPal || paymentMethod === 'gcash') ? <CreditCard className="w-4 h-4" /> : null}
                     onButtonClick={() => {
                       if (paymentMethod === 'paypal') {
                         handlePayPalPayment(plan.plan, plan.price);
                       } else if (paymentMethod === 'robux') {
                         handleRobuxPayment(plan.plan, plan.price);
                       } else {
-                        handleTicketPayment(plan.plan, plan.price, 'GCash');
+                        handleGCashPayment(plan.plan, plan.price);
                       }
                     }}
                     priceIcon={
