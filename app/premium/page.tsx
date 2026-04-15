@@ -328,6 +328,7 @@ function PremiumContent() {
 
   const [showGcashModal, setShowGcashModal] = useState(false);
   const [gcashDetails, setGcashDetails] = useState<{ plan: string; price: number } | null>(null);
+  const [isGcashQrExpanded, setIsGcashQrExpanded] = useState(false);
 
   const [showTicketModal, setShowTicketModal] = useState(false);
   const [ticketDetails, setTicketDetails] = useState<{ plan: string; amount: number; currency: string } | null>(null);
@@ -1110,9 +1111,14 @@ function PremiumContent() {
 
               <div className="flex flex-col items-center gap-2 my-6">
                 <p className="text-gray-400 font-medium">Scan to Pay</p>
-                <div className="bg-white p-3 rounded-2xl shadow-xl">
+                <button 
+                  onClick={() => setIsGcashQrExpanded(true)}
+                  className="bg-white p-3 rounded-2xl shadow-xl cursor-zoom-in hover:scale-105 transition-transform appearance-none border-none"
+                  title="Click to expand QR Code"
+                >
                   <img src="/images/gcash-qr.jpg" alt="GCash QR Code" className="w-48 h-48 object-contain" />
-                </div>
+                </button>
+                <p className="text-xs text-gray-500">Click image to expand</p>
               </div>
 
               <div className="bg-orange-500/10 border border-orange-500/20 p-4 rounded-xl">
@@ -1141,6 +1147,23 @@ function PremiumContent() {
               </a>
             </div>
           </Card>
+          
+          {/* Expanded QR Code Overlay */}
+          {isGcashQrExpanded && (
+            <div 
+              className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 p-4 animate-in fade-in duration-200 cursor-zoom-out"
+              onClick={() => setIsGcashQrExpanded(false)}
+              title="Click anywhere to close"
+            >
+              <div className="bg-white p-4 rounded-3xl shadow-2xl max-w-full max-h-full overflow-hidden flex items-center justify-center">
+                <img 
+                  src="/images/gcash-qr.jpg" 
+                  alt="Expanded GCash QR Code" 
+                  className="max-h-[85vh] max-w-[85vw] object-contain" 
+                />
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
