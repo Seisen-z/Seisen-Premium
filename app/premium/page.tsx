@@ -326,6 +326,9 @@ function PremiumContent() {
   const [email, setEmail] = useState('');
   const [robuxDetails, setRobuxDetails] = useState<{ plan: string; price: number; productId: number } | null>(null);
 
+  const [showGcashModal, setShowGcashModal] = useState(false);
+  const [gcashDetails, setGcashDetails] = useState<{ plan: string; price: number } | null>(null);
+
   const [showTicketModal, setShowTicketModal] = useState(false);
   const [ticketDetails, setTicketDetails] = useState<{ plan: string; amount: number; currency: string } | null>(null);
 
@@ -589,33 +592,13 @@ function PremiumContent() {
     setShowTosModal(true);
   };
 
-  const handleGCashPayment = async (plan: string, amount: number) => {
+  const handleGCashPayment = (plan: string, amount: number) => {
     if (getTierStock(plan) <= 0) {
       setStatusModal({ isOpen: true, type: 'error', title: 'Out of Stock', message: 'This premium plan is currently out of stock.' });
       return;
     }
-    setIsProcessing(true);
-    try {
-      const apiUrl = getApiUrl();
-      const res = await fetch(`${apiUrl}/api/gcash/create-checkout`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          plan, 
-          qty: 1,
-          email: localStorage.getItem('client_email') || undefined
-        })
-      });
-      const data = await res.json();
-      if (!res.ok || !data.checkoutUrl) {
-        throw new Error(data.error || 'Failed to create checkout session');
-      }
-      // Redirect to PayMongo hosted checkout page
-      window.location.href = data.checkoutUrl;
-    } catch (error: any) {
-      setIsProcessing(false);
-      setStatusModal({ isOpen: true, type: 'error', title: 'GCash Error', message: error.message || 'Could not start GCash checkout.' });
-    }
+    setGcashDetails({ plan, price: amount });
+    setShowGcashModal(true);
   };
 
   const handleTicketPayment = (plan: string, amount: number, currency: string) => {
@@ -1103,6 +1086,58 @@ function PremiumContent() {
               </Button>
               <a href="https://discord.gg/F4sAf6z8Ph" target="_blank" className="flex-1">
                 <Button className="w-full">Open Discord</Button>
+              </a>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* GCash Manual Payment Modal */}
+      {showGcashModal && gcashDetails && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 animate-in fade-in duration-200">
+          <Card className="w-full max-w-md p-6 relative">
+            <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+              <img src="/images/gcash.png" alt="GCash" className="w-6 h-6 object-contain" />
+              GCash Payment
+            </h2>
+
+            <div className="space-y-4 mb-6 text-sm text-gray-300">
+              <p className="bg-[#1a1a1a] p-3 rounded-lg border border-[#2a2a2a] text-center">
+                <strong>Plan:</strong> <span className="text-white capitalize">{gcashDetails.plan}</span>
+                <span className="mx-3 opacity-50">|</span>
+                <strong>Price:</strong> <span className="accent-text font-bold text-base">₱{gcashDetails.price}</span>
+              </p>
+
+              <div className="flex flex-col items-center gap-2 my-6">
+                <p className="text-gray-400 font-medium">Scan to Pay</p>
+                <div className="bg-white p-3 rounded-2xl shadow-xl">
+                  <img src="/images/gcash-qr.jpg" alt="GCash QR Code" className="w-48 h-48 object-contain" />
+                </div>
+              </div>
+
+              <div className="bg-orange-500/10 border border-orange-500/20 p-4 rounded-xl">
+                <h3 className="text-orange-300 font-semibold mb-3 flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                  Manual Verification Steps
+                </h3>
+                <ol className="text-orange-200/80 space-y-2.5 list-decimal list-outside ml-4">
+                  <li>Scan the QR code and send exactly <strong className="text-orange-200 font-bold">₱{gcashDetails.price}</strong>.</li>
+                  <li><strong>Download or screenshot</strong> the payment receipt.</li>
+                  <li>Click "Open Support Ticket" below.</li>
+                  <li>Send your receipt and your Seisen account details in the ticket.</li>
+                  <li>Wait for validation. Once confirmed valid, you will receive your keys.</li>
+                </ol>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <Button variant="secondary" className="flex-1" onClick={() => setShowGcashModal(false)}>
+                Cancel
+              </Button>
+              <a href="https://discord.com/channels/1333251917098520628/1333435322603933706" target="_blank" className="flex-1" rel="noopener noreferrer">
+                <Button className="w-full">
+                  Open Support Ticket
+                </Button>
               </a>
             </div>
           </Card>
