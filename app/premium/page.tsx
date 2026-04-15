@@ -1119,7 +1119,8 @@ function PremiumContent() {
                 >
                   <img src="/images/gcash-qr.jpg" alt="GCash QR Code" className="w-48 h-48 object-contain" />
                 </button>
-                <p className="text-xs text-gray-500">Click image to expand</p>
+                <p className="text-xs text-gray-500 mb-2">Click image to expand</p>
+                <p className="text-gray-400 font-medium">If QR fails, send to: <strong className="text-white text-lg tracking-wider">09304300733</strong></p>
               </div>
 
               <div className="bg-orange-500/10 border border-orange-500/20 p-4 rounded-xl">
@@ -1128,7 +1129,7 @@ function PremiumContent() {
                   Manual Verification Steps
                 </h3>
                 <ol className="text-orange-200/80 space-y-2.5 list-decimal list-outside ml-4">
-                  <li>Scan the QR code and send exactly <strong className="text-orange-200 font-bold">₱{gcashDetails.price}</strong>.</li>
+                  <li>Scan the QR code (or send to <strong>09304300733</strong>) with exactly <strong className="text-orange-200 font-bold">₱{gcashDetails.price}</strong>.</li>
                   <li><strong>Download or screenshot</strong> the payment receipt.</li>
                   <li>Click "Open Support Ticket" below.</li>
                   <li>Send your receipt and your Seisen account details in the ticket.</li>
