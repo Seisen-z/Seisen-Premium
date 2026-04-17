@@ -24,6 +24,26 @@ type PaymentMethod = 'paypal' | 'robux' | 'gcash';
 type PremiumTier = 'weekly' | 'monthly' | 'lifetime';
 type MethodStockMap = Record<PaymentMethod, Record<PremiumTier, number>>;
 
+type DiscordSession = {
+  id: string;
+  username: string;
+  discriminator: string;
+  avatar: string;
+  email: string | null;
+  tag: string;
+};
+
+function readDiscordSession(): DiscordSession | null {
+  if (typeof document === 'undefined') return null;
+  const match = document.cookie.match(/(?:^|;\s*)discord_session=([^;]+)/);
+  if (!match) return null;
+  try {
+    return JSON.parse(atob(decodeURIComponent(match[1])));
+  } catch {
+    return null;
+  }
+}
+
 const defaultMethodStockMap = (): MethodStockMap => ({
   paypal: { weekly: 0, monthly: 0, lifetime: 0 },
   robux:  { weekly: 0, monthly: 0, lifetime: 0 },
@@ -315,6 +335,79 @@ function CartDrawer({
   );
 }
 
+// ─── Discord Login Modal ─────────────────────────────────────────────────────
+function DiscordLoginModal({
+  onClose,
+  returnTo = '/premium',
+}: {
+  onClose: () => void;
+  returnTo?: string;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 animate-in fade-in duration-200">
+      <Card className="w-full max-w-md p-6 relative overflow-hidden">
+        {/* Purple glow accent */}
+        <div className="absolute -top-16 -right-16 w-40 h-40 bg-[#5865F2]/20 rounded-full blur-3xl pointer-events-none" />
+
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded text-gray-500 hover:text-white hover:bg-[#2a2a2a] transition-colors"
+        >
+          <X className="w-4 h-4" />
+        </button>
+
+        <div className="flex flex-col items-center text-center gap-4">
+          {/* Discord logo */}
+          <div className="w-16 h-16 rounded-2xl bg-[#5865F2] flex items-center justify-center shadow-lg shadow-[#5865F2]/40">
+            <svg viewBox="0 0 24 24" fill="white" className="w-9 h-9">
+              <path d="M20.317 4.492c-1.53-.69-3.17-1.2-4.885-1.49a.075.075 0 0 0-.079.036c-.21.369-.444.85-.608 1.23a18.566 18.566 0 0 0-5.487 0 12.36 12.36 0 0 0-.617-1.23A.077.077 0 0 0 8.562 3c-1.714.29-3.354.8-4.885 1.491a.07.07 0 0 0-.032.027C.533 9.093-.32 13.555.099 17.961a.08.08 0 0 0 .031.055 20.03 20.03 0 0 0 5.993 2.98.078.078 0 0 0 .084-.026c.462-.62.874-1.275 1.226-1.963.021-.04.001-.088-.041-.104a13.201 13.201 0 0 1-1.872-.878.075.075 0 0 1-.008-.125c.126-.093.252-.19.372-.287a.075.075 0 0 1 .078-.01c3.927 1.764 8.18 1.764 12.061 0a.075.075 0 0 1 .079.009c.12.098.245.195.372.288a.075.075 0 0 1-.006.125c-.598.344-1.22.635-1.873.877a.075.075 0 0 0-.041.105c.36.687.772 1.341 1.225 1.962a.077.077 0 0 0 .084.028 19.963 19.963 0 0 0 6.002-2.981.076.076 0 0 0 .032-.054c.5-5.094-.838-9.52-3.549-13.442a.06.06 0 0 0-.031-.028zM8.02 15.278c-1.182 0-2.157-1.069-2.157-2.38 0-1.312.956-2.38 2.157-2.38 1.21 0 2.176 1.077 2.157 2.38 0 1.312-.956 2.38-2.157 2.38zm7.975 0c-1.183 0-2.157-1.069-2.157-2.38 0-1.312.955-2.38 2.157-2.38 1.21 0 2.176 1.077 2.157 2.38 0 1.312-.946 2.38-2.157 2.38z" />
+            </svg>
+          </div>
+
+          <div>
+            <h2 className="text-xl font-bold text-white mb-1">Login Required</h2>
+            <p className="text-gray-400 text-sm leading-relaxed">
+              Connect your Discord account before purchasing. This lets us verify your identity and handle any support or refund requests.
+            </p>
+          </div>
+
+          <div className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-4 text-left space-y-2">
+            <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Why Discord?</p>
+            <ul className="space-y-1.5">
+              {[
+                '✅ Verify your identity for purchases',
+                '🔍 Track your order for support',
+                '💸 Required for any refund requests',
+              ].map((item) => (
+                <li key={item} className="text-sm text-gray-300">{item}</li>
+              ))}
+            </ul>
+          </div>
+
+          <a
+            href={`/api/auth/discord?return=${encodeURIComponent(returnTo)}`}
+            className="w-full"
+          >
+            <button className="w-full flex items-center justify-center gap-3 py-3 px-6 rounded-xl bg-[#5865F2] hover:bg-[#4752C4] text-white font-semibold transition-all duration-200 shadow-lg shadow-[#5865F2]/30 hover:shadow-[#5865F2]/50">
+              <svg viewBox="0 0 24 24" fill="white" className="w-5 h-5">
+                <path d="M20.317 4.492c-1.53-.69-3.17-1.2-4.885-1.49a.075.075 0 0 0-.079.036c-.21.369-.444.85-.608 1.23a18.566 18.566 0 0 0-5.487 0 12.36 12.36 0 0 0-.617-1.23A.077.077 0 0 0 8.562 3c-1.714.29-3.354.8-4.885 1.491a.07.07 0 0 0-.032.027C.533 9.093-.32 13.555.099 17.961a.08.08 0 0 0 .031.055 20.03 20.03 0 0 0 5.993 2.98.078.078 0 0 0 .084-.026c.462-.62.874-1.275 1.226-1.963.021-.04.001-.088-.041-.104a13.201 13.201 0 0 1-1.872-.878.075.075 0 0 1-.008-.125c.126-.093.252-.19.372-.287a.075.075 0 0 1 .078-.01c3.927 1.764 8.18 1.764 12.061 0a.075.075 0 0 1 .079.009c.12.098.245.195.372.288a.075.075 0 0 1-.006.125c-.598.344-1.22.635-1.873.877a.075.075 0 0 0-.041.105c.36.687.772 1.341 1.225 1.962a.077.077 0 0 0 .084.028 19.963 19.963 0 0 0 6.002-2.981.076.076 0 0 0 .032-.054c.5-5.094-.838-9.52-3.549-13.442a.06.06 0 0 0-.031-.028zM8.02 15.278c-1.182 0-2.157-1.069-2.157-2.38 0-1.312.956-2.38 2.157-2.38 1.21 0 2.176 1.077 2.157 2.38 0 1.312-.956 2.38-2.157 2.38zm7.975 0c-1.183 0-2.157-1.069-2.157-2.38 0-1.312.955-2.38 2.157-2.38 1.21 0 2.176 1.077 2.157 2.38 0 1.312-.946 2.38-2.157 2.38z" />
+              </svg>
+              Login with Discord
+            </button>
+          </a>
+
+          <button
+            onClick={onClose}
+            className="text-sm text-gray-600 hover:text-gray-400 transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
 // ─── Main Component ────────────────────────────────────────────────────────────
 function PremiumContent() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('paypal');
@@ -349,6 +442,10 @@ function PremiumContent() {
   // Per-card quantity state (PayPal only) — keyed by plan
   const [quantities, setQuantities] = useState<Record<string, number>>({ weekly: 1, monthly: 1, lifetime: 1 });
 
+  // Discord session
+  const [discordSession, setDiscordSession] = useState<DiscordSession | null>(null);
+  const [showDiscordModal, setShowDiscordModal] = useState(false);
+
   // Cart state
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
@@ -357,10 +454,61 @@ function PremiumContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  // Load cart from localStorage on mount
+  // Load cart + Discord session on mount; auto-resume pending payment intent
   useEffect(() => {
     setCart(getCart());
+    const session = readDiscordSession();
+    setDiscordSession(session);
+
+    if (session) {
+      const raw = localStorage.getItem('discord_payment_intent');
+      if (raw) {
+        localStorage.removeItem('discord_payment_intent');
+        try {
+          const intent = JSON.parse(raw);
+          // Small delay so state settles first
+          setTimeout(() => {
+            if (intent.method === 'paypal') {
+              setQuantities(q => ({ ...q, [intent.plan]: intent.qty || 1 }));
+              setPendingPlan({ plan: intent.plan, amount: intent.price, price: intent.price, quantity: intent.qty || 1 });
+              setShowTosModal(true);
+            } else if (intent.method === 'robux') {
+              let productId = 1781366430;
+              if (intent.plan === 'weekly')  productId = 1779578553;
+              if (intent.plan === 'monthly') productId = 1781384489;
+              setRobuxDetails({ plan: intent.plan, price: intent.price, productId });
+              setRobloxUsername('');
+              setEmail('');
+              setShowRobuxModal(true);
+            } else if (intent.method === 'gcash') {
+              setGcashDetails({ plan: intent.plan, price: intent.price });
+              setShowGcashModal(true);
+            }
+          }, 400);
+        } catch { /* ignore bad intent */ }
+      }
+    }
   }, []);
+
+  // Handle discord_error query param from OAuth callback
+  useEffect(() => {
+    const discordError = searchParams.get('discord_error');
+    if (discordError) {
+      router.replace('/premium', { scroll: false });
+      const messages: Record<string, string> = {
+        cancelled:         'Discord login was cancelled.',
+        token_failed:      'Discord login failed. Please try again.',
+        user_fetch_failed: 'Could not fetch your Discord profile. Please try again.',
+        server_error:      'A server error occurred during Discord login.',
+      };
+      setStatusModal({
+        isOpen: true,
+        type: 'error',
+        title: 'Discord Login Required',
+        message: messages[discordError] || 'Discord login failed. Please try again.',
+      });
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const token = searchParams.get('token');
@@ -528,18 +676,39 @@ function PremiumContent() {
     }
   };
 
+  // ─── Discord gate helper ─────────────────────────────────────────────────────
+  const requireDiscord = (
+    method: string,
+    plan: string,
+    price: number,
+    qty: number,
+    onAuthenticated: () => void,
+  ) => {
+    const session = readDiscordSession();
+    if (session) {
+      setDiscordSession(session);
+      onAuthenticated();
+      return;
+    }
+    // Save intent so we can auto-resume after OAuth redirect
+    localStorage.setItem('discord_payment_intent', JSON.stringify({ method, plan, price, qty }));
+    setShowDiscordModal(true);
+  };
+
   const handleRobuxPayment = (plan: string, price: number) => {
     if (getTierStock(plan) <= 0) {
       setStatusModal({ isOpen: true, type: 'error', title: 'Out of Stock', message: 'This premium plan is currently out of stock.' });
       return;
     }
-    let productId = 1781366430;
-    if (plan === 'weekly') productId = 1779578553;
-    if (plan === 'monthly') productId = 1781384489;
-    setRobuxDetails({ plan, price, productId });
-    setRobloxUsername('');
-    setEmail('');
-    setShowRobuxModal(true);
+    requireDiscord('robux', plan, price, 1, () => {
+      let productId = 1781366430;
+      if (plan === 'weekly')  productId = 1779578553;
+      if (plan === 'monthly') productId = 1781384489;
+      setRobuxDetails({ plan, price, productId });
+      setRobloxUsername('');
+      setEmail('');
+      setShowRobuxModal(true);
+    });
   };
 
   const verifyRobuxPurchase = async () => {
@@ -551,7 +720,13 @@ function PremiumContent() {
       const response = await fetch(`${apiUrl}/api/roblox/verify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: robloxUsername, email, tier: robuxDetails.plan }),
+        body: JSON.stringify({
+          username: robloxUsername,
+          email,
+          tier: robuxDetails.plan,
+          discordId:       discordSession?.id,
+          discordUsername: discordSession?.tag,
+        }),
       });
       const data = await response.json();
       if (data.success && data.keys && data.keys.length > 0) {
@@ -590,8 +765,10 @@ function PremiumContent() {
       setStatusModal({ isOpen: true, type: 'error', title: 'Not Enough Stock', message: `Only ${getTierStock(plan)} left for this plan.` });
       return;
     }
-    setPendingPlan({ plan, amount, price: amount, quantity: qty });
-    setShowTosModal(true);
+    requireDiscord('paypal', plan, amount, qty, () => {
+      setPendingPlan({ plan, amount, price: amount, quantity: qty });
+      setShowTosModal(true);
+    });
   };
 
   const handleGCashPayment = (plan: string, amount: number) => {
@@ -599,8 +776,10 @@ function PremiumContent() {
       setStatusModal({ isOpen: true, type: 'error', title: 'Out of Stock', message: 'This premium plan is currently out of stock.' });
       return;
     }
-    setGcashDetails({ plan, price: amount });
-    setShowGcashModal(true);
+    requireDiscord('gcash', plan, amount, 1, () => {
+      setGcashDetails({ plan, price: amount });
+      setShowGcashModal(true);
+    });
   };
 
   const handleTicketPayment = (plan: string, amount: number, currency: string) => {
@@ -930,6 +1109,24 @@ function PremiumContent() {
               Terms of Service
             </h2>
 
+            {/* Discord user badge */}
+            {discordSession && (
+              <div className="flex items-center gap-3 bg-[#5865F2]/10 border border-[#5865F2]/30 rounded-xl px-4 py-3 mb-4">
+                <img
+                  src={discordSession.avatar}
+                  alt={discordSession.tag}
+                  className="w-9 h-9 rounded-full ring-2 ring-[#5865F2]/40"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="text-white text-sm font-semibold truncate">{discordSession.tag}</p>
+                  <p className="text-[#5865F2] text-xs">Discord ID: {discordSession.id}</p>
+                </div>
+                <svg viewBox="0 0 24 24" fill="#5865F2" className="w-5 h-5 flex-shrink-0 opacity-70">
+                  <path d="M20.317 4.492c-1.53-.69-3.17-1.2-4.885-1.49a.075.075 0 0 0-.079.036c-.21.369-.444.85-.608 1.23a18.566 18.566 0 0 0-5.487 0 12.36 12.36 0 0 0-.617-1.23A.077.077 0 0 0 8.562 3c-1.714.29-3.354.8-4.885 1.491a.07.07 0 0 0-.032.027C.533 9.093-.32 13.555.099 17.961a.08.08 0 0 0 .031.055 20.03 20.03 0 0 0 5.993 2.98.078.078 0 0 0 .084-.026c.462-.62.874-1.275 1.226-1.963.021-.04.001-.088-.041-.104a13.201 13.201 0 0 1-1.872-.878.075.075 0 0 1-.008-.125c.126-.093.252-.19.372-.287a.075.075 0 0 1 .078-.01c3.927 1.764 8.18 1.764 12.061 0a.075.075 0 0 1 .079.009c.12.098.245.195.372.288a.075.075 0 0 1-.006.125c-.598.344-1.22.635-1.873.877a.075.075 0 0 0-.041.105c.36.687.772 1.341 1.225 1.962a.077.077 0 0 0 .084.028 19.963 19.963 0 0 0 6.002-2.981.076.076 0 0 0 .032-.054c.5-5.094-.838-9.52-3.549-13.442a.06.06 0 0 0-.031-.028z" />
+                </svg>
+              </div>
+            )}
+
             <p className="text-gray-400 text-sm mb-4">
               Before purchasing premium access, you must read and agree to our Terms of Service.
             </p>
@@ -1167,6 +1364,16 @@ function PremiumContent() {
             </div>
           )}
         </div>
+      )}
+      {/* Discord Login Modal */}
+      {showDiscordModal && (
+        <DiscordLoginModal
+          onClose={() => {
+            setShowDiscordModal(false);
+            localStorage.removeItem('discord_payment_intent');
+          }}
+          returnTo="/premium"
+        />
       )}
     </div>
   );

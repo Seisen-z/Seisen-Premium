@@ -10,6 +10,15 @@ export async function POST(req: NextRequest) {
   try {
     const { orderID } = await req.json();
 
+    // Read Discord session from cookie (sent automatically by browser)
+    let discordUser: { id: string; tag: string; username: string; email: string | null } | null = null;
+    try {
+      const rawSession = req.cookies.get('discord_session')?.value;
+      if (rawSession) {
+        discordUser = JSON.parse(Buffer.from(rawSession, 'base64').toString('utf-8'));
+      }
+    } catch { /* non-fatal */ }
+
     if (!orderID) {
         return NextResponse.json({ error: 'Order ID required' }, { status: 400 });
     }
@@ -179,6 +188,9 @@ export async function POST(req: NextRequest) {
                     { name: 'Quantity',       value: String(quantity),                  inline: true },
                     { name: 'Transaction ID', value: paymentInfo.transactionId,         inline: false },
                     { name: 'Customer Email', value: paymentInfo.payerEmail || 'N/A',   inline: false },
+                    { name: '🎮 Discord',    value: discordUser
+                        ? `${discordUser.tag} (ID: \`${discordUser.id}\`)`
+                        : '⚠️ Not linked',                                             inline: false },
                     { name: 'License Keys',   value: keyDisplay,                        inline: false },
                 ],
                 timestamp: new Date().toISOString(),
