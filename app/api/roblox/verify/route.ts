@@ -22,7 +22,7 @@ export async function POST(req: Request) {
         const { username, email, tier: requestedTier } = body;
 
         // Read Discord session from cookie
-        let discordUser: { id: string; tag: string; username: string; email: string | null; avatar: string } | null = null;
+        let discordUser: { id: string; tag: string; username: string; email: string | null; avatar?: string } | null = null;
         try {
             const rawSession = req.headers.get('cookie')?.match(/(?:^|;\s*)discord_session=([^;]+)/)?.[1];
             if (rawSession) {

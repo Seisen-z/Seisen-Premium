@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
     const { orderID } = await req.json();
 
     // Read Discord session from cookie (sent automatically by browser)
-    let discordUser: { id: string; tag: string; username: string; email: string | null; avatar: string } | null = null;
+    let discordUser: { id: string; tag: string; username: string; email: string | null; avatar?: string } | null = null;
     try {
       const rawSession = req.cookies.get('discord_session')?.value;
       if (rawSession) {
