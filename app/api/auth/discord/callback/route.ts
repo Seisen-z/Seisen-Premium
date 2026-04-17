@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
 
   const clientId     = process.env.DISCORD_CLIENT_ID!;
   const clientSecret = process.env.DISCORD_CLIENT_SECRET!;
-  const baseUrl      = process.env.NEXT_PUBLIC_BASE_URL || `https://${req.headers.get('host')}`;
+  const baseUrl = req.nextUrl.origin; // auto-detects environment
   const redirectUri  = `${baseUrl}/api/auth/discord/callback`;
 
   try {

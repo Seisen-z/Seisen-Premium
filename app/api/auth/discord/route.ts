@@ -6,7 +6,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Discord OAuth not configured' }, { status: 500 });
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || `https://${req.headers.get('host')}`;
+  const baseUrl = req.nextUrl.origin; // auto-detects: localhost in dev, real domain in prod
   const redirectUri = `${baseUrl}/api/auth/discord/callback`;
 
   // Grab the "return" query param so we can bounce back after login
