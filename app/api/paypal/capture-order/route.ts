@@ -156,7 +156,10 @@ export async function POST(req: NextRequest) {
     // 4. Save to Database
     await db.savePayment({
         ...paymentInfo,
-        keys: allKeys
+        keys: allKeys,
+        discordId: discordUser?.id,
+        discordTag: discordUser?.tag,
+        discordAvatar: discordUser?.avatar
     });
 
     // 5. Send Email with all keys

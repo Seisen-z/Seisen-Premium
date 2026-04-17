@@ -179,8 +179,20 @@ function SuccessContent() {
   const [discordSession, setDiscordSession] = useState<DiscordSession | null>(null);
 
   useEffect(() => {
-    setDiscordSession(readDiscordSession());
-  }, []);
+    if (isAdminView) {
+      // If admin, read customer discord from URL
+      const tag = searchParams.get('discordTag');
+      const id = searchParams.get('discordId');
+      const avatar = searchParams.get('discordAvatar') || 'https://cdn.discordapp.com/embed/avatars/0.png';
+      
+      if (tag) {
+        setDiscordSession({ id: id || '', tag, username: tag, discriminator: '0', avatar, email: null });
+      }
+    } else {
+      // If normal customer, read session from cookie
+      setDiscordSession(readDiscordSession());
+    }
+  }, [isAdminView, searchParams]);
 
   // Extract params and construct mock 'order' object to match client page structure
   const orderId = searchParams.get('orderId');

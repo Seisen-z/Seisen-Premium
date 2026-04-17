@@ -164,6 +164,9 @@ export class TicketDatabase {
         currency: paymentData.currency,
         payment_status: paymentData.status,
         generated_keys: paymentData.keys ? JSON.stringify(paymentData.keys) : null,
+        discord_id: paymentData.discordId || null,
+        discord_tag: paymentData.discordTag || null,
+        discord_avatar: paymentData.discordAvatar || null,
         updated_at: new Date().toISOString()
       }])
       .select();

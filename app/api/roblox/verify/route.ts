@@ -21,6 +21,15 @@ export async function POST(req: Request) {
         const body = await req.json();
         const { username, email, tier: requestedTier } = body;
 
+        // Read Discord session from cookie
+        let discordUser: { id: string; tag: string; username: string; email: string | null; avatar: string } | null = null;
+        try {
+            const rawSession = req.headers.get('cookie')?.match(/(?:^|;\s*)discord_session=([^;]+)/)?.[1];
+            if (rawSession) {
+                discordUser = JSON.parse(Buffer.from(rawSession, 'base64').toString('utf-8'));
+            }
+        } catch { /* non-fatal */ }
+
         // Basic verification
         if (!email || !email.includes('@')) {
              return NextResponse.json({ error: 'Valid email is required for backup' }, { status: 400 });
@@ -171,7 +180,10 @@ export async function POST(req: Request) {
                 amount: robuxAmount,
                 currency: 'ROBUX',
                 status: 'COMPLETED',
-                keys: null
+                keys: null,
+                discordId: discordUser?.id,
+                discordTag: discordUser?.tag,
+                discordAvatar: discordUser?.avatar
             });
         } else if (isRenewal && currentUaid) {
              await db.updateRobloxPurchase(transactionId, currentUaid);

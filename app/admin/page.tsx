@@ -18,6 +18,9 @@ interface Payment {
   status: string;
   created_at: string;
   generated_keys: string | string[];
+  discord_id?: string;
+  discord_tag?: string;
+  discord_avatar?: string;
 }
 
 interface Ticket {
@@ -736,7 +739,7 @@ export default function AdminPage() {
                                     <td className="p-4 text-right">
                                         <div className="flex justify-end items-center gap-2">
                                             <Link 
-                                              href={`/success?orderId=${p.transaction_id}&tier=${p.tier}&amount=${p.amount}&currency=${p.currency}&key=${key}&email=${p.payer_email || ''}&payerId=${p.payer_email || ''}&date=${p.created_at}&method=${p.currency === 'ROBUX' ? 'Robux' : 'PayPal'}&admin=1`}
+                                              href={`/success?orderId=${p.transaction_id}&tier=${p.tier}&amount=${p.amount}&currency=${p.currency}&key=${key}&email=${p.payer_email || ''}&payerId=${p.payer_email || ''}&date=${p.created_at}&method=${p.currency === 'ROBUX' ? 'Robux' : 'PayPal'}&admin=1${p.discord_tag ? `&discordTag=${encodeURIComponent(p.discord_tag)}&discordId=${encodeURIComponent(p.discord_id || '')}&discordAvatar=${encodeURIComponent(p.discord_avatar || '')}` : ''}`}
                                               target="_blank"
                                             >
                                               <Button size="sm" variant="secondary" className="h-8 px-2 flex items-center justify-center gap-1">
