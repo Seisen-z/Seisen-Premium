@@ -5,6 +5,24 @@ import { TicketDatabase } from '@/lib/server/db';
 
 export async function POST(req: NextRequest) {
   try {
+        // Require Discord auth before starting PayPal checkout.
+        const rawSession = req.cookies.get('discord_session')?.value;
+        if (!rawSession) {
+            return NextResponse.json(
+                { error: 'Discord login is required before starting PayPal checkout.' },
+                { status: 401 }
+            );
+        }
+
+        try {
+            JSON.parse(Buffer.from(decodeURIComponent(rawSession), 'base64').toString('utf-8'));
+        } catch {
+            return NextResponse.json(
+                { error: 'Invalid Discord session. Please log in with Discord again.' },
+                { status: 401 }
+            );
+        }
+
     const body = await req.json();
     const { tier, quantity: rawQuantity } = body;
 
