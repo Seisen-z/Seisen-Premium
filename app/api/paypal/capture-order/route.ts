@@ -15,7 +15,9 @@ export async function POST(req: NextRequest) {
     try {
       const rawSession = req.cookies.get('discord_session')?.value;
       if (rawSession) {
-        discordUser = JSON.parse(Buffer.from(rawSession, 'base64').toString('utf-8'));
+                // Cookies can be URL-encoded by clients/proxies. Decode safely before base64 parse.
+                const normalizedSession = rawSession.includes('%') ? decodeURIComponent(rawSession) : rawSession;
+                discordUser = JSON.parse(Buffer.from(normalizedSession, 'base64').toString('utf-8'));
       }
     } catch { /* non-fatal */ }
 
