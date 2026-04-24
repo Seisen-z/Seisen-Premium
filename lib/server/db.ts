@@ -320,7 +320,7 @@ export class TicketDatabase {
     return this.premiumTiers.includes(normalized) ? normalized : null;
   }
 
-  private readonly paymentMethods = ['robux', 'paypal', 'gcash'];
+  private readonly paymentMethods = ['robux', 'paypal', 'gcash', 'card'];
 
   private normalizeMethod(method: string) {
     const m = (method || '').toLowerCase();
@@ -336,7 +336,7 @@ export class TicketDatabase {
     const result: Record<string, Record<string, number>> = {};
 
     for (const tier of this.premiumTiers) {
-      result[tier] = { robux: 0, paypal: 0, gcash: 0 };
+      result[tier] = { robux: 0, paypal: 0, gcash: 0, card: 0 };
     }
 
     if (error) {

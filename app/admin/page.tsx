@@ -42,12 +42,13 @@ interface Stats {
 }
 
 type PremiumTier = 'weekly' | 'monthly' | 'lifetime';
-type PaymentMethod = 'robux' | 'paypal' | 'gcash';
+type PaymentMethod = 'robux' | 'paypal' | 'gcash' | 'card';
 
 const PAYMENT_METHODS: { id: PaymentMethod; label: string; color: string; accent: string }[] = [
   { id: 'robux',  label: 'Robux',  color: 'amber',  accent: '#fbbf24' },
   { id: 'paypal', label: 'PayPal', color: 'blue',   accent: '#0070ba' },
   { id: 'gcash',  label: 'GCash',  color: 'green',  accent: '#22c55e' },
+  { id: 'card',   label: 'Card',   color: 'purple', accent: '#9333ea' },
 ];
 
 export default function AdminPage() {
@@ -83,14 +84,14 @@ export default function AdminPage() {
   type MethodStockMap = Record<PremiumTier, Record<PaymentMethod, number>>;
   type MethodDraftMap = Record<PremiumTier, Record<PaymentMethod, string>>;
   const defaultMethodStock = (): MethodStockMap => ({
-    weekly:   { robux: 0, paypal: 0, gcash: 0 },
-    monthly:  { robux: 0, paypal: 0, gcash: 0 },
-    lifetime: { robux: 0, paypal: 0, gcash: 0 },
+    weekly:   { robux: 0, paypal: 0, gcash: 0, card: 0 },
+    monthly:  { robux: 0, paypal: 0, gcash: 0, card: 0 },
+    lifetime: { robux: 0, paypal: 0, gcash: 0, card: 0 },
   });
   const defaultMethodDraft = (): MethodDraftMap => ({
-    weekly:   { robux: '0', paypal: '0', gcash: '0' },
-    monthly:  { robux: '0', paypal: '0', gcash: '0' },
-    lifetime: { robux: '0', paypal: '0', gcash: '0' },
+    weekly:   { robux: '0', paypal: '0', gcash: '0', card: '0' },
+    monthly:  { robux: '0', paypal: '0', gcash: '0', card: '0' },
+    lifetime: { robux: '0', paypal: '0', gcash: '0', card: '0' },
   });
   const [methodStock, setMethodStock] = useState<MethodStockMap>(defaultMethodStock());
   const [methodDraft, setMethodDraft] = useState<MethodDraftMap>(defaultMethodDraft());
@@ -159,7 +160,7 @@ export default function AdminPage() {
         const newStock = defaultMethodStock();
         const newDraft = defaultMethodDraft();
         for (const tier of ['weekly', 'monthly', 'lifetime'] as PremiumTier[]) {
-          for (const m of ['robux', 'paypal', 'gcash'] as PaymentMethod[]) {
+          for (const m of ['robux', 'paypal', 'gcash', 'card'] as PaymentMethod[]) {
             const val = Number(ms[tier]?.[m] || 0);
             newStock[tier][m] = val;
             newDraft[tier][m] = String(val);
@@ -205,7 +206,7 @@ export default function AdminPage() {
       const newStock = defaultMethodStock();
       const newDraft = defaultMethodDraft();
       for (const t of ['weekly', 'monthly', 'lifetime'] as PremiumTier[]) {
-        for (const m of ['robux', 'paypal', 'gcash'] as PaymentMethod[]) {
+        for (const m of ['robux', 'paypal', 'gcash', 'card'] as PaymentMethod[]) {
           const val = Number(ms[t]?.[m] || 0);
           newStock[t][m] = val;
           newDraft[t][m] = String(val);
