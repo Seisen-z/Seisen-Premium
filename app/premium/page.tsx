@@ -367,14 +367,112 @@ function CartDrawer({
   );
 }
 
+// ─── Discord SVG Icon ─────────────────────────────────────────────────────────
+const DiscordIcon = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+    <path d="M20.317 4.492c-1.53-.69-3.17-1.2-4.885-1.49a.075.075 0 0 0-.079.036c-.21.369-.444.85-.608 1.23a18.566 18.566 0 0 0-5.487 0 12.36 12.36 0 0 0-.617-1.23A.077.077 0 0 0 8.562 3c-1.714.29-3.354.8-4.885 1.491a.07.07 0 0 0-.032.027C.533 9.093-.32 13.555.099 17.961a.08.08 0 0 0 .031.055 20.03 20.03 0 0 0 5.993 2.98.078.078 0 0 0 .084-.026c.462-.62.874-1.275 1.226-1.963.021-.04.001-.088-.041-.104a13.201 13.201 0 0 1-1.872-.878.075.075 0 0 1-.008-.125c.126-.093.252-.19.372-.287a.075.075 0 0 1 .078-.01c3.927 1.764 8.18 1.764 12.061 0a.075.075 0 0 1 .079.009c.12.098.245.195.372.288a.075.075 0 0 1-.006.125c-.598.344-1.22.635-1.873.877a.075.075 0 0 0-.041.105c.36.687.772 1.341 1.225 1.962a.077.077 0 0 0 .084.028 19.963 19.963 0 0 0 6.002-2.981.076.076 0 0 0 .032-.054c.5-5.094-.838-9.52-3.549-13.442a.06.06 0 0 0-.031-.028zM8.02 15.278c-1.182 0-2.157-1.069-2.157-2.38 0-1.312.956-2.38 2.157-2.38 1.21 0 2.176 1.077 2.157 2.38 0 1.312-.956 2.38-2.157 2.38zm7.975 0c-1.183 0-2.157-1.069-2.157-2.38 0-1.312.955-2.38 2.157-2.38 1.21 0 2.176 1.077 2.157 2.38 0 1.312-.946 2.38-2.157 2.38z" />
+  </svg>
+);
+
+// ─── Discord Account Badge ────────────────────────────────────────────────────
+function DiscordAccountBadge({
+  session,
+  onLogout,
+  onChangeAccount,
+}: {
+  session: DiscordSession;
+  onLogout: () => void;
+  onChangeAccount: () => void;
+}) {
+  return (
+    <div className="flex items-center gap-3 bg-[#5865F2]/10 border border-[#5865F2]/25 rounded-2xl px-4 py-3 w-full max-w-md mx-auto">
+      {/* Avatar */}
+      <div className="relative flex-shrink-0">
+        <img
+          src={session.avatar}
+          alt={session.tag}
+          className="w-10 h-10 rounded-full ring-2 ring-[#5865F2]/50"
+        />
+        <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-[#111]" />
+      </div>
+
+      {/* Info */}
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-1.5">
+          <DiscordIcon className="w-3.5 h-3.5 text-[#5865F2] flex-shrink-0" />
+          <p className="text-white text-sm font-semibold truncate">{session.tag}</p>
+        </div>
+        <p className="text-[#5865F2]/70 text-xs truncate">ID: {session.id}</p>
+      </div>
+
+      {/* Actions */}
+      <div className="flex items-center gap-1.5 flex-shrink-0">
+        <button
+          onClick={onChangeAccount}
+          title="Switch Discord Account"
+          className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-[#5865F2] bg-[#5865F2]/10 hover:bg-[#5865F2]/20 border border-[#5865F2]/20 hover:border-[#5865F2]/40 transition-all"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3">
+            <path d="M17 1l4 4-4 4" /><path d="M3 11V9a4 4 0 0 1 4-4h14" />
+            <path d="M7 23l-4-4 4-4" /><path d="M21 13v2a4 4 0 0 1-4 4H3" />
+          </svg>
+          Switch
+        </button>
+        <button
+          onClick={onLogout}
+          title="Logout"
+          className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-red-400 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 hover:border-red-500/40 transition-all"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <polyline points="16 17 21 12 16 7" />
+            <line x1="21" y1="12" x2="9" y2="12" />
+          </svg>
+          Logout
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Discord Login Banner (not logged in) ─────────────────────────────────────
+function DiscordLoginBanner({ returnTo = '/premium' }: { returnTo?: string }) {
+  return (
+    <div className="flex items-center gap-3 bg-[#1a1a1a] border border-[#2a2a2a] rounded-2xl px-4 py-3 w-full max-w-md mx-auto">
+      <div className="w-9 h-9 rounded-xl bg-[#5865F2]/20 flex items-center justify-center flex-shrink-0">
+        <DiscordIcon className="w-5 h-5 text-[#5865F2]" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-white text-sm font-semibold">Discord not connected</p>
+        <p className="text-gray-500 text-xs">Required to purchase</p>
+      </div>
+      <a href={`/api/auth/discord?return=${encodeURIComponent(returnTo)}`} className="flex-shrink-0">
+        <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-[#5865F2] hover:bg-[#4752C4] transition-colors shadow shadow-[#5865F2]/30">
+          <DiscordIcon className="w-3.5 h-3.5" />
+          Login
+        </button>
+      </a>
+    </div>
+  );
+}
+
 // ─── Discord Login Modal ─────────────────────────────────────────────────────
 function DiscordLoginModal({
   onClose,
   returnTo = '/premium',
+  isSwitching = false,
+  currentSession = null,
 }: {
   onClose: () => void;
   returnTo?: string;
+  isSwitching?: boolean;
+  currentSession?: { tag: string; avatar: string; id: string } | null;
 }) {
+  const handleSwitchConfirm = () => {
+    // Only now clear the cookie and navigate to Discord OAuth
+    document.cookie = 'discord_session=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    window.location.href = `/api/auth/discord?return=${encodeURIComponent(returnTo)}`;
+  };
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 animate-in fade-in duration-200">
       <Card className="w-full max-w-md p-6 relative overflow-hidden">
@@ -391,49 +489,75 @@ function DiscordLoginModal({
         <div className="flex flex-col items-center text-center gap-4">
           {/* Discord logo */}
           <div className="w-16 h-16 rounded-2xl bg-[#5865F2] flex items-center justify-center shadow-lg shadow-[#5865F2]/40">
-            <svg viewBox="0 0 24 24" fill="white" className="w-9 h-9">
-              <path d="M20.317 4.492c-1.53-.69-3.17-1.2-4.885-1.49a.075.075 0 0 0-.079.036c-.21.369-.444.85-.608 1.23a18.566 18.566 0 0 0-5.487 0 12.36 12.36 0 0 0-.617-1.23A.077.077 0 0 0 8.562 3c-1.714.29-3.354.8-4.885 1.491a.07.07 0 0 0-.032.027C.533 9.093-.32 13.555.099 17.961a.08.08 0 0 0 .031.055 20.03 20.03 0 0 0 5.993 2.98.078.078 0 0 0 .084-.026c.462-.62.874-1.275 1.226-1.963.021-.04.001-.088-.041-.104a13.201 13.201 0 0 1-1.872-.878.075.075 0 0 1-.008-.125c.126-.093.252-.19.372-.287a.075.075 0 0 1 .078-.01c3.927 1.764 8.18 1.764 12.061 0a.075.075 0 0 1 .079.009c.12.098.245.195.372.288a.075.075 0 0 1-.006.125c-.598.344-1.22.635-1.873.877a.075.075 0 0 0-.041.105c.36.687.772 1.341 1.225 1.962a.077.077 0 0 0 .084.028 19.963 19.963 0 0 0 6.002-2.981.076.076 0 0 0 .032-.054c.5-5.094-.838-9.52-3.549-13.442a.06.06 0 0 0-.031-.028zM8.02 15.278c-1.182 0-2.157-1.069-2.157-2.38 0-1.312.956-2.38 2.157-2.38 1.21 0 2.176 1.077 2.157 2.38 0 1.312-.956 2.38-2.157 2.38zm7.975 0c-1.183 0-2.157-1.069-2.157-2.38 0-1.312.955-2.38 2.157-2.38 1.21 0 2.176 1.077 2.157 2.38 0 1.312-.946 2.38-2.157 2.38z" />
-            </svg>
+            <DiscordIcon className="w-9 h-9 text-white" />
           </div>
 
           <div>
-            <h2 className="text-xl font-bold text-white mb-1">Login Required</h2>
+            <h2 className="text-xl font-bold text-white mb-1">
+              {isSwitching ? 'Switch Discord Account' : 'Login Required'}
+            </h2>
             <p className="text-gray-400 text-sm leading-relaxed">
-              Connect your Discord account before purchasing. This lets us verify your identity and handle any support or refund requests.
+              {isSwitching
+                ? 'You will be redirected to Discord to log in with a different account.'
+                : 'Connect your Discord account before purchasing. This lets us verify your identity and handle any support or refund requests.'}
             </p>
           </div>
 
-          <div className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-4 text-left space-y-2">
-            <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Why Discord?</p>
-            <ul className="space-y-1.5">
-              {[
-                '✅ Verify your identity for purchases',
-                '🔍 Track your order for support',
-                '💸 Required for any refund requests',
-              ].map((item) => (
-                <li key={item} className="text-sm text-gray-300">{item}</li>
-              ))}
-            </ul>
-          </div>
+          {/* Show current account when switching */}
+          {isSwitching && currentSession && (
+            <div className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-3 flex items-center gap-3">
+              <img src={currentSession.avatar} alt={currentSession.tag} className="w-9 h-9 rounded-full ring-2 ring-[#5865F2]/30 flex-shrink-0" />
+              <div className="min-w-0 flex-1">
+                <p className="text-xs text-gray-500 mb-0.5">Currently signed in as</p>
+                <p className="text-white text-sm font-semibold truncate">{currentSession.tag}</p>
+              </div>
+              <svg viewBox="0 0 24 24" fill="#5865F2" className="w-4 h-4 flex-shrink-0 opacity-60"><path d="M20.317 4.492c-1.53-.69-3.17-1.2-4.885-1.49a.075.075 0 0 0-.079.036c-.21.369-.444.85-.608 1.23a18.566 18.566 0 0 0-5.487 0 12.36 12.36 0 0 0-.617-1.23A.077.077 0 0 0 8.562 3c-1.714.29-3.354.8-4.885 1.491a.07.07 0 0 0-.032.027C.533 9.093-.32 13.555.099 17.961a.08.08 0 0 0 .031.055 20.03 20.03 0 0 0 5.993 2.98.078.078 0 0 0 .084-.026c.462-.62.874-1.275 1.226-1.963.021-.04.001-.088-.041-.104a13.201 13.201 0 0 1-1.872-.878.075.075 0 0 1-.008-.125c.126-.093.252-.19.372-.287a.075.075 0 0 1 .078-.01c3.927 1.764 8.18 1.764 12.061 0a.075.075 0 0 1 .079.009c.12.098.245.195.372.288a.075.075 0 0 1-.006.125c-.598.344-1.22.635-1.873.877a.075.075 0 0 0-.041.105c.36.687.772 1.341 1.225 1.962a.077.077 0 0 0 .084.028 19.963 19.963 0 0 0 6.002-2.981.076.076 0 0 0 .032-.054c.5-5.094-.838-9.52-3.549-13.442a.06.06 0 0 0-.031-.028zM8.02 15.278c-1.182 0-2.157-1.069-2.157-2.38 0-1.312.956-2.38 2.157-2.38 1.21 0 2.176 1.077 2.157 2.38 0 1.312-.956 2.38-2.157 2.38zm7.975 0c-1.183 0-2.157-1.069-2.157-2.38 0-1.312.955-2.38 2.157-2.38 1.21 0 2.176 1.077 2.157 2.38 0 1.312-.946 2.38-2.157 2.38z" /></svg>
+            </div>
+          )}
 
-          <a
-            href={`/api/auth/discord?return=${encodeURIComponent(returnTo)}`}
-            className="w-full"
-          >
-            <button className="w-full flex items-center justify-center gap-3 py-3 px-6 rounded-xl bg-[#5865F2] hover:bg-[#4752C4] text-white font-semibold transition-all duration-200 shadow-lg shadow-[#5865F2]/30 hover:shadow-[#5865F2]/50">
-              <svg viewBox="0 0 24 24" fill="white" className="w-5 h-5">
-                <path d="M20.317 4.492c-1.53-.69-3.17-1.2-4.885-1.49a.075.075 0 0 0-.079.036c-.21.369-.444.85-.608 1.23a18.566 18.566 0 0 0-5.487 0 12.36 12.36 0 0 0-.617-1.23A.077.077 0 0 0 8.562 3c-1.714.29-3.354.8-4.885 1.491a.07.07 0 0 0-.032.027C.533 9.093-.32 13.555.099 17.961a.08.08 0 0 0 .031.055 20.03 20.03 0 0 0 5.993 2.98.078.078 0 0 0 .084-.026c.462-.62.874-1.275 1.226-1.963.021-.04.001-.088-.041-.104a13.201 13.201 0 0 1-1.872-.878.075.075 0 0 1-.008-.125c.126-.093.252-.19.372-.287a.075.075 0 0 1 .078-.01c3.927 1.764 8.18 1.764 12.061 0a.075.075 0 0 1 .079.009c.12.098.245.195.372.288a.075.075 0 0 1-.006.125c-.598.344-1.22.635-1.873.877a.075.075 0 0 0-.041.105c.36.687.772 1.341 1.225 1.962a.077.077 0 0 0 .084.028 19.963 19.963 0 0 0 6.002-2.981.076.076 0 0 0 .032-.054c.5-5.094-.838-9.52-3.549-13.442a.06.06 0 0 0-.031-.028zM8.02 15.278c-1.182 0-2.157-1.069-2.157-2.38 0-1.312.956-2.38 2.157-2.38 1.21 0 2.176 1.077 2.157 2.38 0 1.312-.956 2.38-2.157 2.38zm7.975 0c-1.183 0-2.157-1.069-2.157-2.38 0-1.312.955-2.38 2.157-2.38 1.21 0 2.176 1.077 2.157 2.38 0 1.312-.946 2.38-2.157 2.38z" />
-              </svg>
-              Login with Discord
-            </button>
-          </a>
+          {!isSwitching && (
+            <div className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-4 text-left space-y-2">
+              <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Why Discord?</p>
+              <ul className="space-y-1.5">
+                {[
+                  '✅ Verify your identity for purchases',
+                  '🔍 Track your order for support',
+                  '💸 Required for any refund requests',
+                ].map((item) => (
+                  <li key={item} className="text-sm text-gray-300">{item}</li>
+                ))}
+              </ul>
+            </div>
+          )}
 
-          <button
-            onClick={onClose}
-            className="text-sm text-gray-600 hover:text-gray-400 transition-colors"
-          >
-            Cancel
-          </button>
+          {isSwitching ? (
+            // Confirm switch — two explicit buttons
+            <div className="w-full flex flex-col gap-2">
+              <button
+                onClick={handleSwitchConfirm}
+                className="w-full flex items-center justify-center gap-3 py-3 px-6 rounded-xl bg-[#5865F2] hover:bg-[#4752C4] text-white font-semibold transition-all duration-200 shadow-lg shadow-[#5865F2]/30"
+              >
+                <DiscordIcon className="w-5 h-5" />
+                Yes, Switch Account
+              </button>
+              <button
+                onClick={onClose}
+                className="w-full py-2.5 px-6 rounded-xl bg-[#1a1a1a] hover:bg-[#222] border border-[#2a2a2a] text-gray-300 font-medium text-sm transition-colors"
+              >
+                Cancel — Keep Current Account
+              </button>
+            </div>
+          ) : (
+            <a
+              href={`/api/auth/discord?return=${encodeURIComponent(returnTo)}`}
+              className="w-full"
+            >
+              <button className="w-full flex items-center justify-center gap-3 py-3 px-6 rounded-xl bg-[#5865F2] hover:bg-[#4752C4] text-white font-semibold transition-all duration-200 shadow-lg shadow-[#5865F2]/30 hover:shadow-[#5865F2]/50">
+                <DiscordIcon className="w-5 h-5" />
+                Login with Discord
+              </button>
+            </a>
+          )}
         </div>
       </Card>
     </div>
@@ -480,6 +604,7 @@ function PremiumContent() {
   // Discord session
   const [discordSession, setDiscordSession] = useState<DiscordSession | null>(null);
   const [showDiscordModal, setShowDiscordModal] = useState(false);
+  const [isSwitchingAccount, setIsSwitchingAccount] = useState(false);
 
   // Cart state
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -714,6 +839,19 @@ function PremiumContent() {
     }
   };
 
+  // ─── Discord logout / switch ──────────────────────────────────────────────────
+  const handleDiscordLogout = () => {
+    // Expire the cookie
+    document.cookie = 'discord_session=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    setDiscordSession(null);
+  };
+
+  const handleDiscordSwitchAccount = () => {
+    // Just open the confirm modal — do NOT clear session yet
+    setIsSwitchingAccount(true);
+    setShowDiscordModal(true);
+  };
+
   // ─── Discord gate helper ─────────────────────────────────────────────────────
   const requireDiscord = (
     method: string,
@@ -730,6 +868,7 @@ function PremiumContent() {
     }
     // Save intent so we can auto-resume after OAuth redirect
     localStorage.setItem('discord_payment_intent', JSON.stringify({ method, plan, price, qty }));
+    setIsSwitchingAccount(false);
     setShowDiscordModal(true);
   };
 
@@ -920,6 +1059,19 @@ function PremiumContent() {
 
         <section className="flex justify-center -mt-8 mb-8">
           <PurchaseCounter />
+        </section>
+
+        {/* Discord Account Status */}
+        <section className="flex justify-center -mt-4">
+          {discordSession ? (
+            <DiscordAccountBadge
+              session={discordSession}
+              onLogout={handleDiscordLogout}
+              onChangeAccount={handleDiscordSwitchAccount}
+            />
+          ) : (
+            <DiscordLoginBanner returnTo="/premium" />
+          )}
         </section>
 
         {/* Payment Method + Cart Button */}
@@ -1491,14 +1643,17 @@ function PremiumContent() {
           )}
         </div>
       )}
-      {/* Discord Login Modal */}
+      {/* Discord Login / Switch Modal */}
       {showDiscordModal && (
         <DiscordLoginModal
           onClose={() => {
             setShowDiscordModal(false);
-            localStorage.removeItem('discord_payment_intent');
+            setIsSwitchingAccount(false);
+            if (!isSwitchingAccount) localStorage.removeItem('discord_payment_intent');
           }}
           returnTo="/premium"
+          isSwitching={isSwitchingAccount}
+          currentSession={discordSession}
         />
       )}
     </div>

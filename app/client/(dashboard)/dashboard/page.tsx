@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useAuth } from '@/lib/client/auth';
+import { useAuth, readDiscordSession } from '@/lib/client/auth';
 import { useRouter } from 'next/navigation';
 import { Card } from '@/components/ui/Card';
 import { Crown, ShoppingBag, CreditCard, Clock, CheckCircle, ChevronRight, Download, Star } from 'lucide-react';
@@ -12,6 +12,12 @@ export default function DashboardPage() {
   const router = useRouter();
   const [data, setData] = useState<any>(null);
   const [fetching, setFetching] = useState(true);
+  const [discordTag, setDiscordTag] = useState<string | null>(null);
+
+  useEffect(() => {
+    const ds = readDiscordSession();
+    if (ds) setDiscordTag(ds.tag);
+  }, []);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -39,6 +45,8 @@ export default function DashboardPage() {
     }
   };
 
+  const greeting = discordTag ?? (email?.startsWith('discord:') ? 'there' : email?.split('@')[0] ?? 'there');
+
   if (isLoading || !isAuthenticated) return null;
 
   return (
@@ -46,7 +54,7 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-            <h1 className="text-3xl font-bold text-white mb-2">Good morning, <span className="text-white">{email?.split('@')[0]}</span></h1>
+            <h1 className="text-3xl font-bold text-white mb-2">Good morning, <span className="text-white">{greeting}</span></h1>
             <p className="text-gray-400">Here's a summary of your account and recent activity.</p>
         </div>
       </div>
