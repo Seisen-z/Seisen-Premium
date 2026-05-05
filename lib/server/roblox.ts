@@ -4,9 +4,9 @@ export class RobloxIntegration {
 
     constructor(config?: { apiKey?: string }) {
         this.products = {
-            lifetime: 1781366430, // Lifetime
-            monthly: 1781384489,  // Monthly
-            weekly: 1779578553    // Weekly
+            lifetime: 1823465320, // Lifetime
+            monthly: 1826497396,  // Monthly
+            weekly: 1823271804    // Weekly
         };
         this.robloxApiUrl = 'https://inventory.roblox.com/v1/users';
         console.log('✅ Roblox Integration initialized with products:', this.products);

@@ -633,9 +633,9 @@ function PremiumContent() {
               setPendingPlan({ plan: intent.plan, amount: intent.price, price: intent.price, quantity: intent.qty || 1 });
               setShowTosModal(true);
             } else if (intent.method === 'robux') {
-              let productId = 1781366430;
-              if (intent.plan === 'weekly')  productId = 1779578553;
-              if (intent.plan === 'monthly') productId = 1781384489;
+              let productId = 1823465320;
+              if (intent.plan === 'weekly')  productId = 1823271804;
+              if (intent.plan === 'monthly') productId = 1826497396;
               setRobuxDetails({ plan: intent.plan, price: intent.price, productId });
               setRobloxUsername('');
               setEmail('');
@@ -878,9 +878,9 @@ function PremiumContent() {
       return;
     }
     requireDiscord('robux', plan, price, 1, () => {
-      let productId = 1781366430;
-      if (plan === 'weekly')  productId = 1779578553;
-      if (plan === 'monthly') productId = 1781384489;
+      let productId = 1823465320;
+      if (plan === 'weekly')  productId = 1823271804;
+      if (plan === 'monthly') productId = 1826497396;
       setRobuxDetails({ plan, price, productId });
       setRobloxUsername('');
       setEmail('');
