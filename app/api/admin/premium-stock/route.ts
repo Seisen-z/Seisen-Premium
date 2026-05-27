@@ -55,7 +55,7 @@ export async function PUT(req: NextRequest) {
     if (!Number.isFinite(stock) || stock < 0 || !Number.isInteger(stock)) {
       return NextResponse.json({ error: 'Stock must be a non-negative integer' }, { status: 400 });
     }
-    if (!method || !['robux', 'paypal', 'gcash', 'card'].includes(method)) {
+    if (!method || !['robux', 'paypal', 'gcash', 'card', 'stripe'].includes(method)) {
       return NextResponse.json({ error: 'Invalid or missing payment method' }, { status: 400 });
     }
 

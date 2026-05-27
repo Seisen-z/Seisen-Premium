@@ -20,7 +20,9 @@ import {
   getCartCount,
 } from '@/lib/client/cart';
 
-type PaymentMethod = 'paypal' | 'robux' | 'gcash' | 'card';
+const ENABLE_ROBUX = false;
+
+type PaymentMethod = 'paypal' | 'robux' | 'gcash';
 type PremiumTier = 'weekly' | 'monthly' | 'lifetime';
 type MethodStockMap = Record<PaymentMethod, Record<PremiumTier, number>>;
 
@@ -45,10 +47,9 @@ function readDiscordSession(): DiscordSession | null {
 }
 
 const defaultMethodStockMap = (): MethodStockMap => ({
-  paypal: { weekly: 0, monthly: 0, lifetime: 0 },
-  robux:  { weekly: 0, monthly: 0, lifetime: 0 },
-  gcash:  { weekly: 0, monthly: 0, lifetime: 0 },
-  card:   { weekly: 0, monthly: 0, lifetime: 0 },
+  paypal:  { weekly: 0, monthly: 0, lifetime: 0 },
+  robux:   { weekly: 0, monthly: 0, lifetime: 0 },
+  gcash:   { weekly: 0, monthly: 0, lifetime: 0 },
 });
 
 // Updated PayPal prices: Monthly €6, Lifetime €12
@@ -149,36 +150,7 @@ const gcashPlans = [
   },
 ];
 
-const cardPlans = [
-  {
-    title: 'Weekly',
-    badge: '7 Days',
-    price: 3,
-    currency: '€',
-    period: '/week',
-    features: ['All premium scripts', 'No key system', 'Priority support', 'Early access'],
-    plan: 'weekly',
-  },
-  {
-    title: 'Monthly',
-    badge: '30 Days',
-    price: 6,
-    currency: '€',
-    period: '/month',
-    features: ['All premium scripts', 'No key system', 'Priority support', 'Early access', 'Exclusive updates'],
-    plan: 'monthly',
-  },
-  {
-    title: 'Lifetime',
-    features: ['All premium scripts', 'No key system', 'Priority support', 'Early access', 'Exclusive updates', 'Lifetime access'],
-    plan: 'lifetime',
-    price: 12,
-    originalPrice: 14,
-    badge: '14% OFF',
-    badgeVariant: 'best-value' as const,
-    featured: true,
-  },
-];
+
 
 const faqs = [
   {
@@ -580,8 +552,7 @@ function PremiumContent() {
   const [gcashDetails, setGcashDetails] = useState<{ plan: string; price: number } | null>(null);
   const [isGcashQrExpanded, setIsGcashQrExpanded] = useState(false);
 
-  const [showCardModal, setShowCardModal] = useState(false);
-  const [cardDetails, setCardDetails] = useState<{ plan: string; price: number } | null>(null);
+
 
   const [showTicketModal, setShowTicketModal] = useState(false);
   const [ticketDetails, setTicketDetails] = useState<{ plan: string; amount: number; currency: string } | null>(null);
@@ -643,9 +614,6 @@ function PremiumContent() {
             } else if (intent.method === 'gcash') {
               setGcashDetails({ plan: intent.plan, price: intent.price });
               setShowGcashModal(true);
-            } else if (intent.method === 'card') {
-              setCardDetails({ plan: intent.plan, price: intent.price });
-              setShowCardModal(true);
             }
           }, 400);
         } catch { /* ignore bad intent */ }
@@ -681,6 +649,8 @@ function PremiumContent() {
     }
   }, [searchParams]);
 
+
+
   useEffect(() => {
     const paymentSuccess = searchParams.get('payment_success');
     const method = searchParams.get('method');
@@ -704,7 +674,7 @@ function PremiumContent() {
       if (data?.methodStocks) {
         const ms = data.methodStocks;
         const map = defaultMethodStockMap();
-        for (const method of ['paypal', 'robux', 'gcash', 'card'] as PaymentMethod[]) {
+        for (const method of ['paypal', 'robux', 'gcash'] as PaymentMethod[]) {
           for (const tier of ['weekly', 'monthly', 'lifetime'] as PremiumTier[]) {
             map[method][tier] = Number(ms[tier]?.[method] || 0);
           }
@@ -839,6 +809,8 @@ function PremiumContent() {
     }
   };
 
+
+
   // ─── Discord logout / switch ──────────────────────────────────────────────────
   const handleDiscordLogout = () => {
     // Expire the cookie
@@ -959,16 +931,7 @@ function PremiumContent() {
     });
   };
 
-  const handleCardPayment = (plan: string, amount: number) => {
-    if (getTierStock(plan) <= 0) {
-      setStatusModal({ isOpen: true, type: 'error', title: 'Out of Stock', message: 'This premium plan is currently out of stock.' });
-      return;
-    }
-    requireDiscord('card', plan, amount, 1, () => {
-      setCardDetails({ plan, price: amount });
-      setShowCardModal(true);
-    });
-  };
+
 
   const handleTicketPayment = (plan: string, amount: number, currency: string) => {
     if (getTierStock(plan) <= 0) {
@@ -1026,10 +989,9 @@ function PremiumContent() {
 
   const getCurrentPlans = () => {
     switch (paymentMethod) {
-      case 'robux': return robuxPlans;
-      case 'gcash': return gcashPlans;
-      case 'card': return cardPlans;
-      default: return paypalPlans;
+      case 'robux':  return robuxPlans;
+      case 'gcash':  return gcashPlans;
+      default:       return paypalPlans;
     }
   };
 
@@ -1108,17 +1070,19 @@ function PremiumContent() {
             >
               <img src="/images/paypal.png" alt="PayPal" className="w-5 h-5 object-contain" />
             </button>
-            <button
-              onClick={() => setPaymentMethod('robux')}
-              className={`px-4 py-2.5 rounded-lg border transition-all flex items-center gap-2 ${
-                paymentMethod === 'robux'
-                  ? 'accent-bg accent-border accent-text'
-                  : 'bg-[#1a1a1a] border-[#2a2a2a] text-gray-400 hover:border-[#3a3a3a]'
-              }`}
-              title="Robux"
-            >
-              <img src="https://upload.wikimedia.org/wikipedia/commons/c/c7/Robux_2019_Logo_gold.svg" alt="Robux" className="w-5 h-5" />
-            </button>
+            {ENABLE_ROBUX && (
+              <button
+                onClick={() => setPaymentMethod('robux')}
+                className={`px-4 py-2.5 rounded-lg border transition-all flex items-center gap-2 ${
+                  paymentMethod === 'robux'
+                    ? 'accent-bg accent-border accent-text'
+                    : 'bg-[#1a1a1a] border-[#2a2a2a] text-gray-400 hover:border-[#3a3a3a]'
+                }`}
+                title="Robux"
+              >
+                <img src="https://upload.wikimedia.org/wikipedia/commons/c/c7/Robux_2019_Logo_gold.svg" alt="Robux" className="w-5 h-5" />
+              </button>
+            )}
             <button
               onClick={() => setPaymentMethod('gcash')}
               className={`px-4 py-2.5 rounded-lg border transition-all flex items-center gap-2 ${
@@ -1129,17 +1093,6 @@ function PremiumContent() {
               title="GCash"
             >
               <img src="/images/gcash.png" alt="GCash" className="w-6 h-6 object-contain" />
-            </button>
-            <button
-              onClick={() => setPaymentMethod('card')}
-              className={`px-4 py-2.5 rounded-lg border transition-all flex items-center gap-2 ${
-                paymentMethod === 'card'
-                  ? 'accent-bg accent-border accent-text'
-                  : 'bg-[#1a1a1a] border-[#2a2a2a] text-gray-400 hover:border-[#3a3a3a]'
-              }`}
-              title="Card"
-            >
-              <CreditCard className="w-5 h-5 text-purple-500" />
             </button>
           </div>
         </section>
@@ -1178,17 +1131,15 @@ function PremiumContent() {
                     stockStatusText={isOutOfStock ? 'Currently out of stock' : stockStatusText}
                     stockStatusVariant={isOutOfStock ? 'out-of-stock' : tierStock <= 5 ? 'low-stock' : 'in-stock'}
                     isOutOfStock={isOutOfStock}
-                    buttonText={isOutOfStock ? 'Out of Stock' : isPayPal ? `Pay with PayPal${qty > 1 ? ` (×${qty})` : ''}` : paymentMethod === 'gcash' ? 'Pay with GCash' : paymentMethod === 'card' ? 'Pay with Card' : 'Verify & Get Key'}
-                    buttonIcon={!isOutOfStock && (isPayPal || paymentMethod === 'gcash' || paymentMethod === 'card') ? <CreditCard className="w-4 h-4" /> : null}
+                    buttonText={isOutOfStock ? 'Out of Stock' : isPayPal ? `Pay with PayPal${qty > 1 ? ` (×${qty})` : ''}` : paymentMethod === 'gcash' ? 'Pay with GCash' : 'Verify & Get Key'}
+                    buttonIcon={!isOutOfStock && (isPayPal || paymentMethod === 'gcash') ? <CreditCard className="w-4 h-4" /> : null}
                     onButtonClick={() => {
                       if (paymentMethod === 'paypal') {
                         handlePayPalPayment(plan.plan, plan.price);
                       } else if (paymentMethod === 'robux') {
                         handleRobuxPayment(plan.plan, plan.price);
-                      } else if (paymentMethod === 'gcash') {
-                        handleGCashPayment(plan.plan, plan.price);
                       } else {
-                        handleCardPayment(plan.plan, plan.price);
+                        handleGCashPayment(plan.plan, plan.price);
                       }
                     }}
                     priceIcon={
@@ -1202,7 +1153,7 @@ function PremiumContent() {
                     }
                   />
 
-                  {/* PayPal-only: Quantity stepper + Add to Cart */}
+                  {/* PayPal: Quantity stepper + Add to Cart */}
                   {isPayPal && (
                     <div className={`flex items-center gap-2 px-1 ${isOutOfStock ? 'invisible select-none pointer-events-none' : ''}`}>
                       <div className="flex items-center gap-2 flex-1">
@@ -1506,68 +1457,7 @@ function PremiumContent() {
         </div>
       )}
 
-      {/* Card Manual Payment Modal */}
-      {showCardModal && cardDetails && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 animate-in fade-in duration-200">
-          <Card className="w-full max-w-md p-6 relative">
-            <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-              <CreditCard className="w-6 h-6 text-purple-500" />
-              Card Transfer
-            </h2>
 
-            <div className="space-y-4 mb-6 text-sm text-gray-300">
-              <p className="bg-[#1a1a1a] p-3 rounded-lg border border-[#2a2a2a] text-center">
-                <strong>Plan:</strong> <span className="text-white capitalize">{cardDetails.plan}</span>
-                <span className="mx-3 opacity-50">|</span>
-                <strong>Price:</strong> <span className="accent-text font-bold text-base">€{cardDetails.price}</span>
-              </p>
-
-              <div className="flex flex-col items-center gap-2 my-6">
-                <p className="text-gray-400 font-medium">Send Funds To:</p>
-                <div className="bg-[#111] border border-[#2a2a2a] rounded-lg p-4 w-full text-center space-y-2 shadow-inner">
-                  <p className="text-gray-400 text-xs uppercase tracking-wider">Card Number</p>
-                  <p className="text-white text-2xl font-mono tracking-widest font-bold">3080 1010 2933</p>
-                  <div className="flex justify-between items-center px-2 mt-4 pt-4 border-t border-[#222]">
-                    <div className="text-left">
-                      <p className="text-gray-500 text-xs">Account Name</p>
-                      <p className="text-white font-medium">Zandrix O Pongos</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-gray-500 text-xs">Bank</p>
-                      <p className="text-white font-medium">PNB</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-purple-500/10 border border-purple-500/20 p-4 rounded-xl">
-                <h3 className="text-purple-300 font-semibold mb-3 flex items-center gap-2">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                  Manual Verification Steps
-                </h3>
-                <ol className="text-purple-200/80 space-y-2.5 list-decimal list-outside ml-4">
-                  <li>Send exactly <strong className="text-purple-200 font-bold">€{cardDetails.price}</strong> to the PNB card above.</li>
-                  <li><strong>Download or screenshot</strong> the payment receipt.</li>
-                  <li>Click "Open Support Ticket" below.</li>
-                  <li>Send your receipt and your Seisen account details in the ticket.</li>
-                  <li>Wait for validation. Once confirmed valid, you will receive your keys.</li>
-                </ol>
-              </div>
-            </div>
-
-            <div className="flex gap-3">
-              <Button variant="secondary" className="flex-1" onClick={() => setShowCardModal(false)}>
-                Cancel
-              </Button>
-              <a href="https://discord.gg/F4sAf6z8Ph" target="_blank" className="flex-1" rel="noopener noreferrer">
-                <Button className="w-full">
-                  Open Support Ticket
-                </Button>
-              </a>
-            </div>
-          </Card>
-        </div>
-      )}
 
       {/* GCash Manual Payment Modal */}
       {showGcashModal && gcashDetails && (

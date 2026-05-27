@@ -47,7 +47,7 @@ const faqItems = [
     questions: [
       {
         q: 'What payment methods are accepted?',
-        a: 'We accept PayPal, Robux, and GCash. PayPal offers instant processing, while Robux and GCash require ticket verification.',
+        a: 'We accept PayPal and GCash. PayPal offers instant processing, while GCash requires ticket verification.',
       },
       {
         q: 'Can I get a refund?',

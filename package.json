@@ -28,6 +28,7 @@
     "react-dom": "19.2.3",
     "react-simple-code-editor": "^0.14.1",
     "resend": "^6.7.0",
+    "stripe": "^22.1.1",
     "tailwind-merge": "^3.4.0",
     "wasmoon": "^1.16.0"
   },
