@@ -1,8 +1,22 @@
 import { db } from '@/lib/server/db';
-import { NextResponse } from 'next/server';
+import { TicketDatabase } from '@/lib/server/db';
+import { NextRequest, NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
+async function isAdmin(req: NextRequest) {
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader) return false;
+
+  const token = authHeader.replace('Bearer ', '');
+
+  try {
+    const decoded = Buffer.from(token, 'base64').toString('ascii');
+    const database = new TicketDatabase();
+    return await database.validateAdminPassword(decoded);
+  } catch {
+    return false;
+  }
+}
 
 export async function GET() {
   try {
@@ -14,10 +28,10 @@ export async function GET() {
   }
 }
 
-export async function PUT(request: Request) {
+export async function PUT(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('Authorization');
-    if (!authHeader || authHeader !== `Bearer ${ADMIN_PASSWORD}`) {
+    const authorized = await isAdmin(request);
+    if (!authorized) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
