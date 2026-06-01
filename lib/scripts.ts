@@ -32,9 +32,11 @@ export async function fetchScripts(): Promise<Script[]> {
           ? `https://${process.env.VERCEL_URL}`
           : process.env.NEXTAUTH_URL || 'http://localhost:3000';
         configUrl = `${baseUrl}/api/admin/github-config`;
+        console.log('📚 [Server] Fetching config from:', configUrl);
       } else {
         // Client-side - use relative URL
         configUrl = '/api/admin/github-config';
+        console.log('📚 [Client] Fetching config from:', configUrl);
       }
 
       if (configUrl) {
@@ -42,19 +44,33 @@ export async function fetchScripts(): Promise<Script[]> {
           next: { revalidate: 300 }
         });
 
+        console.log('📚 Config fetch status:', configRes.status, configRes.ok);
+
         if (configRes.ok) {
           const config = await configRes.json();
-          if (config.free_url) freeUrl = config.free_url;
-          if (config.premium_url) premiumUrl = config.premium_url;
-          if (config.discontinued_url) discontinuedUrl = config.discontinued_url;
-          console.log('📚 Using GitHub URLs from database:', { freeUrl, premiumUrl, discontinuedUrl });
+          console.log('📚 Raw config from database:', config);
+
+          if (config.free_url) {
+            freeUrl = config.free_url;
+            console.log('✅ Using custom free URL:', freeUrl);
+          }
+          if (config.premium_url) {
+            premiumUrl = config.premium_url;
+            console.log('✅ Using custom premium URL:', premiumUrl);
+          }
+          if (config.discontinued_url) {
+            discontinuedUrl = config.discontinued_url;
+            console.log('✅ Using custom discontinued URL:', discontinuedUrl);
+          }
         } else {
+          console.log('⚠️ Config fetch failed with status:', configRes.status);
           console.log('📚 Using default GitHub URLs');
         }
       }
     } catch (error) {
       // If config fetch fails, use default URLs
-      console.debug('Using default GitHub URLs due to config fetch error:', error);
+      console.error('❌ Config fetch error:', error);
+      console.log('📚 Using default GitHub URLs due to error');
     }
 
     const [freeRes, premiumRes, discontinuedRes] = await Promise.all([
