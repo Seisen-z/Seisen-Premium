@@ -26,9 +26,13 @@ function parseLuaGameNames(luaCode: string): string[] {
   return names;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXTAUTH_URL || 'http://localhost:3000';
+    // Construct proper base URL for server-side fetches
+    const protocol = request.headers.get('x-forwarded-proto') || 'https';
+    const host = request.headers.get('host') || 'localhost:3000';
+    const baseUrl = `${protocol}://${host}`;
+
     const configRes = await fetch(`${baseUrl}/api/admin/github-config`, {
       next: { revalidate: 300 }
     });

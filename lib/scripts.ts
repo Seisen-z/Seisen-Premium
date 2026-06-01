@@ -16,8 +16,8 @@ interface Script {
 
 export async function fetchScripts(): Promise<Script[]> {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXTAUTH_URL || 'http://localhost:3000';
-    const configRes = await fetch(`${baseUrl}/api/admin/github-config`, {
+    // Use relative URL so it works on both local and production
+    const configRes = await fetch('/api/admin/github-config', {
       next: { revalidate: 300 }
     });
 
