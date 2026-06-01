@@ -112,8 +112,10 @@ export async function fetchScripts(): Promise<Script[]> {
         const existing = gamesByName.get(game.name)!;
         if (!existing.additionalUrls) existing.additionalUrls = [];
         existing.additionalUrls.push({ url: game.scriptUrl, type: game.type });
-        
-        if (game.type === 'Premium' && existing.type === 'Free') {
+
+        // Set displayType to 'Free & Premium' if we have both
+        if ((game.type === 'Premium' && existing.type === 'Free') ||
+            (game.type === 'Free' && existing.type === 'Premium')) {
           existing.displayType = 'Free & Premium';
         }
         // Merge metadata into existing if it was missing (e.g., from the second variant)
