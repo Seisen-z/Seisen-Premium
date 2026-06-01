@@ -21,55 +21,25 @@ export async function fetchScripts(): Promise<Script[]> {
     let premiumUrl = 'https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/premium/gamelist.lua';
     let discontinuedUrl = 'https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/discontinued.lua';
 
-    // Try to fetch custom config from database
+    // Fetch custom config directly from database
     try {
-      let configUrl = '';
+      const { supabase } = await import('./server/db');
+      const { data: config, error } = await supabase
+        .from('github_config')
+        .select('*')
+        .single();
 
-      // Determine the correct config URL
-      if (typeof window === 'undefined') {
-        // Server-side - construct absolute URL
-        const baseUrl = process.env.VERCEL_URL
-          ? `https://${process.env.VERCEL_URL}`
-          : process.env.NEXTAUTH_URL || 'http://localhost:3000';
-        configUrl = `${baseUrl}/api/admin/github-config`;
-        console.log('📚 [Server] Fetching config from:', configUrl);
+      if (!error && config) {
+        if (config.free_url) freeUrl = config.free_url;
+        if (config.premium_url) premiumUrl = config.premium_url;
+        if (config.discontinued_url) discontinuedUrl = config.discontinued_url;
+        console.log('✅ Using GitHub URLs from database:', { freeUrl, premiumUrl, discontinuedUrl });
       } else {
-        // Client-side - use relative URL
-        configUrl = '/api/admin/github-config';
-        console.log('📚 [Client] Fetching config from:', configUrl);
-      }
-
-      if (configUrl) {
-        const configRes = await fetch(configUrl, {
-          next: { revalidate: 300 }
-        });
-
-        console.log('📚 Config fetch status:', configRes.status, configRes.ok);
-
-        if (configRes.ok) {
-          const config = await configRes.json();
-          console.log('📚 Raw config from database:', config);
-
-          if (config.free_url) {
-            freeUrl = config.free_url;
-            console.log('✅ Using custom free URL:', freeUrl);
-          }
-          if (config.premium_url) {
-            premiumUrl = config.premium_url;
-            console.log('✅ Using custom premium URL:', premiumUrl);
-          }
-          if (config.discontinued_url) {
-            discontinuedUrl = config.discontinued_url;
-            console.log('✅ Using custom discontinued URL:', discontinuedUrl);
-          }
-        } else {
-          console.log('⚠️ Config fetch failed with status:', configRes.status);
-          console.log('📚 Using default GitHub URLs');
-        }
+        console.log('📚 Using default GitHub URLs (no custom config found)');
       }
     } catch (error) {
-      // If config fetch fails, use default URLs
-      console.error('❌ Config fetch error:', error);
+      // If database fetch fails, use default URLs
+      console.error('❌ Error fetching GitHub config from database:', error);
       console.log('📚 Using default GitHub URLs due to error');
     }
 
