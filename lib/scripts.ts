@@ -55,38 +55,56 @@ export async function fetchScripts(): Promise<Script[]> {
     const freeGames = parseLuaGameList(freeCode, 'Free');
     const premiumGames = parseLuaGameList(premiumCode, 'Premium');
 
-    // Merge logic
+    // Deduplicate by combining all games and removing duplicates by name and URL
+    const allGames = [...freeGames, ...premiumGames];
+
+    // First pass: mark discontinued
+    allGames.forEach(game => {
+      if (discontinuedIds.has(game.id)) {
+        game.type = 'Discontinued';
+        game.status = 'Discontinued';
+      }
+    });
+
+    // Second pass: deduplicate by URL first (same script URL = same game)
     const gamesByUrl = new Map<string, Script>();
+    allGames.forEach(game => {
+      if (!gamesByUrl.has(game.scriptUrl)) {
+        gamesByUrl.set(game.scriptUrl, game);
+      }
+    });
+
+    // Third pass: merge by game name and collect unique URLs
     const gamesByName = new Map<string, Script>();
+    Array.from(gamesByUrl.values()).forEach(game => {
+      if (gamesByName.has(game.name)) {
+        const existing = gamesByName.get(game.name)!;
+        // Only add additional URL if it's different
+        if (existing.scriptUrl !== game.scriptUrl) {
+          if (!existing.additionalUrls) existing.additionalUrls = [];
+          if (!existing.additionalUrls.find(u => u.url === game.scriptUrl)) {
+            existing.additionalUrls.push({ url: game.scriptUrl, type: game.type });
+          }
+        }
 
-    // Process Free
-    freeGames.forEach(game => {
-      if (discontinuedIds.has(game.id)) {
-        game.type = 'Discontinued';
-        game.status = 'Discontinued';
+        // Set displayType to 'Free & Premium' if we have both types
+        if ((game.type === 'Premium' && existing.type === 'Free') ||
+            (game.type === 'Free' && existing.type === 'Premium')) {
+          existing.displayType = 'Free & Premium';
+        }
+      } else {
+        gamesByName.set(game.name, { ...game, displayType: game.type });
       }
-      gamesByUrl.set(game.scriptUrl, game);
     });
 
-    // Process Premium
-    premiumGames.forEach(game => {
-      if (gamesByUrl.has(game.scriptUrl)) return; // Skip duplicate URLs
-
-      if (discontinuedIds.has(game.id)) {
-        game.type = 'Discontinued';
-        game.status = 'Discontinued';
-      }
-      gamesByUrl.set(game.scriptUrl, game);
-    });
-
-    // Fetch metadata from database
+    // Fetch and apply metadata
     let metadataMap: Record<string, { description: string; features: string[] }> = {};
     try {
       const { supabase } = await import('./server/db');
       const { data: metadataData } = await supabase
         .from('script_metadata')
         .select('*');
-      
+
       if (metadataData) {
         metadataData.forEach((item: any) => {
           metadataMap[item.script_name] = {
@@ -99,34 +117,12 @@ export async function fetchScripts(): Promise<Script[]> {
       console.error('Error fetching metadata from database:', error);
     }
 
-    // Combine by Name and Merge Metadata
-    Array.from(gamesByUrl.values()).forEach(game => {
-      // Lookup Metadata from database
+    // Apply metadata to all scripts
+    gamesByName.forEach((game) => {
       const metadata = metadataMap[game.name];
       if (metadata) {
         game.description = metadata.description;
         game.features = metadata.features;
-      }
-
-      if (gamesByName.has(game.name)) {
-        const existing = gamesByName.get(game.name)!;
-        if (!existing.additionalUrls) existing.additionalUrls = [];
-        existing.additionalUrls.push({ url: game.scriptUrl, type: game.type });
-
-        // Set displayType to 'Free & Premium' if we have both
-        if ((game.type === 'Premium' && existing.type === 'Free') ||
-            (game.type === 'Free' && existing.type === 'Premium')) {
-          existing.displayType = 'Free & Premium';
-        }
-        // Merge metadata into existing if it was missing (e.g., from the second variant)
-        if (!existing.description && game.description) {
-           existing.description = game.description;
-           existing.features = game.features;
-        }
-
-      } else {
-        const gameCopy = { ...game, displayType: game.type };
-        gamesByName.set(game.name, gameCopy);
       }
     });
 
