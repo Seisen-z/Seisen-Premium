@@ -47,7 +47,11 @@ export async function PUT(request: NextRequest) {
 
     const config = await db.setGitHubConfig(free_url, premium_url, discontinued_url);
 
-    revalidatePath('/');
+    // Clear caches for all pages that use scripts
+    revalidatePath('/', 'layout');
+    revalidatePath('/scripts');
+    revalidatePath('/api/games');
+
     return NextResponse.json(config);
   } catch (error) {
     console.error('Error updating GitHub config:', error);
