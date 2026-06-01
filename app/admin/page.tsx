@@ -1048,9 +1048,11 @@ export default function AdminPage() {
               return paginatedScripts.map((script) => {
                 const hasMeta = !!metadata[script.name]?.id;
                 const lastUpdated = metadata[script.name]?.updated_at || metadata[script.name]?.created_at;
-                
+                // Use unique key combining id and name to avoid duplicates
+                const uniqueKey = `${script.id}-${script.name.replace(/\s+/g, '-')}`;
+
                 return (
-                  <tr key={script.id} className="hover:bg-[#1a1a1a] transition-colors">
+                  <tr key={uniqueKey} className="hover:bg-[#1a1a1a] transition-colors">
                     <td className="p-4 text-white font-medium">{script.name}</td>
                     <td className="p-4">
                       <span className={`text-xs px-2 py-1 rounded border ${
