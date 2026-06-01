@@ -1,4 +1,3 @@
-
 import { SCRIPT_METADATA } from './script-metadata';
 
 interface Script {
@@ -16,31 +15,24 @@ interface Script {
 
 export async function fetchScripts(): Promise<Script[]> {
   try {
-    // Default GitHub URLs
     let freeUrl = 'https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/gamelist.lua';
     let premiumUrl = 'https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/premium/gamelist.lua';
     let discontinuedUrl = 'https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/discontinued.lua';
 
-    // Fetch custom config directly from database
     try {
       const { supabase } = await import('./server/db');
-      const { data: config, error } = await supabase
+      const { data: config } = await supabase
         .from('github_config')
         .select('*')
         .single();
 
-      if (!error && config) {
+      if (config) {
         if (config.free_url) freeUrl = config.free_url;
         if (config.premium_url) premiumUrl = config.premium_url;
         if (config.discontinued_url) discontinuedUrl = config.discontinued_url;
-        console.log('✅ Using GitHub URLs from database:', { freeUrl, premiumUrl, discontinuedUrl });
-      } else {
-        console.log('📚 Using default GitHub URLs (no custom config found)');
       }
-    } catch (error) {
-      // If database fetch fails, use default URLs
-      console.error('❌ Error fetching GitHub config from database:', error);
-      console.log('📚 Using default GitHub URLs due to error');
+    } catch {
+      // fall through to defaults
     }
 
     const [freeRes, premiumRes, discontinuedRes] = await Promise.all([
@@ -49,10 +41,6 @@ export async function fetchScripts(): Promise<Script[]> {
       fetch(discontinuedUrl, { next: { revalidate: 60 } })
     ]);
 
-    if (!freeRes.ok) console.error('❌ Free games fetch failed:', freeRes.status, freeUrl);
-    if (!premiumRes.ok) console.error('❌ Premium games fetch failed:', premiumRes.status, premiumUrl);
-    if (!discontinuedRes.ok) console.error('❌ Discontinued games fetch failed:', discontinuedRes.status, discontinuedUrl);
-
     const [freeCode, premiumCode, discontinuedCode] = await Promise.all([
       freeRes.text(),
       premiumRes.text(),
@@ -60,13 +48,11 @@ export async function fetchScripts(): Promise<Script[]> {
     ]);
 
     const discontinuedIds = parseDiscontinuedList(discontinuedCode);
-    const freeGames = parseLuaGameList(freeCode, 'Free');
-    const premiumGames = parseLuaGameList(premiumCode, 'Premium');
+    const allGames = [
+      ...parseLuaGameList(freeCode, 'Free'),
+      ...parseLuaGameList(premiumCode, 'Premium'),
+    ];
 
-    // Deduplicate by combining all games and removing duplicates by name and URL
-    const allGames = [...freeGames, ...premiumGames];
-
-    // First pass: mark discontinued
     allGames.forEach(game => {
       if (discontinuedIds.has(game.id)) {
         game.type = 'Discontinued';
@@ -74,7 +60,7 @@ export async function fetchScripts(): Promise<Script[]> {
       }
     });
 
-    // Second pass: deduplicate by URL first (same script URL = same game)
+    // Deduplicate by URL
     const gamesByUrl = new Map<string, Script>();
     allGames.forEach(game => {
       if (!gamesByUrl.has(game.scriptUrl)) {
@@ -82,22 +68,21 @@ export async function fetchScripts(): Promise<Script[]> {
       }
     });
 
-    // Third pass: merge by game name and collect unique URLs
+    // Merge by name
     const gamesByName = new Map<string, Script>();
     Array.from(gamesByUrl.values()).forEach(game => {
       if (gamesByName.has(game.name)) {
         const existing = gamesByName.get(game.name)!;
-        // Only add additional URL if it's different
         if (existing.scriptUrl !== game.scriptUrl) {
           if (!existing.additionalUrls) existing.additionalUrls = [];
           if (!existing.additionalUrls.find(u => u.url === game.scriptUrl)) {
             existing.additionalUrls.push({ url: game.scriptUrl, type: game.type });
           }
         }
-
-        // Set displayType to 'Free & Premium' if we have both types
-        if ((game.type === 'Premium' && existing.type === 'Free') ||
-            (game.type === 'Free' && existing.type === 'Premium')) {
+        if (
+          (game.type === 'Premium' && existing.type === 'Free') ||
+          (game.type === 'Free' && existing.type === 'Premium')
+        ) {
           existing.displayType = 'Free & Premium';
         }
       } else {
@@ -105,8 +90,7 @@ export async function fetchScripts(): Promise<Script[]> {
       }
     });
 
-    // Fetch and apply metadata
-    let metadataMap: Record<string, { description: string; features: string[] }> = {};
+    // Apply metadata
     try {
       const { supabase } = await import('./server/db');
       const { data: metadataData } = await supabase
@@ -115,31 +99,21 @@ export async function fetchScripts(): Promise<Script[]> {
 
       if (metadataData) {
         metadataData.forEach((item: any) => {
-          metadataMap[item.script_name] = {
-            description: item.description,
-            features: item.features || []
-          };
+          const game = gamesByName.get(item.script_name);
+          if (game) {
+            game.description = item.description;
+            game.features = item.features || [];
+          }
         });
       }
-    } catch (error) {
-      console.error('Error fetching metadata from database:', error);
+    } catch {
+      // fall through without metadata
     }
 
-    // Apply metadata to all scripts
-    gamesByName.forEach((game) => {
-      const metadata = metadataMap[game.name];
-      if (metadata) {
-        game.description = metadata.description;
-        game.features = metadata.features;
-      }
-    });
-
-    const result = Array.from(gamesByName.values());
-    console.log(`✅ Loaded ${result.length} scripts from GitHub`);
-    return result;
+    return Array.from(gamesByName.values());
 
   } catch (error) {
-    console.error('❌ Failed to fetch scripts:', error);
+    console.error('Failed to fetch scripts:', error);
     return [];
   }
 }
@@ -169,21 +143,14 @@ function parseLuaGameList(luaCode: string, type: 'Free' | 'Premium'): Script[] {
     if (entryMatch) {
       const id = entryMatch[1];
       const scriptUrl = entryMatch[2];
-      
+
       let name = currentComment;
       if (!name) {
         const nameMatch = scriptUrl.match(/Script_([^.]+)\.lua/);
-        name = nameMatch ? nameMatch[1].replace(/([A-Z])/g, " $1").trim() : "Unknown Game";
+        name = nameMatch ? nameMatch[1].replace(/([A-Z])/g, ' $1').trim() : 'Unknown Game';
       }
 
-      games.push({
-        id,
-        name,
-        scriptUrl,
-        status: 'Working',
-        type,
-        universeId: id
-      });
+      games.push({ id, name, scriptUrl, status: 'Working', type, universeId: id });
       currentComment = '';
     }
   }
