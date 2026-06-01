@@ -16,10 +16,26 @@ interface Script {
 
 export async function fetchScripts(): Promise<Script[]> {
   try {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXTAUTH_URL || 'http://localhost:3000';
+    const configRes = await fetch(`${baseUrl}/api/admin/github-config`, {
+      next: { revalidate: 300 }
+    });
+
+    let freeUrl = 'https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/gamelist.lua';
+    let premiumUrl = 'https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/premium/gamelist.lua';
+    let discontinuedUrl = 'https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/discontinued.lua';
+
+    if (configRes.ok) {
+      const config = await configRes.json();
+      if (config.free_url) freeUrl = config.free_url;
+      if (config.premium_url) premiumUrl = config.premium_url;
+      if (config.discontinued_url) discontinuedUrl = config.discontinued_url;
+    }
+
     const [freeRes, premiumRes, discontinuedRes] = await Promise.all([
-      fetch('https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/gamelist.lua', { next: { revalidate: 3600 } }),
-      fetch('https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/premium/gamelist.lua', { next: { revalidate: 3600 } }),
-      fetch('https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/discontinued.lua', { next: { revalidate: 60 } })
+      fetch(freeUrl, { next: { revalidate: 3600 } }),
+      fetch(premiumUrl, { next: { revalidate: 3600 } }),
+      fetch(discontinuedUrl, { next: { revalidate: 60 } })
     ]);
 
     const [freeCode, premiumCode, discontinuedCode] = await Promise.all([

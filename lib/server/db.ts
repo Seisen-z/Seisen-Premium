@@ -553,10 +553,10 @@ export class TicketDatabase {
 
     const { error } = await this.client
         .from('verification_codes')
-        .upsert({ 
-            email, 
-            code, 
-            expires_at: expiresAt 
+        .upsert({
+            email,
+            code,
+            expires_at: expiresAt
         }, { onConflict: 'email' });
 
     if (error) {
@@ -586,8 +586,47 @@ export class TicketDatabase {
     }
 
     await this.client.from('verification_codes').delete().eq('email', email);
-    
+
     return { success: true };
+  }
+
+  async getGitHubConfig() {
+    const { data, error } = await this.client
+        .from('github_config')
+        .select('*')
+        .single();
+
+    if (error && error.code !== 'PGRST116') {
+        console.error('Error fetching GitHub config:', error);
+        return null;
+    }
+
+    return data || {
+        free_url: 'https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/gamelist.lua',
+        premium_url: 'https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/premium/gamelist.lua',
+        discontinued_url: 'https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/discontinued.lua'
+    };
+  }
+
+  async setGitHubConfig(free_url: string, premium_url: string, discontinued_url: string) {
+    const { data, error } = await this.client
+        .from('github_config')
+        .upsert({
+            id: 1,
+            free_url,
+            premium_url,
+            discontinued_url,
+            updated_at: new Date().toISOString()
+        }, { onConflict: 'id' })
+        .select()
+        .single();
+
+    if (error) {
+        console.error('Error setting GitHub config:', error);
+        throw error;
+    }
+
+    return data;
   }
 }
 

@@ -97,6 +97,15 @@ export default function AdminPage() {
   const [methodDraft, setMethodDraft] = useState<MethodDraftMap>(defaultMethodDraft());
   const [savingMethodKey, setSavingMethodKey] = useState<string | null>(null);
 
+  // GitHub config state
+  const [githubConfig, setGithubConfig] = useState({
+    free_url: '',
+    premium_url: '',
+    discontinued_url: ''
+  });
+  const [savingGithub, setSavingGithub] = useState(false);
+  const [githubLoading, setGithubLoading] = useState(false);
+
   const ITEMS_PER_PAGE = 5;
   const TABLE_ITEMS_PER_PAGE = 10;
 
@@ -176,6 +185,53 @@ export default function AdminPage() {
     }
   };
 
+  const loadGitHubConfig = async () => {
+    try {
+      setGithubLoading(true);
+      const res = await fetch(`${getApiUrl()}/api/admin/github-config`);
+      if (res.ok) {
+        const config = await res.json();
+        setGithubConfig({
+          free_url: config.free_url || '',
+          premium_url: config.premium_url || '',
+          discontinued_url: config.discontinued_url || ''
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching GitHub config:', error);
+    } finally {
+      setGithubLoading(false);
+    }
+  };
+
+  const saveGitHubConfig = async () => {
+    try {
+      setSavingGithub(true);
+      const token = localStorage.getItem('adminToken');
+      if (!token) return;
+
+      const res = await fetch(`${getApiUrl()}/api/admin/github-config`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(githubConfig),
+      });
+
+      if (!res.ok) throw new Error('Failed to save config');
+
+      const data = await res.json();
+      setGithubConfig(data);
+      alert('GitHub configuration saved successfully!');
+    } catch (error) {
+      console.error('Error saving GitHub config:', error);
+      alert('Failed to save GitHub configuration');
+    } finally {
+      setSavingGithub(false);
+    }
+  };
+
   const saveMethodStock = async (tier: PremiumTier, method: PaymentMethod) => {
     try {
       const token = localStorage.getItem('adminToken');
@@ -249,6 +305,9 @@ export default function AdminPage() {
   useEffect(() => {
     if (activeTab === 'scripts' && scripts.length === 0) {
       loadScriptData();
+    }
+    if (activeTab === 'settings' && !githubConfig.free_url) {
+      loadGitHubConfig();
     }
   }, [activeTab]);
 
@@ -1237,81 +1296,154 @@ export default function AdminPage() {
 
 
         {activeTab === 'settings' && (
-            <Card className="p-6 space-y-6">
-              <div>
-                <h3 className="text-lg font-semibold text-white mb-1">Stock by Payment Method</h3>
-                <p className="text-gray-500 text-sm">Set individual stock for Robux, PayPal, and GCash per tier.</p>
-              </div>
-
-              {stockLoading ? (
-                <div className="text-gray-400 text-sm flex items-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Loading stock...
+            <div className="space-y-6">
+              <Card className="p-6 space-y-6">
+                <div>
+                  <h3 className="text-lg font-semibold text-white mb-1">Stock by Payment Method</h3>
+                  <p className="text-gray-500 text-sm">Set individual stock for Robux, PayPal, and GCash per tier.</p>
                 </div>
-              ) : (
-                <div className="space-y-6">
-                  {PAYMENT_METHODS.map(({ id: methodId, label, accent }) => (
-                    <div key={methodId}>
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: accent }} />
-                        <p className="text-white font-semibold text-sm">{label}</p>
-                      </div>
-                      <div className="grid md:grid-cols-3 gap-4">
-                        {(['weekly', 'monthly', 'lifetime'] as PremiumTier[]).map((tier) => {
-                          const saveKey = `${methodId}-${tier}`;
-                          const currentVal = methodStock[tier][methodId];
-                          return (
-                            <div
-                              key={tier}
-                              className="bg-[#101010] border border-[#2a2a2a] rounded-xl p-4 space-y-3"
-                            >
-                              <div className="flex items-center justify-between">
-                                <p className="text-white font-semibold capitalize text-sm">{tier}</p>
-                                <span
-                                  className={`text-xs px-2 py-1 rounded border ${
-                                    currentVal > 0
-                                      ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                                      : 'bg-red-500/10 text-red-400 border-red-500/30'
-                                  }`}
-                                >
-                                  {currentVal > 0 ? 'In Stock' : 'Out of Stock'}
-                                </span>
-                              </div>
 
-                              <input
-                                type="number"
-                                min={0}
-                                value={methodDraft[tier][methodId]}
-                                onChange={(e) =>
-                                  setMethodDraft((prev) => ({
-                                    ...prev,
-                                    [tier]: { ...prev[tier], [methodId]: e.target.value },
-                                  }))
-                                }
-                                className="w-full p-2.5 bg-[#141414] border border-[#2a2a2a] rounded-lg text-white focus:outline-none focus:border-emerald-500/50"
-                              />
-
-                              <Button
-                                className="w-full"
-                                onClick={() => saveMethodStock(tier, methodId)}
-                                disabled={savingMethodKey === saveKey}
+                {stockLoading ? (
+                  <div className="text-gray-400 text-sm flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Loading stock...
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {PAYMENT_METHODS.map(({ id: methodId, label, accent }) => (
+                      <div key={methodId}>
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: accent }} />
+                          <p className="text-white font-semibold text-sm">{label}</p>
+                        </div>
+                        <div className="grid md:grid-cols-3 gap-4">
+                          {(['weekly', 'monthly', 'lifetime'] as PremiumTier[]).map((tier) => {
+                            const saveKey = `${methodId}-${tier}`;
+                            const currentVal = methodStock[tier][methodId];
+                            return (
+                              <div
+                                key={tier}
+                                className="bg-[#101010] border border-[#2a2a2a] rounded-xl p-4 space-y-3"
                               >
-                                {savingMethodKey === saveKey ? (
-                                  <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : (
-                                  <Save className="w-4 h-4" />
-                                )}
-                                Save
-                              </Button>
-                            </div>
-                          );
-                        })}
+                                <div className="flex items-center justify-between">
+                                  <p className="text-white font-semibold capitalize text-sm">{tier}</p>
+                                  <span
+                                    className={`text-xs px-2 py-1 rounded border ${
+                                      currentVal > 0
+                                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                                        : 'bg-red-500/10 text-red-400 border-red-500/30'
+                                    }`}
+                                  >
+                                    {currentVal > 0 ? 'In Stock' : 'Out of Stock'}
+                                  </span>
+                                </div>
+
+                                <input
+                                  type="number"
+                                  min={0}
+                                  value={methodDraft[tier][methodId]}
+                                  onChange={(e) =>
+                                    setMethodDraft((prev) => ({
+                                      ...prev,
+                                      [tier]: { ...prev[tier], [methodId]: e.target.value },
+                                    }))
+                                  }
+                                  className="w-full p-2.5 bg-[#141414] border border-[#2a2a2a] rounded-lg text-white focus:outline-none focus:border-emerald-500/50"
+                                />
+
+                                <Button
+                                  className="w-full"
+                                  onClick={() => saveMethodStock(tier, methodId)}
+                                  disabled={savingMethodKey === saveKey}
+                                >
+                                  {savingMethodKey === saveKey ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                  ) : (
+                                    <Save className="w-4 h-4" />
+                                  )}
+                                  Save
+                                </Button>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
+                )}
+              </Card>
+
+              <Card className="p-6 space-y-6">
+                <div>
+                  <h3 className="text-lg font-semibold text-white mb-1">GitHub Repository Configuration</h3>
+                  <p className="text-gray-500 text-sm">Manage the GitHub URLs for fetching game lists. No need to change code when switching repositories.</p>
                 </div>
-              )}
-            </Card>
+
+                {githubLoading ? (
+                  <div className="text-gray-400 text-sm flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Loading configuration...
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-300 mb-2">
+                        Free Games URL
+                      </label>
+                      <input
+                        type="text"
+                        value={githubConfig.free_url}
+                        onChange={(e) => setGithubConfig({ ...githubConfig, free_url: e.target.value })}
+                        placeholder="https://raw.githubusercontent.com/..."
+                        className="w-full px-4 py-3 bg-[#141414] border border-[#2a2a2a] rounded-lg text-white focus:outline-none focus:border-emerald-500/50 text-sm"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">URL to the free games list</p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-300 mb-2">
+                        Premium Games URL
+                      </label>
+                      <input
+                        type="text"
+                        value={githubConfig.premium_url}
+                        onChange={(e) => setGithubConfig({ ...githubConfig, premium_url: e.target.value })}
+                        placeholder="https://raw.githubusercontent.com/..."
+                        className="w-full px-4 py-3 bg-[#141414] border border-[#2a2a2a] rounded-lg text-white focus:outline-none focus:border-emerald-500/50 text-sm"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">URL to the premium games list</p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-300 mb-2">
+                        Discontinued Games URL
+                      </label>
+                      <input
+                        type="text"
+                        value={githubConfig.discontinued_url}
+                        onChange={(e) => setGithubConfig({ ...githubConfig, discontinued_url: e.target.value })}
+                        placeholder="https://raw.githubusercontent.com/..."
+                        className="w-full px-4 py-3 bg-[#141414] border border-[#2a2a2a] rounded-lg text-white focus:outline-none focus:border-emerald-500/50 text-sm"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">URL to the discontinued games list</p>
+                    </div>
+
+                    <Button
+                      onClick={saveGitHubConfig}
+                      disabled={savingGithub}
+                      className="w-full flex items-center justify-center gap-2"
+                    >
+                      {savingGithub ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Save className="w-4 h-4" />
+                      )}
+                      {savingGithub ? 'Saving...' : 'Save Configuration'}
+                    </Button>
+                  </div>
+                )}
+              </Card>
+            </div>
         )}
       </div>
 
