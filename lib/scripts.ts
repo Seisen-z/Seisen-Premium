@@ -16,10 +16,27 @@ interface Script {
 
 export async function fetchScripts(): Promise<Script[]> {
   try {
-    // Use relative URL so it works on both local and production
-    const configRes = await fetch('/api/admin/github-config', {
-      next: { revalidate: 300 }
-    });
+    // Construct proper base URL for both build time and runtime
+    let configUrl = '/api/admin/github-config';
+
+    // During build time (static generation), use absolute URL
+    if (typeof window === 'undefined' && !process.env.VERCEL_URL && process.env.NODE_ENV === 'production') {
+      // Build time - use default URLs
+      configUrl = '';
+    } else if (typeof window === 'undefined') {
+      // Server-side at runtime - construct absolute URL
+      const baseUrl = process.env.VERCEL_URL
+        ? `https://${process.env.VERCEL_URL}`
+        : process.env.NEXTAUTH_URL || 'http://localhost:3000';
+      configUrl = `${baseUrl}/api/admin/github-config`;
+    }
+
+    let configRes = { ok: false };
+    if (configUrl) {
+      configRes = await fetch(configUrl, {
+        next: { revalidate: 300 }
+      });
+    }
 
     let freeUrl = 'https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/gamelist.lua';
     let premiumUrl = 'https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/premium/gamelist.lua';
