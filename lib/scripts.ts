@@ -16,40 +16,45 @@ interface Script {
 
 export async function fetchScripts(): Promise<Script[]> {
   try {
-    // Construct proper base URL for both build time and runtime
-    let configUrl = '/api/admin/github-config';
-
-    // During build time (static generation), use absolute URL
-    if (typeof window === 'undefined' && !process.env.VERCEL_URL && process.env.NODE_ENV === 'production') {
-      // Build time - use default URLs
-      configUrl = '';
-    } else if (typeof window === 'undefined') {
-      // Server-side at runtime - construct absolute URL
-      const baseUrl = process.env.VERCEL_URL
-        ? `https://${process.env.VERCEL_URL}`
-        : process.env.NEXTAUTH_URL || 'http://localhost:3000';
-      configUrl = `${baseUrl}/api/admin/github-config`;
-    }
-
-    let configRes = { ok: false };
-    if (configUrl) {
-      configRes = await fetch(configUrl, {
-        next: { revalidate: 300 }
-      });
-    }
-
+    // Default GitHub URLs
     let freeUrl = 'https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/gamelist.lua';
     let premiumUrl = 'https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/premium/gamelist.lua';
     let discontinuedUrl = 'https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/discontinued.lua';
 
-    if (configRes.ok) {
-      const config = await configRes.json();
-      if (config.free_url) freeUrl = config.free_url;
-      if (config.premium_url) premiumUrl = config.premium_url;
-      if (config.discontinued_url) discontinuedUrl = config.discontinued_url;
-      console.log('📚 Using GitHub URLs from database:', { freeUrl, premiumUrl, discontinuedUrl });
-    } else {
-      console.log('📚 Using default GitHub URLs');
+    // Try to fetch custom config from database
+    try {
+      let configUrl = '';
+
+      // Determine the correct config URL
+      if (typeof window === 'undefined') {
+        // Server-side - construct absolute URL
+        const baseUrl = process.env.VERCEL_URL
+          ? `https://${process.env.VERCEL_URL}`
+          : process.env.NEXTAUTH_URL || 'http://localhost:3000';
+        configUrl = `${baseUrl}/api/admin/github-config`;
+      } else {
+        // Client-side - use relative URL
+        configUrl = '/api/admin/github-config';
+      }
+
+      if (configUrl) {
+        const configRes = await fetch(configUrl, {
+          next: { revalidate: 300 }
+        });
+
+        if (configRes.ok) {
+          const config = await configRes.json();
+          if (config.free_url) freeUrl = config.free_url;
+          if (config.premium_url) premiumUrl = config.premium_url;
+          if (config.discontinued_url) discontinuedUrl = config.discontinued_url;
+          console.log('📚 Using GitHub URLs from database:', { freeUrl, premiumUrl, discontinuedUrl });
+        } else {
+          console.log('📚 Using default GitHub URLs');
+        }
+      }
+    } catch (error) {
+      // If config fetch fails, use default URLs
+      console.debug('Using default GitHub URLs due to config fetch error:', error);
     }
 
     const [freeRes, premiumRes, discontinuedRes] = await Promise.all([
