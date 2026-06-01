@@ -30,6 +30,9 @@ export async function fetchScripts(): Promise<Script[]> {
       if (config.free_url) freeUrl = config.free_url;
       if (config.premium_url) premiumUrl = config.premium_url;
       if (config.discontinued_url) discontinuedUrl = config.discontinued_url;
+      console.log('📚 Using GitHub URLs from database:', { freeUrl, premiumUrl, discontinuedUrl });
+    } else {
+      console.log('📚 Using default GitHub URLs');
     }
 
     const [freeRes, premiumRes, discontinuedRes] = await Promise.all([
@@ -37,6 +40,10 @@ export async function fetchScripts(): Promise<Script[]> {
       fetch(premiumUrl, { next: { revalidate: 3600 } }),
       fetch(discontinuedUrl, { next: { revalidate: 60 } })
     ]);
+
+    if (!freeRes.ok) console.error('❌ Free games fetch failed:', freeRes.status, freeUrl);
+    if (!premiumRes.ok) console.error('❌ Premium games fetch failed:', premiumRes.status, premiumUrl);
+    if (!discontinuedRes.ok) console.error('❌ Discontinued games fetch failed:', discontinuedRes.status, discontinuedUrl);
 
     const [freeCode, premiumCode, discontinuedCode] = await Promise.all([
       freeRes.text(),
@@ -121,10 +128,12 @@ export async function fetchScripts(): Promise<Script[]> {
       }
     });
 
-    return Array.from(gamesByName.values());
+    const result = Array.from(gamesByName.values());
+    console.log(`✅ Loaded ${result.length} scripts from GitHub`);
+    return result;
 
   } catch (error) {
-    console.error('Failed to fetch scripts:', error);
+    console.error('❌ Failed to fetch scripts:', error);
     return [];
   }
 }
