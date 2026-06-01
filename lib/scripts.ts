@@ -127,7 +127,21 @@ export async function fetchScripts(): Promise<Script[]> {
     });
 
     const result = Array.from(gamesByName.values());
+
+    // Debug logging
+    const duplicateNames = result.filter((game, idx) =>
+      result.findIndex(g => g.name === game.name) !== idx
+    );
+
     console.log(`✅ Loaded ${result.length} scripts from GitHub`);
+    console.log(`📊 Free games: ${freeGames.length}, Premium games: ${premiumGames.length}`);
+    console.log(`🔗 Unique URLs: ${new Set([...freeGames, ...premiumGames].map(g => g.scriptUrl)).size}`);
+    console.log(`📛 Free & Premium merged:`, result.filter(g => g.displayType === 'Free & Premium').map(g => g.name));
+
+    if (duplicateNames.length > 0) {
+      console.warn(`⚠️ Found duplicate names:`, duplicateNames.map(g => g.name));
+    }
+
     return result;
 
   } catch (error) {
