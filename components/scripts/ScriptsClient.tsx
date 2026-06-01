@@ -261,11 +261,13 @@ export default function ScriptsClient({ initialScripts }: ScriptsClientProps) {
           >
             {filteredScripts.map((script, index) => {
               const isSelected = selectedScript?.id === script.id;
+              // Use unique key combining id and name to avoid duplicates when same game has free+premium
+              const uniqueKey = `${script.id}-${script.name.replace(/\s+/g, '-')}`;
 
               return (
-                <div 
-                  key={script.id} 
-                  className="relative mb-6 break-inside-avoid" 
+                <div
+                  key={uniqueKey}
+                  className="relative mb-6 break-inside-avoid"
                   id={`script-card-${script.id}`}
                   data-script-card="true"
                 >
