@@ -9,9 +9,23 @@ import PartnerLogos from '@/components/sections/PartnerLogos';
 import ScriptShowcase from '@/components/ScriptShowcase';
 import HomeFAQ from '@/components/sections/HomeFAQ';
 
+async function fetchDiscordMemberCount(): Promise<number> {
+  try {
+    const res = await fetch('https://discord.com/api/v10/invites/F4sAf6z8Ph?with_counts=true', {
+      next: { revalidate: 300 },
+    });
+    if (!res.ok) return 0;
+    const data = await res.json();
+    return data.approximate_member_count ?? 0;
+  } catch {
+    return 0;
+  }
+}
+
 export default async function HomePage() {
   const scripts = await fetchScripts();
   const videos  = await fetchVideos();
+  const discordMembers = await fetchDiscordMemberCount();
 
   const freeCount    = scripts.filter(s => s.type === 'Free'    || s.displayType === 'Free & Premium').length;
   const premiumCount = scripts.filter(s => s.type === 'Premium' || s.displayType === 'Free & Premium').length;
@@ -220,8 +234,10 @@ export default async function HomePage() {
                 ))}
               </div>
               <div>
-                <p className="text-sm font-bold text-white">2,000+ active users</p>
-                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>and growing daily</p>
+                <p className="text-sm font-bold text-white">
+                  {discordMembers > 0 ? `${discordMembers.toLocaleString()}+ members` : '2,000+ active users'}
+                </p>
+                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Discord server</p>
               </div>
             </div>
           </div>
