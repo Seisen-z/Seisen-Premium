@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { Check, HelpCircle, CreditCard, Copy, X, Loader2, AlertCircle, CheckCircle, ShoppingCart, Plus, Minus, Trash2 } from 'lucide-react';
+import PremiumSkeleton from '@/components/ui/PremiumSkeleton';
 import PricingCard from '@/components/ui/PricingCard';
 import CommunityVoices from '@/components/sections/CommunityVoices';
 import PurchaseCounter from '@/components/ui/PurchaseCounter';
@@ -1954,7 +1955,7 @@ function PremiumContent() {
 
 export default function PremiumPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin accent-text" /></div>}>
+    <Suspense fallback={<PremiumSkeleton />}>
       <PremiumContent />
     </Suspense>
   );
