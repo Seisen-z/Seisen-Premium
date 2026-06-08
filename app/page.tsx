@@ -7,6 +7,7 @@ import YoutubeCarousel from '@/components/YoutubeCarousel';
 import Testimonials from '@/components/sections/Testimonials';
 import PartnerLogos from '@/components/sections/PartnerLogos';
 import ScriptShowcase from '@/components/ScriptShowcase';
+import HomeFAQ from '@/components/sections/HomeFAQ';
 
 export default async function HomePage() {
   const scripts = await fetchScripts();
@@ -202,6 +203,39 @@ export default async function HomePage() {
         <PartnerLogos />
         <Testimonials />
       </div>
+
+      {/* ── COMMUNITY STATS ───────────────────────────────────── */}
+      <section className="px-6 md:px-14 py-16 max-w-6xl mx-auto">
+        <div className="grid md:grid-cols-2 gap-4">
+          <div className="p-8 rounded-2xl" style={{ backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+            <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: 'var(--text-muted)' }}>Community</p>
+            <h3 className="font-bold text-white text-2xl leading-tight mb-3">Join the fastest growing Roblox script hub.</h3>
+            <p className="text-sm mb-6" style={{ color: 'var(--text-muted)' }}>Thousands of players using Seisen every day across every major game.</p>
+            <div className="flex items-center gap-3">
+              <div className="flex -space-x-2">
+                {['#10b981','#6366f1','#f59e0b','#ec4899','#3b82f6'].map((c, i) => (
+                  <div key={i} className="w-8 h-8 rounded-full border-2 border-[#080808] flex items-center justify-center text-xs font-bold text-white" style={{ background: c }}>
+                    {['S','R','A','J','K'][i]}
+                  </div>
+                ))}
+              </div>
+              <div>
+                <p className="text-sm font-bold text-white">2,000+ active users</p>
+                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>and growing daily</p>
+              </div>
+            </div>
+          </div>
+          <div className="p-8 rounded-2xl" style={{ backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+            <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: 'var(--text-muted)' }}>Reach</p>
+            <p className="font-bold text-white leading-none mb-2" style={{ fontSize: 'clamp(2.5rem, 6vw, 4rem)', letterSpacing: '-0.03em' }}>500K+</p>
+            <p className="text-base font-semibold text-white mb-3">Scripts executed</p>
+            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Trusted loadstrings running across Roblox every single day — free and premium.</p>
+          </div>
+        </div>
+      </section>
+
+      {/* ── FAQ ───────────────────────────────────────────────── */}
+      <HomeFAQ />
 
       {/* ── PLANS ─────────────────────────────────────────────── */}
       <section id="access-options" className="px-6 md:px-14 py-24 max-w-6xl mx-auto">
