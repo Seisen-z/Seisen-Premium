@@ -5,7 +5,7 @@ import {
   Shield, CreditCard, Settings, LogOut, Search, Copy, Check,
   Loader2, AlertCircle, MessageSquare, Eye, FileCode, Plus,
   Save, Trash2, X, TrendingUp, Users, DollarSign, Zap,
-  ChevronRight, MoreHorizontal, Package
+  ChevronRight, ChevronLeft, MoreHorizontal, Package
 } from 'lucide-react';
 import { getApiUrl, copyToClipboard } from '@/lib/utils';
 import Link from 'next/link';
@@ -834,15 +834,35 @@ export default function AdminPage() {
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-white/[0.08] bg-[#0e0e0e] shadow-2xl">
             <div className="p-6 space-y-5">
-              <div className="flex items-start justify-between pb-4 border-b border-white/[0.06]">
-                <div>
-                  <h3 className="text-lg font-bold text-white">{selectedScript.name}</h3>
-                  <p className="text-xs text-[#555] mt-1">Edit script metadata and features</p>
-                </div>
-                <button onClick={() => setSelectedScript(null)} className="p-2 rounded-xl hover:bg-white/[0.06] text-[#555] hover:text-white transition-colors">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
+              {(() => {
+                const idx = scripts.findIndex(s => s.name === selectedScript.name);
+                const total = scripts.length;
+                const goPrev = () => idx > 0 && setSelectedScript(scripts[idx - 1]);
+                const goNext = () => idx < total - 1 && setSelectedScript(scripts[idx + 1]);
+                return (
+                  <div className="flex items-start justify-between pb-4 border-b border-white/[0.06]">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: selectedScript.status === 'Working' ? '#10b981' : '#ef4444' }} />
+                      <div className="min-w-0">
+                        <h3 className="text-lg font-bold text-white truncate">{selectedScript.name}</h3>
+                        <p className="text-xs text-[#555] mt-0.5">Edit script metadata and features</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0 ml-3">
+                      <span className="text-xs text-[#444] mr-1">{idx + 1}/{total}</span>
+                      <button onClick={goPrev} disabled={idx === 0} className="p-1.5 rounded-lg hover:bg-white/[0.06] disabled:opacity-20 text-[#555] hover:text-white transition-colors">
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
+                      <button onClick={goNext} disabled={idx === total - 1} className="p-1.5 rounded-lg hover:bg-white/[0.06] disabled:opacity-20 text-[#555] hover:text-white transition-colors">
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => setSelectedScript(null)} className="p-1.5 rounded-xl hover:bg-white/[0.06] text-[#555] hover:text-white transition-colors ml-1">
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
               <div>
                 <label className="block text-xs font-medium text-[#888] mb-2 uppercase tracking-wide">Description</label>
                 <textarea value={metadata[selectedScript.name]?.description || ''} onChange={(e) => updateMetadata(selectedScript.name, 'description', e.target.value)} placeholder="Enter script description…" rows={4}
