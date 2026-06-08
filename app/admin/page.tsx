@@ -673,57 +673,81 @@ export default function AdminPage() {
                 />
               </div>
 
-              <div className="bg-white/[0.02] rounded-2xl border border-white/[0.06] overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-white/[0.06]">
-                      <th className="text-left px-5 py-3.5 text-xs font-medium text-[#555] uppercase tracking-wide">Script</th>
-                      <th className="text-left px-5 py-3.5 text-xs font-medium text-[#555] uppercase tracking-wide">Type</th>
-                      <th className="text-left px-5 py-3.5 text-xs font-medium text-[#555] uppercase tracking-wide">Status</th>
-                      <th className="text-left px-5 py-3.5 text-xs font-medium text-[#555] uppercase tracking-wide">Updated</th>
-                      <th className="px-5 py-3.5" />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(() => {
-                      const filtered = scripts.filter(s => s.name.toLowerCase().includes(scriptSearch.toLowerCase()));
-                      const pages    = Math.ceil(filtered.length / ITEMS_PER_PAGE);
-                      const page     = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
-                      if (!page.length) return <tr><td colSpan={5} className="py-16 text-center text-sm text-[#444]">No scripts</td></tr>;
-                      return page.map((script) => (
-                        <tr key={script.id} className="border-t border-white/[0.04] hover:bg-white/[0.02] transition-colors group">
-                          <td className="px-5 py-4">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-xl bg-white/[0.04] flex items-center justify-center">
-                                <FileCode className="w-4 h-4 text-[#555]" />
-                              </div>
-                              <p className="text-sm text-white font-medium">{script.name}</p>
-                            </div>
-                          </td>
-                          <td className="px-5 py-4">
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium ring-1 ${
-                              script.type === 'Premium' ? 'bg-violet-500/15 text-violet-300 ring-violet-500/30' : 'bg-blue-500/15 text-blue-300 ring-blue-500/30'
-                            }`}>{script.type}</span>
-                          </td>
-                          <td className="px-5 py-4">
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium ring-1 ${
-                              script.status === 'Working' ? 'bg-emerald-500/15 text-emerald-300 ring-emerald-500/30' : 'bg-red-500/15 text-red-300 ring-red-500/30'
-                            }`}>{script.status}</span>
-                          </td>
-                          <td className="px-5 py-4 text-xs text-[#555]">
-                            {metadata[script.name]?.updated_at ? new Date(metadata[script.name].updated_at).toLocaleDateString() : 'Never'}
-                          </td>
-                          <td className="px-5 py-4">
-                            <button onClick={() => setSelectedScript(script)} className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/[0.06] hover:bg-white/10 text-xs text-[#888] hover:text-white ml-auto">
-                              Edit <ChevronRight className="w-3 h-3" />
-                            </button>
-                          </td>
-                        </tr>
-                      ));
-                    })()}
-                  </tbody>
-                </table>
-              </div>
+              {(() => {
+                const filtered    = scripts.filter(s => s.name.toLowerCase().includes(scriptSearch.toLowerCase()));
+                const totalPages  = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
+                const page        = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+                return (
+                  <>
+                    <div className="bg-white/[0.02] rounded-2xl border border-white/[0.06] overflow-hidden">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-white/[0.06]">
+                            <th className="text-left px-5 py-3.5 text-xs font-medium text-[#555] uppercase tracking-wide">Script</th>
+                            <th className="text-left px-5 py-3.5 text-xs font-medium text-[#555] uppercase tracking-wide">Type</th>
+                            <th className="text-left px-5 py-3.5 text-xs font-medium text-[#555] uppercase tracking-wide">Status</th>
+                            <th className="text-left px-5 py-3.5 text-xs font-medium text-[#555] uppercase tracking-wide">Updated</th>
+                            <th className="px-5 py-3.5" />
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {page.length === 0 ? (
+                            <tr><td colSpan={5} className="py-16 text-center text-sm text-[#444]">No scripts</td></tr>
+                          ) : page.map((script: any) => (
+                            <tr key={script.id} className="border-t border-white/[0.04] hover:bg-white/[0.02] transition-colors group">
+                              <td className="px-5 py-4">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 rounded-xl bg-white/[0.04] flex items-center justify-center">
+                                    <FileCode className="w-4 h-4 text-[#555]" />
+                                  </div>
+                                  <p className="text-sm text-white font-medium">{script.name}</p>
+                                </div>
+                              </td>
+                              <td className="px-5 py-4">
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium ring-1 ${
+                                  script.type === 'Premium' ? 'bg-violet-500/15 text-violet-300 ring-violet-500/30' : 'bg-blue-500/15 text-blue-300 ring-blue-500/30'
+                                }`}>{script.type}</span>
+                              </td>
+                              <td className="px-5 py-4">
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium ring-1 ${
+                                  script.status === 'Working' ? 'bg-emerald-500/15 text-emerald-300 ring-emerald-500/30' : 'bg-red-500/15 text-red-300 ring-red-500/30'
+                                }`}>{script.status}</span>
+                              </td>
+                              <td className="px-5 py-4 text-xs text-[#555]">
+                                {metadata[script.name]?.updated_at ? new Date(metadata[script.name].updated_at).toLocaleDateString() : 'Never'}
+                              </td>
+                              <td className="px-5 py-4">
+                                <button onClick={() => setSelectedScript(script)} className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/[0.06] hover:bg-white/10 text-xs text-[#888] hover:text-white ml-auto">
+                                  Edit <ChevronRight className="w-3 h-3" />
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {totalPages > 1 && (
+                      <div className="flex items-center justify-between px-1">
+                        <p className="text-xs text-[#444]">
+                          {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)} of {filtered.length} scripts
+                        </p>
+                        <div className="flex items-center gap-1">
+                          <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="w-8 h-8 rounded-lg text-xs font-medium transition-colors text-[#555] hover:text-white hover:bg-white/[0.04] disabled:opacity-30">
+                            <ChevronLeft className="w-4 h-4 mx-auto" />
+                          </button>
+                          {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                            <button key={p} onClick={() => setCurrentPage(p)} className={`w-8 h-8 rounded-lg text-xs font-medium transition-colors ${p === currentPage ? 'bg-white/10 text-white' : 'text-[#555] hover:text-white hover:bg-white/[0.04]'}`}>{p}</button>
+                          ))}
+                          <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="w-8 h-8 rounded-lg text-xs font-medium transition-colors text-[#555] hover:text-white hover:bg-white/[0.04] disabled:opacity-30">
+                            <ChevronRight className="w-4 h-4 mx-auto" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
             </>
           )}
 
