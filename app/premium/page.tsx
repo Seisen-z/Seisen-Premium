@@ -792,43 +792,6 @@ function DiscordLoginModal({
   );
 }
 
-// ─── Main Component ────────────────────────────────────────────────────────────
-function PremiumFAQ() {
-  const [open, setOpen] = useState<number | null>(null);
-  const items = [
-    { q: 'What does Premium include?', a: 'Full access to every script — free and premium — with no key system, no limits. Weekly, monthly, or lifetime options available.' },
-    { q: 'What payment methods are accepted?', a: 'We accept PayPal, Maya, GCash, and card payments. All methods deliver your key instantly after payment.' },
-    { q: 'Can I get a refund?', a: 'All sales are final. We do not offer refunds, so please make sure before purchasing.' },
-    { q: 'Do I need to renew?', a: 'Weekly and monthly plans expire and need renewal. Lifetime is a one-time purchase with no expiry.' },
-    { q: 'Is there a key system for premium?', a: 'No — premium members get instant loadstring access with zero checkpoints or key generation.' },
-  ];
-  return (
-    <section className="pt-4 pb-8">
-      <div className="mb-8">
-        <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: 'var(--accent)' }}>FAQ</p>
-        <h2 className="font-bold text-white text-2xl" style={{ letterSpacing: '-0.02em' }}>Common questions</h2>
-      </div>
-      <div className="space-y-2">
-        {items.map((item, i) => (
-          <div key={i} className="rounded-2xl overflow-hidden" style={{ backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
-            <button onClick={() => setOpen(open === i ? null : i)} className="w-full flex items-center justify-between px-6 py-4 text-left gap-4">
-              <span className="text-sm font-semibold text-white">{item.q}</span>
-              <span className="shrink-0 w-6 h-6 rounded-lg flex items-center justify-center text-lg leading-none" style={{ background: 'rgba(255,255,255,0.06)', color: open === i ? 'white' : 'var(--text-muted)' }}>
-                {open === i ? '−' : '+'}
-              </span>
-            </button>
-            {open === i && (
-              <div className="px-6 pb-5">
-                <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>{item.a}</p>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
 function PremiumContent() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('paypal');
   const [showTosModal, setShowTosModal] = useState(false);
@@ -1967,37 +1930,6 @@ function PremiumContent() {
           </div>
         </div>
       )}
-
-      {/* ── Stats banner ── */}
-      <section className="grid md:grid-cols-2 gap-4 pt-4">
-        <div className="p-8 rounded-2xl" style={{ backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
-          <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: 'var(--text-muted)' }}>Community</p>
-          <h3 className="font-bold text-white text-2xl leading-tight mb-3">Join thousands of premium players.</h3>
-          <p className="text-sm mb-6" style={{ color: 'var(--text-muted)' }}>Real users. Real scripts. No key system, no waiting.</p>
-          <div className="flex items-center gap-3">
-            <div className="flex -space-x-2">
-              {['#10b981','#6366f1','#f59e0b','#ec4899','#3b82f6'].map((c, i) => (
-                <div key={i} className="w-8 h-8 rounded-full border-2 border-[#080808] flex items-center justify-center text-xs font-bold text-white" style={{ background: c }}>
-                  {['S','R','A','J','K'][i]}
-                </div>
-              ))}
-            </div>
-            <div>
-              <p className="text-sm font-bold text-white">2,000+ active members</p>
-              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>and growing daily</p>
-            </div>
-          </div>
-        </div>
-        <div className="p-8 rounded-2xl" style={{ backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
-          <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: 'var(--text-muted)' }}>Trusted</p>
-          <p className="font-bold text-white leading-none mb-2" style={{ fontSize: 'clamp(2.5rem, 6vw, 4rem)', letterSpacing: '-0.03em' }}>500K+</p>
-          <p className="text-base font-semibold text-white mb-3">Scripts executed</p>
-          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Premium loadstrings running across Roblox every single day — no key, no limits.</p>
-        </div>
-      </section>
-
-      {/* ── FAQ ── */}
-      <PremiumFAQ />
 
       {/* Discord Login / Switch Modal */}
       {showDiscordModal && (

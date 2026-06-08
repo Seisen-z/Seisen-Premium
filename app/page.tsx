@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Crown, Key, ArrowRight, Play, Zap, Shield, RefreshCw } from 'lucide-react';
+import { Crown, ArrowRight, Play, Zap, Shield, RefreshCw } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { fetchScripts } from '@/lib/scripts';
 import { fetchVideos } from '@/lib/videos';
@@ -280,96 +280,6 @@ export default async function HomePage() {
 
       {/* ── FAQ ───────────────────────────────────────────────── */}
       <HomeFAQ />
-
-      {/* ── PLANS ─────────────────────────────────────────────── */}
-      <section id="access-options" className="px-6 md:px-14 py-24 max-w-6xl mx-auto">
-        <p className="section-label mb-4">Access</p>
-        <h2 className="font-bold text-white mb-4" style={{ fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', letterSpacing: '-0.02em' }}>
-          Choose your plan
-        </h2>
-        <p className="text-sm mb-14" style={{ color: 'var(--text-muted)' }}>
-          Start free, upgrade when you're ready.
-        </p>
-
-        <div className="space-y-3">
-          {/* Free */}
-          <div
-            className="flex flex-col md:flex-row md:items-center gap-5 md:gap-10 p-6 rounded-2xl group transition-all duration-200"
-            style={{ backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}
-          >
-            <div className="md:w-28 shrink-0">
-              <span className="section-label">Tier 01</span>
-              <h3 className="font-bold text-white text-xl mt-1">Free</h3>
-            </div>
-            <p className="text-sm leading-relaxed flex-1 md:max-w-sm" style={{ color: 'var(--text-muted)' }}>
-              Access our free script library with a time-based key. Renewed in minutes.
-            </p>
-            <div className="md:ml-auto shrink-0">
-              <Link href="/getkey">
-                <Button variant="outline" size="lg">
-                  <Key className="w-4 h-4" /> Get Free Key
-                </Button>
-              </Link>
-            </div>
-          </div>
-
-          {/* Premium */}
-          <div
-            className="flex flex-col md:flex-row md:items-center gap-5 md:gap-10 p-6 rounded-2xl relative overflow-hidden group transition-all duration-200"
-            style={{
-              backgroundColor: 'rgba(var(--accent-rgb), 0.06)',
-              border: '1px solid rgba(var(--accent-rgb), 0.25)',
-            }}
-          >
-            {/* Glow */}
-            <div
-              className="absolute inset-0 pointer-events-none"
-              style={{ background: 'radial-gradient(ellipse 60% 80% at 0% 50%, rgba(var(--accent-rgb),0.08) 0%, transparent 70%)' }}
-            />
-            <div className="md:w-28 shrink-0 relative">
-              <span className="section-label">Tier 02</span>
-              <div className="flex items-center gap-2 mt-1">
-                <h3 className="font-bold text-white text-xl">Premium</h3>
-                <span
-                  className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full"
-                  style={{ backgroundColor: 'var(--accent)', color: '#000' }}
-                >
-                  Best
-                </span>
-              </div>
-            </div>
-            <p className="text-sm leading-relaxed flex-1 md:max-w-sm relative" style={{ color: 'var(--text-secondary)' }}>
-              Full access to every script — free and premium — with no key system, no limits. Weekly, monthly, or lifetime.
-            </p>
-            <div className="md:ml-auto shrink-0 relative">
-              <Link href="/premium">
-                <Button size="lg">
-                  <Crown className="w-4 h-4" /> Upgrade Now
-                </Button>
-              </Link>
-            </div>
-          </div>
-
-          {/* Community */}
-          <div
-            className="flex flex-col md:flex-row md:items-center gap-5 md:gap-10 p-6 rounded-2xl group transition-all duration-200"
-            style={{ backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}
-          >
-            <div className="md:w-28 shrink-0">
-              <span className="section-label">Tier 03</span>
-              <h3 className="font-bold text-white text-xl mt-1">Community</h3>
-            </div>
-            <p className="text-sm leading-relaxed flex-1 md:max-w-sm" style={{ color: 'var(--text-muted)' }}>
-              Join the Discord for script updates, help, and community support.
-            </p>
-            <div className="md:ml-auto shrink-0">
-              <a href="https://discord.gg/F4sAf6z8Ph" target="_blank" rel="noopener noreferrer">
-                <Button variant="secondary" size="lg">Join Discord</Button>
-              </a>
-            </div>
-          </div>
-        </div>
-      </section>
 
     </div>
   );
