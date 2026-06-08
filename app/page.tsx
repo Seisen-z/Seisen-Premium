@@ -9,23 +9,45 @@ import PartnerLogos from '@/components/sections/PartnerLogos';
 import ScriptShowcase from '@/components/ScriptShowcase';
 import HomeFAQ from '@/components/sections/HomeFAQ';
 
-async function fetchDiscordMemberCount(): Promise<number> {
+interface DiscordMember { id: string; username: string; avatar_url: string; }
+interface DiscordStats { memberCount: number; members: DiscordMember[]; }
+
+async function fetchDiscordStats(): Promise<DiscordStats> {
   try {
-    const res = await fetch('https://discord.com/api/v10/invites/F4sAf6z8Ph?with_counts=true', {
+    const inviteRes = await fetch('https://discord.com/api/v10/invites/F4sAf6z8Ph?with_counts=true', {
       next: { revalidate: 300 },
     });
-    if (!res.ok) return 0;
-    const data = await res.json();
-    return data.approximate_member_count ?? 0;
+    if (!inviteRes.ok) return { memberCount: 0, members: [] };
+    const invite = await inviteRes.json();
+    const memberCount: number = invite.approximate_member_count ?? 0;
+    const guildId: string | undefined = invite.guild?.id;
+
+    let members: DiscordMember[] = [];
+    if (guildId) {
+      try {
+        const widgetRes = await fetch(`https://discord.com/api/guilds/${guildId}/widget.json`, {
+          next: { revalidate: 300 },
+        });
+        if (widgetRes.ok) {
+          const widget = await widgetRes.json();
+          members = (widget.members ?? []).slice(0, 5).map((m: any) => ({
+            id: m.id,
+            username: m.username,
+            avatar_url: m.avatar_url,
+          }));
+        }
+      } catch { /* widget not enabled — fall back to initials */ }
+    }
+    return { memberCount, members };
   } catch {
-    return 0;
+    return { memberCount: 0, members: [] };
   }
 }
 
 export default async function HomePage() {
   const scripts = await fetchScripts();
   const videos  = await fetchVideos();
-  const discordMembers = await fetchDiscordMemberCount();
+  const discord = await fetchDiscordStats();
 
   const freeCount    = scripts.filter(s => s.type === 'Free'    || s.displayType === 'Free & Premium').length;
   const premiumCount = scripts.filter(s => s.type === 'Premium' || s.displayType === 'Free & Premium').length;
@@ -227,15 +249,26 @@ export default async function HomePage() {
             <p className="text-sm mb-6" style={{ color: 'var(--text-muted)' }}>Thousands of players using Seisen every day across every major game.</p>
             <div className="flex items-center gap-3">
               <div className="flex -space-x-2">
-                {['#10b981','#6366f1','#f59e0b','#ec4899','#3b82f6'].map((c, i) => (
-                  <div key={i} className="w-8 h-8 rounded-full border-2 border-[#080808] flex items-center justify-center text-xs font-bold text-white" style={{ background: c }}>
-                    {['S','R','A','J','K'][i]}
-                  </div>
-                ))}
+                {discord.members.length > 0
+                  ? discord.members.map((m) => (
+                      <img
+                        key={m.id}
+                        src={m.avatar_url}
+                        alt={m.username}
+                        title={m.username}
+                        className="w-8 h-8 rounded-full border-2 border-[#080808] object-cover"
+                      />
+                    ))
+                  : ['#10b981','#6366f1','#f59e0b','#ec4899','#3b82f6'].map((c, i) => (
+                      <div key={i} className="w-8 h-8 rounded-full border-2 border-[#080808] flex items-center justify-center text-xs font-bold text-white" style={{ background: c }}>
+                        {['S','R','A','J','K'][i]}
+                      </div>
+                    ))
+                }
               </div>
               <div>
                 <p className="text-sm font-bold text-white">
-                  {discordMembers > 0 ? `${discordMembers.toLocaleString()}+ members` : '2,000+ active users'}
+                  {discord.memberCount > 0 ? `${discord.memberCount.toLocaleString()}+ members` : '2,000+ active users'}
                 </p>
                 <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Discord server</p>
               </div>
