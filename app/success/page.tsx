@@ -468,17 +468,25 @@ function SuccessContent() {
             </Card>
 
             {/* Footer Buttons */}
-            <div className="flex gap-3 print:hidden">
-                <Link href="/" className="flex-1">
-                    <Button variant="secondary" className="w-full">
-                        <Home className="w-4 h-4 mr-2" />
-                        Return Home
+            <div className="flex flex-col gap-3 print:hidden">
+                <Link href="/client/downloads" className="w-full">
+                    <Button className="w-full justify-center py-3 text-base font-bold">
+                        <Download className="w-5 h-5 mr-2" />
+                        Access Your Script
                     </Button>
                 </Link>
-                <Button className="flex-1" onClick={handlePrint}>
-                    <Download className="w-4 h-4 mr-2" />
-                    Save Receipt
-                </Button>
+                <div className="flex gap-3">
+                    <Link href="/" className="flex-1">
+                        <Button variant="secondary" className="w-full">
+                            <Home className="w-4 h-4 mr-2" />
+                            Return Home
+                        </Button>
+                    </Link>
+                    <Button variant="secondary" className="flex-1" onClick={handlePrint}>
+                        <Download className="w-4 h-4 mr-2" />
+                        Save Receipt
+                    </Button>
+                </div>
             </div>
             
             <div className="text-center pt-8 print:hidden">

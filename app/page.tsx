@@ -97,8 +97,7 @@ export default async function HomePage() {
         {/* CTAs */}
         <div className="flex flex-wrap items-center gap-3 mb-16">
           <Link href="/scripts"><Button size="lg"><Play className="w-4 h-4" /> Browse Scripts</Button></Link>
-          <Link href="#scripts"><Button variant="outline" size="lg">All Scripts →</Button></Link>
-          <Link href="/premium"><Button variant="ghost" size="lg"><Crown className="w-4 h-4" /> Premium</Button></Link>
+          <Link href="/premium"><Button variant="outline" size="lg"><Crown className="w-4 h-4" /> Go Premium</Button></Link>
         </div>
 
         {/* Stat chips */}

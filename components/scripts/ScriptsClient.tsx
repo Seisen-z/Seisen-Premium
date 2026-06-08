@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Search, Copy, Check, Crown, Code, X, ChevronRight } from 'lucide-react';
+import { Search, Copy, Check, Crown, Code, X, ChevronRight, ArrowRight } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { copyToClipboard } from '@/lib/utils';
 import Image from 'next/image';
@@ -98,6 +98,18 @@ export default function ScriptsClient({ initialScripts }: ScriptsClientProps) {
 
   return (
     <div className="flex flex-col" style={{ height: 'calc(100vh - 3.5rem)' }}>
+
+      {/* ── Premium upgrade banner ── */}
+      {counts.premium > 0 && filter !== 'premium' && (
+        <div className="shrink-0 px-6 md:px-12 py-2.5 flex items-center justify-between gap-4" style={{ backgroundColor: 'rgba(16,185,129,0.06)', borderBottom: '1px solid rgba(16,185,129,0.15)' }}>
+          <p className="text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>
+            <span style={{ color: 'var(--accent)', fontWeight: 600 }}>{counts.premium} premium scripts</span> are locked — upgrade to access everything with no key system.
+          </p>
+          <Link href="/premium" className="shrink-0 flex items-center gap-1.5 text-xs font-semibold whitespace-nowrap" style={{ color: 'var(--accent)' }}>
+            Go Premium <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+      )}
 
       {/* ── Top bar — never scrolls ── */}
       <div className="shrink-0 px-6 md:px-12 py-3 z-[500]" style={{ backgroundColor: 'var(--bg-primary)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>

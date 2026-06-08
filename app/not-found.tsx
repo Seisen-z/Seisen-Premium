@@ -6,30 +6,27 @@ import Button from '@/components/ui/Button';
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="text-center animate-fade-in">
-        {/* 404 Text */}
-        <h1 className="text-[150px] md:text-[200px] font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-teal-500 leading-none mb-4">
+    <div className="min-h-screen flex items-center justify-center px-6">
+      <div className="text-center">
+        <p className="text-xs font-semibold uppercase tracking-widest mb-6" style={{ color: 'var(--accent)' }}>404</p>
+        <h1
+          className="font-bold text-white leading-none mb-4"
+          style={{ fontSize: 'clamp(6rem, 20vw, 14rem)', letterSpacing: '-0.05em', color: 'rgba(255,255,255,0.07)' }}
+        >
           404
         </h1>
-
-        {/* Message */}
-        <h2 className="text-2xl font-bold text-white mb-2">Page Not Found</h2>
-        <p className="text-gray-500 mb-8 max-w-md mx-auto">
+        <h2 className="text-2xl font-bold text-white mb-3 -mt-6" style={{ letterSpacing: '-0.02em' }}>Page not found</h2>
+        <p className="text-sm mb-10 max-w-sm mx-auto" style={{ color: 'var(--text-muted)' }}>
           The page you&apos;re looking for doesn&apos;t exist or has been moved.
         </p>
-
-        {/* Actions */}
-        <div className="flex gap-4 justify-center">
+        <div className="flex items-center gap-3 justify-center">
           <Link href="/">
             <Button>
-              <Home className="w-4 h-4" />
-              Go Home
+              <Home className="w-4 h-4" /> Go Home
             </Button>
           </Link>
-          <Button variant="secondary" onClick={() => window.history.back()}>
-            <ArrowLeft className="w-4 h-4" />
-            Go Back
+          <Button variant="outline" onClick={() => window.history.back()}>
+            <ArrowLeft className="w-4 h-4" /> Go Back
           </Button>
         </div>
       </div>

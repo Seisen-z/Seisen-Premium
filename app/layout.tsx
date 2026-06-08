@@ -21,18 +21,26 @@ const firaCode = Fira_Code({
 });
 
 export const metadata: Metadata = {
-  title: 'Seisen',
-  description:
-    'Seisen - Premium scripts and tools for enhanced gaming experiences. Access powerful scripts with advanced features.',
-  keywords: 'scripts, gaming, seisen, premium scripts, game scripts, roblox scripts',
+  metadataBase: new URL('https://seisen.vercel.app'),
+  title: { default: 'Seisen', template: '%s — Seisen' },
+  description: 'Premium Roblox scripts for enhanced gaming. Free access available — no sign-up required.',
+  keywords: 'roblox scripts, seisen, premium scripts, roblox hub, free scripts, roblox exploit',
+  openGraph: {
+    type: 'website',
+    siteName: 'Seisen',
+    title: 'Seisen — Premium Roblox Scripts',
+    description: 'Premium Roblox scripts for enhanced gaming. Free access available — no sign-up required.',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Seisen — Premium Roblox Scripts',
+    description: 'Premium Roblox scripts for enhanced gaming. Free access available — no sign-up required.',
+  },
   icons: {
     icon: '/favicon.ico',
     shortcut: '/favicon.ico',
-    apple: '/favicon.ico', 
-    other: {
-      rel: 'apple-touch-icon-precomposed',
-      url: '/favicon.ico',
-    },
+    apple: '/favicon.ico',
+    other: { rel: 'apple-touch-icon-precomposed', url: '/favicon.ico' },
   },
 };
 

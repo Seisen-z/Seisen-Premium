@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { Menu, X, User } from 'lucide-react';
+import { Menu, X, User, Crown } from 'lucide-react';
 import { Logo } from '@/components/ui/Logo';
 import { AnimatePresence, motion } from 'framer-motion';
 
@@ -263,6 +263,17 @@ export default function Dock() {
                   <span className="ml-auto w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--accent)' }} />
                 )}
               </Link>
+
+              <div className="px-4 pb-4 pt-1">
+                <Link
+                  href="/premium"
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-semibold transition-colors"
+                  style={{ backgroundColor: 'var(--accent)', color: '#000' }}
+                >
+                  <Crown className="w-4 h-4" /> Go Premium
+                </Link>
+              </div>
             </motion.div>
           </>
         )}
