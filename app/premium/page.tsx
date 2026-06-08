@@ -1,14 +1,13 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { Crown, Check, HelpCircle, CreditCard, Copy, X, Loader2, AlertCircle, CheckCircle, ShoppingCart, Plus, Minus, Trash2 } from 'lucide-react';
+import { Check, HelpCircle, CreditCard, Copy, X, Loader2, AlertCircle, CheckCircle, ShoppingCart, Plus, Minus, Trash2 } from 'lucide-react';
 import PricingCard from '@/components/ui/PricingCard';
 import PurchaseCounter from '@/components/ui/PurchaseCounter';
 import { Card } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import { getApiUrl, copyToClipboard } from '@/lib/utils';
 import { useSearchParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
 import {
   CartItem,
   getCart,
@@ -21,8 +20,9 @@ import {
 } from '@/lib/client/cart';
 
 const ENABLE_ROBUX = false;
+const ENABLE_CARD = true;
 
-type PaymentMethod = 'paypal' | 'robux' | 'gcash';
+type PaymentMethod = 'paypal' | 'robux' | 'maya' | 'gcash' | 'card';
 type PremiumTier = 'weekly' | 'monthly' | 'lifetime';
 type MethodStockMap = Record<PaymentMethod, Record<PremiumTier, number>>;
 
@@ -49,7 +49,9 @@ function readDiscordSession(): DiscordSession | null {
 const defaultMethodStockMap = (): MethodStockMap => ({
   paypal:  { weekly: 0, monthly: 0, lifetime: 0 },
   robux:   { weekly: 0, monthly: 0, lifetime: 0 },
+  maya:    { weekly: 0, monthly: 0, lifetime: 0 },
   gcash:   { weekly: 0, monthly: 0, lifetime: 0 },
+  card:    { weekly: 0, monthly: 0, lifetime: 0 },
 });
 
 // Updated PayPal prices: Monthly €6, Lifetime €12
@@ -117,6 +119,39 @@ const robuxPlans = [
   },
 ];
 
+const mayaPlans = [
+  {
+    title: 'Weekly',
+    badge: '7 Days',
+    price: 250,
+    currency: '₱',
+    period: '/week',
+    features: ['All premium scripts', 'No key system', 'Priority support', 'Early access'],
+    plan: 'weekly',
+  },
+  {
+    title: 'Monthly',
+    badge: '30 Days',
+    price: 430,
+    currency: '₱',
+    period: '/month',
+    features: ['All premium scripts', 'No key system', 'Priority support', 'Early access', 'Exclusive updates'],
+    plan: 'monthly',
+  },
+  {
+    title: 'Lifetime',
+    badge: '18% OFF',
+    badgeVariant: 'best-value' as const,
+    price: 850,
+    originalPrice: 1000,
+    currency: '₱',
+    period: 'one-time',
+    features: ['All premium scripts', 'No key system', 'Priority support', 'Early access', 'Exclusive updates', 'Lifetime access'],
+    plan: 'lifetime',
+    featured: true,
+  },
+];
+
 const gcashPlans = [
   {
     title: 'Weekly',
@@ -152,6 +187,7 @@ const gcashPlans = [
 
 
 
+
 const faqs = [
   {
     question: 'How do I get premium?',
@@ -183,10 +219,13 @@ function QuantityStepper({
 }) {
   const maxVal = max ?? 10;
   return (
-    <div className="flex items-center gap-1 bg-[#0d0d0d] border border-[#2a2a2a] rounded-lg p-1">
+    <div className="flex items-center gap-1 rounded-lg p-1" style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid rgba(255,255,255,0.08)' }}>
       <button
         onClick={() => onChange(Math.max(1, value - 1))}
-        className="w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:text-white hover:bg-[#2a2a2a] transition-colors disabled:opacity-30"
+        className="w-7 h-7 flex items-center justify-center rounded transition-colors disabled:opacity-30"
+        style={{ color: 'var(--text-muted)' }}
+        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'white'; (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(255,255,255,0.06)'; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'; (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; }}
         disabled={value <= 1}
       >
         <Minus className="w-3 h-3" />
@@ -196,7 +235,10 @@ function QuantityStepper({
       </span>
       <button
         onClick={() => onChange(Math.min(maxVal, value + 1))}
-        className="w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:text-white hover:bg-[#2a2a2a] transition-colors disabled:opacity-30"
+        className="w-7 h-7 flex items-center justify-center rounded transition-colors disabled:opacity-30"
+        style={{ color: 'var(--text-muted)' }}
+        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'white'; (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(255,255,255,0.06)'; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'; (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; }}
         disabled={value >= maxVal}
       >
         <Plus className="w-3 h-3" />
@@ -215,6 +257,7 @@ function CartDrawer({
   onCheckout,
   onClear,
   isProcessing,
+  paymentMethod,
 }: {
   isOpen: boolean;
   cart: CartItem[];
@@ -224,6 +267,7 @@ function CartDrawer({
   onCheckout: () => void;
   onClear: () => void;
   isProcessing: boolean;
+  paymentMethod: PaymentMethod;
 }) {
   const total = getCartTotal(cart);
   const count = getCartCount(cart);
@@ -240,24 +284,28 @@ function CartDrawer({
 
       {/* Drawer */}
       <div
-        className={`fixed right-0 top-0 h-full w-full max-w-sm bg-[#111] border-l border-[#2a2a2a] z-50 flex flex-col shadow-2xl transition-transform duration-300 ${
+        className={`fixed right-0 top-0 h-full w-full max-w-sm z-50 flex flex-col shadow-2xl transition-transform duration-300 ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
+        style={{ backgroundColor: 'var(--bg-secondary)', borderLeft: '1px solid rgba(255,255,255,0.07)' }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[#2a2a2a]">
+        <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
           <h2 className="text-white font-bold text-lg flex items-center gap-2">
-            <ShoppingCart className="w-5 h-5 accent-text" />
+            <ShoppingCart className="w-5 h-5" style={{ color: 'var(--accent)' }} />
             Cart
             {count > 0 && (
-              <span className="accent-bg text-white text-xs px-2 py-0.5 rounded-full font-medium ml-1">
+              <span className="text-white text-xs px-2 py-0.5 rounded-full font-medium ml-1" style={{ backgroundColor: 'rgba(var(--accent-rgb),0.15)', color: 'var(--accent)' }}>
                 {count}
               </span>
             )}
           </h2>
           <button
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded text-gray-400 hover:text-white hover:bg-[#2a2a2a] transition-colors"
+            className="w-8 h-8 flex items-center justify-center rounded transition-colors"
+            style={{ color: 'var(--text-muted)' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'white'; (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(255,255,255,0.06)'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'; (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; }}
           >
             <X className="w-4 h-4" />
           </button>
@@ -266,25 +314,29 @@ function CartDrawer({
         {/* Items */}
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {cart.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-48 text-gray-600">
-              <ShoppingCart className="w-12 h-12 mb-3 opacity-30" />
+            <div className="flex flex-col items-center justify-center h-48" style={{ color: 'var(--text-muted)' }}>
+              <ShoppingCart className="w-12 h-12 mb-3 opacity-20" />
               <p className="text-sm">Your cart is empty</p>
-              <p className="text-xs mt-1 opacity-60">Add PayPal plans to checkout</p>
+              <p className="text-xs mt-1 opacity-60">Add plans to checkout</p>
             </div>
           ) : (
             cart.map(item => (
               <div
                 key={item.plan}
-                className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-4 space-y-3"
+                className="rounded-xl p-4 space-y-3"
+                style={{ backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <p className="text-white font-semibold capitalize">{item.title} Plan</p>
-                    <p className="text-gray-500 text-xs">€{item.pricePerUnit} / key</p>
+                    <p className="text-xs" style={{ color: 'var(--text-muted)' }}>€{item.pricePerUnit} / key</p>
                   </div>
                   <button
                     onClick={() => onRemove(item.plan)}
-                    className="w-7 h-7 flex items-center justify-center rounded text-gray-600 hover:text-red-400 hover:bg-red-500/10 transition-colors flex-shrink-0"
+                    className="w-7 h-7 flex items-center justify-center rounded transition-colors flex-shrink-0"
+                    style={{ color: 'var(--text-muted)' }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#f87171'; (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(239,68,68,0.08)'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'; (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; }}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -307,12 +359,12 @@ function CartDrawer({
 
         {/* Footer */}
         {cart.length > 0 && (
-          <div className="border-t border-[#2a2a2a] p-4 space-y-3">
+          <div className="p-4 space-y-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
             <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-400">Subtotal ({count} {count === 1 ? 'key' : 'keys'})</span>
+              <span style={{ color: 'var(--text-secondary)' }}>Subtotal ({count} {count === 1 ? 'key' : 'keys'})</span>
               <span className="text-white font-bold text-lg">€{total.toFixed(2)}</span>
             </div>
-            <p className="text-xs text-gray-600 text-center">+ VAT if applicable</p>
+            <p className="text-xs text-center" style={{ color: 'var(--text-muted)' }}>+ VAT if applicable</p>
 
             <Button
               className="w-full"
@@ -322,13 +374,16 @@ function CartDrawer({
               {isProcessing ? (
                 <><Loader2 className="w-4 h-4 animate-spin" /> Processing...</>
               ) : (
-                <><CreditCard className="w-4 h-4" /> Checkout with PayPal</>
+                <><CreditCard className="w-4 h-4" /> Checkout with Card / PayPal</>
               )}
             </Button>
 
             <button
               onClick={onClear}
-              className="w-full text-xs text-gray-600 hover:text-gray-400 transition-colors py-1"
+              className="w-full text-xs transition-colors py-1"
+              style={{ color: 'var(--text-muted)' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'; }}
             >
               Clear cart
             </button>
@@ -338,6 +393,207 @@ function CartDrawer({
     </>
   );
 }
+
+// ─── PayPal Card Fields Modal ─────────────────────────────────────────────────
+function CardPaymentModal({
+  plan,
+  amount,
+  onClose,
+  onSuccess,
+  onError,
+}: {
+  plan: string;
+  amount: number;
+  onClose: () => void;
+  onSuccess: (transactionId: string, tier: string, amt: number) => void;
+  onError: (msg: string) => void;
+}) {
+  const [sdkLoaded, setSdkLoaded] = useState(false);
+  const [eligible, setEligible] = useState<boolean | null>(null);
+  const [cardFields, setCardFields] = useState<any>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [fieldError, setFieldError] = useState('');
+
+  useEffect(() => {
+    const clientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID;
+    const scriptId = 'paypal-sdk-card';
+    if (document.getElementById(scriptId)) { setSdkLoaded(true); return; }
+    const script = document.createElement('script');
+    script.id = scriptId;
+    script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&components=card-fields&currency=EUR&intent=capture`;
+    script.onload = () => setSdkLoaded(true);
+    script.onerror = () => setFieldError('Failed to load payment SDK.');
+    document.head.appendChild(script);
+  }, []);
+
+  useEffect(() => {
+    if (!sdkLoaded) return;
+    const pp = (window as any).paypal;
+    if (!pp?.CardFields) { setEligible(false); return; }
+
+    const cf = pp.CardFields({
+      createOrder: async () => {
+        const res = await fetch('/api/paypal/create-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tier: plan, amount, quantity: 1, currency: 'EUR', description: 'Seisen Hub Premium Access' }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to create order');
+        return data.id;
+      },
+      onApprove: async (data: any) => {
+        const res = await fetch('/api/paypal/capture-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderID: data.orderID }),
+        });
+        const result = await res.json();
+        if (result.success && result.keys?.length > 0) {
+          onSuccess(result.transactionId || data.orderID, result.tier || plan, result.amount || amount);
+        } else {
+          onError(result.error || result.junkieError || 'Payment failed');
+          setIsSubmitting(false);
+        }
+      },
+      onError: (err: any) => {
+        setFieldError(err.message || 'Card payment failed. Please try again.');
+        setIsSubmitting(false);
+      },
+    });
+
+    if (cf.isEligible()) {
+      setEligible(true);
+      setCardFields(cf);
+      setTimeout(() => {
+        cf.NameField()?.render('#pp-card-name');
+        cf.NumberField().render('#pp-card-number');
+        cf.ExpiryField().render('#pp-card-expiry');
+        cf.CVVField().render('#pp-card-cvv');
+      }, 100);
+    } else {
+      setEligible(false);
+    }
+  }, [sdkLoaded]);
+
+  const handlePay = async () => {
+    if (!cardFields || isSubmitting) return;
+    setIsSubmitting(true);
+    setFieldError('');
+    try {
+      await cardFields.submit();
+    } catch (err: any) {
+      setFieldError(err.message || 'Payment failed. Check your card details.');
+      setIsSubmitting(false);
+    }
+  };
+
+  const fieldStyle: React.CSSProperties = {
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    border: '1px solid rgba(255,255,255,0.1)',
+    borderRadius: '8px',
+    height: '44px',
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+      <div className="w-full max-w-md rounded-xl overflow-hidden" style={{ backgroundColor: '#0e0e0e', border: '1px solid rgba(255,255,255,0.09)' }}>
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          <div>
+            <p className="font-mono text-[10px] uppercase tracking-[0.2em] mb-0.5" style={{ color: 'var(--text-muted)' }}>Card Payment</p>
+            <h2 className="font-bold text-white text-base capitalize">{plan} Plan</h2>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg transition-colors" style={{ color: 'var(--text-muted)' }} onMouseEnter={e => (e.currentTarget.style.color = 'white')} onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}>
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Amount */}
+        <div className="px-5 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', backgroundColor: 'rgba(var(--accent-rgb),0.04)' }}>
+          <p className="text-xs mb-0.5" style={{ color: 'var(--text-muted)' }}>Amount</p>
+          <p className="text-2xl font-bold text-white" style={{ letterSpacing: '-0.03em' }}>€{amount}</p>
+        </div>
+
+        <div className="px-5 py-5 space-y-3">
+          {/* Loading */}
+          {eligible === null && !fieldError && (
+            <div className="flex items-center gap-2 py-4 text-sm" style={{ color: 'var(--text-muted)' }}>
+              <Loader2 className="w-4 h-4 animate-spin" /> Loading card form...
+            </div>
+          )}
+
+          {/* Not eligible */}
+          {eligible === false && (
+            <div className="rounded-lg p-4 text-sm" style={{ backgroundColor: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171' }}>
+              Advanced card fields are not enabled on this PayPal account. Please use the PayPal tab instead.
+            </div>
+          )}
+
+          {/* Card Fields */}
+          {eligible === true && (
+            <>
+              <div>
+                <p className="font-mono text-[10px] uppercase tracking-widest mb-1.5" style={{ color: 'var(--text-muted)' }}>Name on Card</p>
+                <div id="pp-card-name" style={fieldStyle} />
+              </div>
+              <div>
+                <p className="font-mono text-[10px] uppercase tracking-widest mb-1.5" style={{ color: 'var(--text-muted)' }}>Card Number</p>
+                <div id="pp-card-number" style={fieldStyle} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <p className="font-mono text-[10px] uppercase tracking-widest mb-1.5" style={{ color: 'var(--text-muted)' }}>Expiry</p>
+                  <div id="pp-card-expiry" style={fieldStyle} />
+                </div>
+                <div>
+                  <p className="font-mono text-[10px] uppercase tracking-widest mb-1.5" style={{ color: 'var(--text-muted)' }}>CVV</p>
+                  <div id="pp-card-cvv" style={fieldStyle} />
+                </div>
+              </div>
+
+              {fieldError && (
+                <div className="flex items-start gap-2 rounded-lg p-3 text-sm" style={{ backgroundColor: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171' }}>
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />{fieldError}
+                </div>
+              )}
+
+              <button
+                onClick={handlePay}
+                disabled={isSubmitting}
+                className="w-full py-3 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-all"
+                style={{ backgroundColor: isSubmitting ? 'rgba(var(--accent-rgb),0.5)' : 'var(--accent)', color: '#000' }}
+              >
+                {isSubmitting
+                  ? <><Loader2 className="w-4 h-4 animate-spin" /> Processing...</>
+                  : <><CreditCard className="w-4 h-4" /> Pay €{amount}</>}
+              </button>
+
+              <p className="text-center text-xs" style={{ color: 'var(--text-muted)' }}>
+                Secured by PayPal · Visa · Mastercard
+              </p>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Maya Icon ────────────────────────────────────────────────────────────────
+const MayaIcon = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
+    <rect width="60" height="60" rx="13" fill="#00B14F"/>
+    <g transform="translate(7.5, 15)">
+      <path d="M32.4509 0C29.0563 0 25.6029 1.41908 23.3998 3.66813L24.65 6.15245L24.1215 6.57215C21.7858 2.57089 17.4914 0 12.9204 0C5.77684 0 0.00102172 6.21079 0.00102172 13.4868V29.1625C-0.00516045 29.2962 0.0167642 29.4297 0.0653878 29.5545C0.114011 29.6793 0.18827 29.7927 0.283437 29.8874C0.378604 29.9822 0.492584 30.0562 0.618124 30.1047C0.743665 30.1532 0.878017 30.1753 1.0126 30.1694H6.19359C6.44479 30.1694 6.68571 30.0702 6.86333 29.8938C7.04096 29.7173 7.14075 29.4779 7.14075 29.2284V13.3683C7.14075 9.76035 9.34386 6.80364 13.0946 6.80364C16.6067 6.80364 19.1072 9.40464 19.1072 13.2497V26.2641C19.0984 26.393 19.1163 26.5223 19.16 26.6439C19.2036 26.7656 19.272 26.877 19.3608 26.9713C19.4497 27.0656 19.5571 27.1407 19.6764 27.1919C19.7958 27.2431 19.9244 27.2694 20.0544 27.2691H25.0062C25.1362 27.2694 25.2648 27.2431 25.3842 27.1919C25.5035 27.1407 25.6109 27.0656 25.6998 26.9713C25.7886 26.877 25.857 26.7656 25.9006 26.6439C25.9442 26.5223 25.9622 26.393 25.9533 26.2641V13.2497C25.9533 9.40464 28.5732 6.80364 32.0853 6.80364C35.8361 6.80364 37.9198 9.76035 37.9198 13.3683V29.2227C37.9316 29.4796 38.044 29.7218 38.233 29.8976C38.422 30.0734 38.6726 30.1689 38.9314 30.1637H44.0461C44.1808 30.1699 44.3154 30.1481 44.4412 30.0996C44.5669 30.0512 44.6811 29.9773 44.7765 29.8825C44.8719 29.7878 44.9463 29.6743 44.9951 29.5493C45.0438 29.4244 45.0658 29.2907 45.0596 29.1568V13.4868C45.0596 6.21079 39.5224 0 32.4376 0" fill="white"/>
+    </g>
+  </svg>
+);
+
+// ─── GCash Icon ───────────────────────────────────────────────────────────────
+const GCashIcon = ({ className }: { className?: string }) => (
+  <img src="/images/gcash.png" alt="GCash" className={className} style={{ objectFit: 'contain' }} />
+);
 
 // ─── Discord SVG Icon ─────────────────────────────────────────────────────────
 const DiscordIcon = ({ className }: { className?: string }) => (
@@ -410,13 +666,13 @@ function DiscordAccountBadge({
 // ─── Discord Login Banner (not logged in) ─────────────────────────────────────
 function DiscordLoginBanner({ returnTo = '/premium' }: { returnTo?: string }) {
   return (
-    <div className="flex items-center gap-3 bg-[#1a1a1a] border border-[#2a2a2a] rounded-2xl px-4 py-3 w-full max-w-md mx-auto">
-      <div className="w-9 h-9 rounded-xl bg-[#5865F2]/20 flex items-center justify-center flex-shrink-0">
+    <div className="flex items-center gap-3 rounded-2xl px-4 py-3 w-full max-w-md mx-auto" style={{ backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}>
+      <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'rgba(88,101,242,0.15)' }}>
         <DiscordIcon className="w-5 h-5 text-[#5865F2]" />
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-white text-sm font-semibold">Discord not connected</p>
-        <p className="text-gray-500 text-xs">Required to purchase</p>
+        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Required to purchase</p>
       </div>
       <a href={`/api/auth/discord?return=${encodeURIComponent(returnTo)}`} className="flex-shrink-0">
         <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-[#5865F2] hover:bg-[#4752C4] transition-colors shadow shadow-[#5865F2]/30">
@@ -548,11 +804,10 @@ function PremiumContent() {
   const [email, setEmail] = useState('');
   const [robuxDetails, setRobuxDetails] = useState<{ plan: string; price: number; productId: number } | null>(null);
 
-  const [showGcashModal, setShowGcashModal] = useState(false);
-  const [gcashDetails, setGcashDetails] = useState<{ plan: string; price: number } | null>(null);
-  const [isGcashQrExpanded, setIsGcashQrExpanded] = useState(false);
-
-
+  const [showQRModal, setShowQRModal] = useState(false);
+  const [qrMethod, setQrMethod] = useState<'maya' | 'gcash'>('maya');
+  const [qrZoomed, setQrZoomed] = useState(false);
+  const [showCardModal, setShowCardModal] = useState(false);
 
   const [showTicketModal, setShowTicketModal] = useState(false);
   const [ticketDetails, setTicketDetails] = useState<{ plan: string; amount: number; currency: string } | null>(null);
@@ -611,9 +866,14 @@ function PremiumContent() {
               setRobloxUsername('');
               setEmail('');
               setShowRobuxModal(true);
-            } else if (intent.method === 'gcash') {
-              setGcashDetails({ plan: intent.plan, price: intent.price });
-              setShowGcashModal(true);
+            } else if (intent.method === 'maya' || intent.method === 'gcash') {
+              setQuantities(q => ({ ...q, [intent.plan]: intent.qty || 1 }));
+              setPendingPlan({ plan: intent.plan, amount: intent.price, price: intent.price, quantity: intent.qty || 1 });
+              setShowTosModal(true);
+            } else if (intent.method === 'paddle') {
+              setQuantities(q => ({ ...q, [intent.plan]: intent.qty || 1 }));
+              setPendingPlan({ plan: intent.plan, amount: intent.price, price: intent.price, quantity: intent.qty || 1 });
+              setShowTosModal(true);
             }
           }, 400);
         } catch { /* ignore bad intent */ }
@@ -651,21 +911,6 @@ function PremiumContent() {
 
 
 
-  useEffect(() => {
-    const paymentSuccess = searchParams.get('payment_success');
-    const method = searchParams.get('method');
-    if (paymentSuccess === 'true' && method === 'gcash') {
-      router.replace('/premium', { scroll: false });
-      setStatusModal({
-        isOpen: true,
-        type: 'success',
-        title: 'Payment Successful! 🎉',
-        message: 'Your GCash payment was received! Your premium key will be sent to your email shortly. Check your inbox (and spam folder).'
-      });
-      loadPremiumStocks();
-    }
-  }, [searchParams]);
-
   const loadPremiumStocks = async () => {
     try {
       const response = await fetch('/api/premium-stock', { cache: 'no-store' });
@@ -674,7 +919,7 @@ function PremiumContent() {
       if (data?.methodStocks) {
         const ms = data.methodStocks;
         const map = defaultMethodStockMap();
-        for (const method of ['paypal', 'robux', 'gcash'] as PaymentMethod[]) {
+        for (const method of ['paypal', 'robux', 'maya', 'gcash', 'card'] as PaymentMethod[]) {
           for (const tier of ['weekly', 'monthly', 'lifetime'] as PremiumTier[]) {
             map[method][tier] = Number(ms[tier]?.[method] || 0);
           }
@@ -694,7 +939,7 @@ function PremiumContent() {
 
   const getTierStock = (tier: string) => {
     if (tier === 'weekly' || tier === 'monthly' || tier === 'lifetime') {
-      return stockMap[paymentMethod][tier];
+      return stockMap[paymentMethod]?.[tier] ?? 0;
     }
     return 0;
   };
@@ -811,6 +1056,7 @@ function PremiumContent() {
 
 
 
+
   // ─── Discord logout / switch ──────────────────────────────────────────────────
   const handleDiscordLogout = () => {
     // Expire the cookie
@@ -920,34 +1166,102 @@ function PremiumContent() {
     });
   };
 
-  const handleGCashPayment = (plan: string, amount: number) => {
-    if (getTierStock(plan) <= 0) {
-      setStatusModal({ isOpen: true, type: 'error', title: 'Out of Stock', message: 'This premium plan is currently out of stock.' });
-      return;
-    }
-    requireDiscord('gcash', plan, amount, 1, () => {
-      setGcashDetails({ plan, price: amount });
-      setShowGcashModal(true);
+  const handleMayaPayment = (plan: string, amount: number) => {
+    requireDiscord('maya', plan, amount, 1, () => {
+      setPendingPlan({ plan, amount, price: amount, quantity: 1 });
+      setShowTosModal(true);
     });
   };
 
+  const handleGCashPayment = (plan: string, amount: number) => {
+    requireDiscord('gcash', plan, amount, 1, () => {
+      setPendingPlan({ plan, amount, price: amount, quantity: 1 });
+      setShowTosModal(true);
+    });
+  };
 
-
-  const handleTicketPayment = (plan: string, amount: number, currency: string) => {
-    if (getTierStock(plan) <= 0) {
-      setStatusModal({ isOpen: true, type: 'error', title: 'Out of Stock', message: 'This premium plan is currently out of stock.' });
+  const handleCardPayment = (plan: string, amount: number) => {
+    const qty = quantities[plan] || 1;
+    if (getTierStock(plan) < qty) {
+      setStatusModal({ isOpen: true, type: 'error', title: 'Not Enough Stock', message: `Only ${getTierStock(plan)} left for this plan.` });
       return;
     }
-    setTicketDetails({ plan, amount, currency });
-    setPendingPlan({ plan, amount, price: amount, quantity: 1 });
-    setShowTosModal(true);
+    requireDiscord('card', plan, amount, qty, () => {
+      setPendingPlan({ plan, amount, price: amount, quantity: qty });
+      setShowTosModal(true);
+    });
   };
+
+  const confirmMayaCheckout = async (checkoutId: string) => {
+    setIsProcessing(true);
+    try {
+      const response = await fetch('/api/maya/confirm-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ checkoutId }),
+      });
+      const data = await response.json();
+
+      if (data.success && data.keys && data.keys.length > 0) {
+        clearCart();
+        setCart([]);
+        setStatusModal({
+          isOpen: true,
+          type: 'success',
+          title: 'Purchase Successful!',
+          message: `${data.keys.length > 1 ? `${data.keys.length} keys have` : 'Your key has'} been generated. Redirecting you to the receipt...`,
+        });
+        localStorage.setItem('client_email', data.payerEmail || '');
+        localStorage.setItem('client_auth', 'true');
+        setTimeout(() => {
+          const params = new URLSearchParams({
+            orderId: data.transactionId || 'MAYA',
+            tier: data.tier,
+            amount: String(data.amount),
+            currency: String(data.currency),
+            key: JSON.stringify(data.keys),
+            email: data.payerEmail || '',
+            payerId: 'Maya',
+            method: 'maya',
+            date: new Date().toISOString(),
+          });
+          router.push(`/success?${params.toString()}`);
+        }, 1000);
+      } else {
+        setStatusModal({
+          isOpen: true,
+          type: 'error',
+          title: 'Activation Failed',
+          message: data.error || data.junkieError || 'No key returned from server.',
+        });
+        setIsProcessing(false);
+      }
+    } catch (error: any) {
+      setStatusModal({
+        isOpen: true,
+        type: 'error',
+        title: 'System Error',
+        message: 'An unexpected error occurred while confirming your payment.',
+        details: error.message,
+      });
+      setIsProcessing(false);
+    }
+  };
+
+
 
   const proceedWithPayment = async () => {
     if (!pendingPlan) return;
     setShowTosModal(false);
 
-    if (paymentMethod === 'paypal') {
+    if (paymentMethod === 'maya' || paymentMethod === 'gcash') {
+      setQrMethod(paymentMethod);
+      setShowQRModal(true);
+      return;
+    } else if (paymentMethod === 'card') {
+      setShowCardModal(true);
+      return;
+    } else if (paymentMethod === 'paypal') {
       try {
         setIsProcessing(true);
         const apiUrl = getApiUrl();
@@ -989,9 +1303,11 @@ function PremiumContent() {
 
   const getCurrentPlans = () => {
     switch (paymentMethod) {
-      case 'robux':  return robuxPlans;
-      case 'gcash':  return gcashPlans;
-      default:       return paypalPlans;
+      case 'robux': return robuxPlans;
+      case 'maya':  return mayaPlans;
+      case 'gcash': return gcashPlans;
+      case 'card':  return paypalPlans;
+      default:      return paypalPlans;
     }
   };
 
@@ -1005,26 +1321,27 @@ function PremiumContent() {
   const cartCount = getCartCount(cart);
 
   return (
-    <div className="min-h-screen py-8 px-4 md:px-8">
-      <div className="max-w-5xl mx-auto space-y-12">
+    <div className="min-h-screen px-6 md:px-14 pt-16 pb-28 max-w-6xl mx-auto">
+      <div className="space-y-16">
 
-        {/* Header */}
-        <section className="text-center animate-fade-in">
-          <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center rounded-2xl bg-gradient-to-br from-yellow-500 to-orange-500 shadow-lg shadow-yellow-500/30">
-            <Crown className="w-8 h-8 text-white" />
+        {/* ── Header ── */}
+        <section>
+          <h1
+            className="font-bold text-white leading-none mb-5"
+            style={{ fontSize: 'clamp(3rem, 8vw, 6rem)', letterSpacing: '-0.04em' }}
+          >
+            Premium
+          </h1>
+          <div className="flex items-end gap-8 flex-wrap">
+            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+              No key system. All scripts. Choose your duration.
+            </p>
+            <PurchaseCounter />
           </div>
-          <h1 className="text-3xl font-bold text-white mb-2">Premium Access</h1>
-          <p className="text-gray-500">
-            Unlock all features with instant access, no key system required
-          </p>
         </section>
 
-        <section className="flex justify-center -mt-8 mb-8">
-          <PurchaseCounter />
-        </section>
-
-        {/* Discord Account Status */}
-        <section className="flex justify-center -mt-4">
+        {/* ── Discord Account Status ── */}
+        <section>
           {discordSession ? (
             <DiscordAccountBadge
               session={discordSession}
@@ -1036,81 +1353,81 @@ function PremiumContent() {
           )}
         </section>
 
-        {/* Payment Method + Cart Button */}
+        {/* ── Payment Method Tabs + Cart ── */}
         <section>
-          <div className="flex items-end justify-between mb-3 flex-wrap gap-3">
-            <h3 className="text-sm font-medium text-gray-400">Payment Method:</h3>
+          <p className="font-mono text-[10px] uppercase tracking-[0.2em] mb-5" style={{ color: 'var(--text-muted)' }}>Pay with</p>
+          <div className="flex items-center gap-3 flex-wrap">
+            {/* Pill tabs */}
+            <div className="flex items-center gap-1 p-1 rounded-xl flex-wrap" style={{ backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+              {([
+                ...(ENABLE_CARD ? [{ key: 'card' as PaymentMethod, label: 'Card', icon: <CreditCard className="w-4 h-4" /> }] : []),
+                { key: 'paypal' as PaymentMethod, label: 'PayPal', icon: <img src="/images/paypal.png" alt="PayPal" className="w-4 h-4 object-contain" /> },
+                { key: 'maya'   as PaymentMethod, label: 'Maya',   icon: <MayaIcon className="w-4 h-4" /> },
+                { key: 'gcash'  as PaymentMethod, label: 'GCash',  icon: <GCashIcon className="w-4 h-4" /> },
+                ...(ENABLE_ROBUX ? [{ key: 'robux' as PaymentMethod, label: 'Robux', icon: <img src="https://upload.wikimedia.org/wikipedia/commons/c/c7/Robux_2019_Logo_gold.svg" alt="Robux" className="w-4 h-4 object-contain" /> }] : []),
+              ]).map(option => (
+                <button
+                  key={option.key}
+                  onClick={() => setPaymentMethod(option.key)}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-150"
+                  style={{
+                    backgroundColor: paymentMethod === option.key ? 'rgba(255,255,255,0.09)' : 'transparent',
+                    color: paymentMethod === option.key ? 'white' : 'var(--text-muted)',
+                  }}
+                >
+                  {option.icon}
+                  {option.label}
+                </button>
+              ))}
+            </div>
 
             {/* Cart button — PayPal only */}
             {paymentMethod === 'paypal' && (
               <button
                 onClick={() => setCartOpen(true)}
-                className="relative flex items-center gap-2 px-3 py-2 rounded-lg bg-[#1a1a1a] border border-[#2a2a2a] text-gray-400 hover:text-white hover:border-[#3a3a3a] transition-all text-sm"
+                className="relative flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ml-auto"
+                style={{ backgroundColor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: 'var(--text-secondary)' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'white'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)'; }}
               >
                 <ShoppingCart className="w-4 h-4" />
                 Cart
                 {cartCount > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 accent-bg text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold leading-none">
+                  <span className="absolute -top-1.5 -right-1.5 text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold leading-none" style={{ backgroundColor: 'var(--accent)', color: '#000' }}>
                     {cartCount}
                   </span>
                 )}
               </button>
             )}
           </div>
-
-          <div className="flex gap-2">
-            <button
-              onClick={() => setPaymentMethod('paypal')}
-              className={`px-4 py-2.5 rounded-lg border transition-all flex items-center gap-2 ${
-                paymentMethod === 'paypal'
-                  ? 'accent-bg accent-border accent-text'
-                  : 'bg-[#1a1a1a] border-[#2a2a2a] text-gray-400 hover:border-[#3a3a3a]'
-              }`}
-              title="PayPal"
-            >
-              <img src="/images/paypal.png" alt="PayPal" className="w-5 h-5 object-contain" />
-            </button>
-            {ENABLE_ROBUX && (
-              <button
-                onClick={() => setPaymentMethod('robux')}
-                className={`px-4 py-2.5 rounded-lg border transition-all flex items-center gap-2 ${
-                  paymentMethod === 'robux'
-                    ? 'accent-bg accent-border accent-text'
-                    : 'bg-[#1a1a1a] border-[#2a2a2a] text-gray-400 hover:border-[#3a3a3a]'
-                }`}
-                title="Robux"
-              >
-                <img src="https://upload.wikimedia.org/wikipedia/commons/c/c7/Robux_2019_Logo_gold.svg" alt="Robux" className="w-5 h-5" />
-              </button>
-            )}
-            <button
-              onClick={() => setPaymentMethod('gcash')}
-              className={`px-4 py-2.5 rounded-lg border transition-all flex items-center gap-2 ${
-                paymentMethod === 'gcash'
-                  ? 'accent-bg accent-border accent-text'
-                  : 'bg-[#1a1a1a] border-[#2a2a2a] text-gray-400 hover:border-[#3a3a3a]'
-              }`}
-              title="GCash"
-            >
-              <img src="/images/gcash.png" alt="GCash" className="w-6 h-6 object-contain" />
-            </button>
-          </div>
         </section>
 
         {/* Pricing Cards */}
-        <section className="grid md:grid-cols-3 gap-6">
+        <section>
+        <p className="font-mono text-[10px] uppercase tracking-[0.2em] mb-5" style={{ color: 'var(--text-muted)' }}>Plans</p>
+        <div className="grid md:grid-cols-3 gap-4">
           {getCurrentPlans().map((plan) => (
             (() => {
-              const tierStock = getTierStock(plan.plan);
-              const isOutOfStock = !stockLoading && tierStock <= 0;
-              const stockStatusText = stockLoading
-                ? 'Checking stock...'
-                : tierStock <= 5
-                    ? `${tierStock} left (low stock)`
-                    : `${tierStock} in stock`;
+              const isMaya = paymentMethod === 'maya';
+              const isGCash = paymentMethod === 'gcash';
+              const isCard = paymentMethod === 'card';
+              const isQRMethod = isMaya || isGCash;
+              const isWeeklyQR = isQRMethod && plan.plan === 'weekly';
+              const tierStock = isQRMethod ? 999 : getTierStock(plan.plan);
+              const isOutOfStock = isWeeklyQR ? true : isQRMethod ? false : (!stockLoading && tierStock <= 0);
+              const stockStatusText = isWeeklyQR
+                ? 'Not available'
+                : isQRMethod
+                  ? 'Available'
+                  : stockLoading
+                    ? 'Checking stock...'
+                    : tierStock <= 5
+                      ? `${tierStock} left (low stock)`
+                      : `${tierStock} in stock`;
 
               const qty = quantities[plan.plan] || 1;
               const isPayPal = paymentMethod === 'paypal';
+              const isPaddle  = false;
               const cartIncludes = cart.some(c => c.plan === plan.plan);
               const justAdded = addedFeedback === plan.plan;
 
@@ -1131,15 +1448,19 @@ function PremiumContent() {
                     stockStatusText={isOutOfStock ? 'Currently out of stock' : stockStatusText}
                     stockStatusVariant={isOutOfStock ? 'out-of-stock' : tierStock <= 5 ? 'low-stock' : 'in-stock'}
                     isOutOfStock={isOutOfStock}
-                    buttonText={isOutOfStock ? 'Out of Stock' : isPayPal ? `Pay with PayPal${qty > 1 ? ` (×${qty})` : ''}` : paymentMethod === 'gcash' ? 'Pay with GCash' : 'Verify & Get Key'}
-                    buttonIcon={!isOutOfStock && (isPayPal || paymentMethod === 'gcash') ? <CreditCard className="w-4 h-4" /> : null}
+                    buttonText={isOutOfStock ? 'Out of Stock' : isCard ? `Pay with Card${qty > 1 ? ` (×${qty})` : ''}` : isPayPal ? `Pay with PayPal${qty > 1 ? ` (×${qty})` : ''}` : isMaya ? 'Pay with Maya' : isGCash ? 'Pay with GCash' : 'Verify & Get Key'}
+                    buttonIcon={!isOutOfStock && (isPayPal || isCard || isQRMethod) ? <CreditCard className="w-4 h-4" /> : null}
                     onButtonClick={() => {
-                      if (paymentMethod === 'paypal') {
+                      if (paymentMethod === 'card') {
+                        handleCardPayment(plan.plan, plan.price);
+                      } else if (paymentMethod === 'paypal') {
                         handlePayPalPayment(plan.plan, plan.price);
                       } else if (paymentMethod === 'robux') {
                         handleRobuxPayment(plan.plan, plan.price);
-                      } else {
+                      } else if (paymentMethod === 'gcash') {
                         handleGCashPayment(plan.plan, plan.price);
+                      } else {
+                        handleMayaPayment(plan.plan, plan.price);
                       }
                     }}
                     priceIcon={
@@ -1153,8 +1474,8 @@ function PremiumContent() {
                     }
                   />
 
-                  {/* PayPal: Quantity stepper + Add to Cart */}
-                  {isPayPal && (
+                  {/* PayPal / Card: Quantity stepper + Add to Cart */}
+                  {(isPayPal || isCard) && (
                     <div className={`flex items-center gap-2 px-1 ${isOutOfStock ? 'invisible select-none pointer-events-none' : ''}`}>
                       <div className="flex items-center gap-2 flex-1">
                         <span className="text-xs text-gray-500">Qty:</span>
@@ -1169,42 +1490,47 @@ function PremiumContent() {
                           </span>
                         )}
                       </div>
-                      <button
-                        onClick={() => handleAddToCart(plan.plan, plan.price, plan.title)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
-                          justAdded
-                            ? 'accent-bg accent-text border-transparent'
-                            : cartIncludes
-                            ? 'bg-[#1a1a1a] border-[var(--accent)] accent-text'
-                            : 'bg-[#1a1a1a] border-[#2a2a2a] text-gray-400 hover:text-white hover:border-[#3a3a3a]'
-                        }`}
-                      >
-                        {justAdded ? (
-                          <><CheckCircle className="w-3 h-3" /> Added!</>
-                        ) : (
-                          <><ShoppingCart className="w-3 h-3" /> Add to Cart</>
-                        )}
-                      </button>
+                      {isPayPal && (
+                        <button
+                          onClick={() => handleAddToCart(plan.plan, plan.price, plan.title)}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                            justAdded
+                              ? 'accent-bg accent-text border-transparent'
+                              : cartIncludes
+                              ? 'bg-[#1a1a1a] border-[var(--accent)] accent-text'
+                              : 'bg-[#1a1a1a] border-[#2a2a2a] text-gray-400 hover:text-white hover:border-[#3a3a3a]'
+                          }`}
+                        >
+                          {justAdded ? (
+                            <><CheckCircle className="w-3 h-3" /> Added!</>
+                          ) : (
+                            <><ShoppingCart className="w-3 h-3" /> Add to Cart</>
+                          )}
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
               );
             })()
           ))}
+        </div>
         </section>
 
-        {/* FAQ Section */}
+        {/* ── FAQ ── */}
         <section>
-          <h2 className="text-xl font-bold text-white mb-6">Frequently Asked Questions</h2>
-          <div className="grid md:grid-cols-2 gap-4">
+          <p className="font-mono text-[10px] uppercase tracking-[0.2em] mb-8" style={{ color: 'var(--text-muted)' }}>FAQ</p>
+          <div className="divide-y" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', borderColor: 'rgba(255,255,255,0.06)' }}>
             {faqs.map((faq, index) => (
-              <Card key={index} variant="hover" className="p-5">
-                <h3 className="font-medium text-white mb-2 flex items-center gap-2">
-                  <HelpCircle className="w-4 h-4 accent-text" />
-                  {faq.question}
-                </h3>
-                <p className="text-gray-500 text-sm">{faq.answer}</p>
-              </Card>
+              <div key={index} className="flex gap-8 py-6">
+                <span className="font-mono text-xs pt-0.5 w-6 shrink-0" style={{ color: 'rgba(255,255,255,0.2)' }}>
+                  {String(index + 1).padStart(2, '0')}
+                </span>
+                <div className="flex-1 flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-12">
+                  <h3 className="font-medium text-white text-sm sm:w-48 shrink-0">{faq.question}</h3>
+                  <p className="text-sm leading-relaxed flex-1" style={{ color: 'var(--text-muted)' }}>{faq.answer}</p>
+                </div>
+              </div>
             ))}
           </div>
         </section>
@@ -1220,6 +1546,7 @@ function PremiumContent() {
         onCheckout={() => { setCartOpen(false); handleCartCheckout(); }}
         onClear={handleCartClear}
         isProcessing={isProcessing}
+        paymentMethod={paymentMethod}
       />
 
       {/* Processing Modal */}
@@ -1238,7 +1565,7 @@ function PremiumContent() {
       {/* Status Modal */}
       {statusModal.isOpen && (
         <div className="fixed inset-0 bg-black/90 z-[60] flex items-center justify-center p-4 animate-in fade-in zoom-in duration-200">
-          <Card className="w-full max-w-md p-6 text-center border shadow-2xl relative">
+          <Card className="w-full max-w-md p-6 text-center border shadow-2xl relative" style={{ backgroundColor: '#0e0e0e' }}>
             <div className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center ${
               statusModal.type === 'success' ? 'accent-bg accent-text' : 'bg-red-500/20 text-red-500'
             }`}>
@@ -1269,7 +1596,7 @@ function PremiumContent() {
       {/* TOS Modal */}
       {showTosModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 animate-in fade-in duration-200">
-          <Card className="w-full max-w-md p-6 relative">
+          <Card className="w-full max-w-md p-6 relative" style={{ backgroundColor: '#0e0e0e' }}>
             <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
               <HelpCircle className="w-5 h-5 accent-text" />
               Terms of Service
@@ -1350,7 +1677,7 @@ function PremiumContent() {
       {/* Robux Verification Modal */}
       {showRobuxModal && robuxDetails && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 animate-in fade-in duration-200">
-          <Card className="w-full max-w-md p-6 relative">
+          <Card className="w-full max-w-md p-6 relative" style={{ backgroundColor: '#0e0e0e' }}>
             <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
               <span className="text-2xl">🎮</span>
               Verify Ownership
@@ -1422,7 +1749,7 @@ function PremiumContent() {
       {/* Ticket Modal */}
       {showTicketModal && ticketDetails && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 animate-in fade-in duration-200">
-          <Card className="w-full max-w-md p-6 relative">
+          <Card className="w-full max-w-md p-6 relative" style={{ backgroundColor: '#0e0e0e' }}>
             <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
               <CreditCard className="w-5 h-5 accent-text" />
               Complete Purchase
@@ -1459,80 +1786,152 @@ function PremiumContent() {
 
 
 
-      {/* GCash Manual Payment Modal */}
-      {showGcashModal && gcashDetails && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 animate-in fade-in duration-200">
-          <Card className="w-full max-w-md p-6 relative">
-            <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-              <img src="/images/gcash.png" alt="GCash" className="w-6 h-6 object-contain" />
-              GCash Payment
-            </h2>
+      {/* ─── QR Payment Modal (Maya / GCash) ──────────────────────────────────── */}
+      {showQRModal && pendingPlan && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+          <div
+            className="w-full max-w-sm rounded-xl overflow-hidden"
+            style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.09)' }}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+              <div>
+                <p className="font-mono text-[10px] uppercase tracking-[0.2em] mb-0.5" style={{ color: 'var(--text-muted)' }}>
+                  {qrMethod === 'gcash' ? 'GCash' : 'Maya'}
+                </p>
+                <h2 className="font-bold text-white text-base capitalize">{pendingPlan.plan} Plan</h2>
+              </div>
+              <button
+                onClick={() => setShowQRModal(false)}
+                className="w-8 h-8 flex items-center justify-center rounded-lg transition-colors"
+                style={{ color: 'var(--text-muted)' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'white'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'; }}
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
 
-            <div className="space-y-4 mb-6 text-sm text-gray-300">
-              <p className="bg-[#1a1a1a] p-3 rounded-lg border border-[#2a2a2a] text-center">
-                <strong>Plan:</strong> <span className="text-white capitalize">{gcashDetails.plan}</span>
-                <span className="mx-3 opacity-50">|</span>
-                <strong>Price:</strong> <span className="accent-text font-bold text-base">₱{gcashDetails.price}</span>
+            {/* Amount */}
+            <div className="px-5 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', backgroundColor: 'rgba(var(--accent-rgb),0.04)' }}>
+              <p className="text-xs mb-1" style={{ color: 'var(--text-muted)' }}>Amount to send</p>
+              <p className="text-3xl font-bold text-white" style={{ letterSpacing: '-0.03em' }}>
+                ₱{pendingPlan.amount.toLocaleString()}
               </p>
+            </div>
 
-              <div className="flex flex-col items-center gap-2 my-6">
-                <p className="text-gray-400 font-medium">Scan to Pay</p>
-                <button 
-                  onClick={() => setIsGcashQrExpanded(true)}
-                  className="bg-white p-3 rounded-2xl shadow-xl cursor-zoom-in hover:scale-105 transition-transform appearance-none border-none"
-                  title="Click to expand QR Code"
-                >
-                  <img src="/images/gcash-qr.jpg" alt="GCash QR Code" className="w-48 h-48 object-contain" />
-                </button>
-                <p className="text-xs text-gray-500 mb-2">Click image to expand</p>
-                <p className="text-gray-400 font-medium">If QR fails, send to: <strong className="text-white text-lg tracking-wider">09304300733</strong></p>
+            {/* QR Code */}
+            <div className="px-5 py-6 flex flex-col items-center gap-4">
+              <div
+                className="w-52 h-52 rounded-xl flex items-center justify-center overflow-hidden cursor-zoom-in relative group"
+                style={{ backgroundColor: 'white' }}
+                onClick={() => setQrZoomed(true)}
+                title="Tap to enlarge for scanning"
+              >
+                <img
+                  src={qrMethod === 'gcash' ? '/images/gcash-qr.jpg' : '/images/maya-qr.jpg'}
+                  alt={qrMethod === 'gcash' ? 'GCash QR Code' : 'Maya QR Code'}
+                  className="w-full h-full object-contain"
+                  onError={e => {
+                    (e.currentTarget as HTMLElement).style.display = 'none';
+                    const placeholder = qrMethod === 'gcash' ? '/images/gcash-qr.jpg' : '/images/maya-qr.jpg';
+                    (e.currentTarget.parentElement as HTMLElement).innerHTML = `<p style="color:#999;font-size:12px;text-align:center;padding:16px">QR image not uploaded yet.<br/>Place at ${placeholder}</p>`;
+                  }}
+                />
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-end justify-center pb-2 opacity-0 group-hover:opacity-100">
+                  <span className="text-[10px] font-mono bg-black/60 text-white px-2 py-0.5 rounded">tap to enlarge</span>
+                </div>
               </div>
 
-              <div className="bg-orange-500/10 border border-orange-500/20 p-4 rounded-xl">
-                <h3 className="text-orange-300 font-semibold mb-3 flex items-center gap-2">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                  Manual Verification Steps
-                </h3>
-                <ol className="text-orange-200/80 space-y-2.5 list-decimal list-outside ml-4">
-                  <li>Scan the QR code (or send to <strong>09304300733</strong>) with exactly <strong className="text-orange-200 font-bold">₱{gcashDetails.price}</strong>.</li>
-                  <li><strong>Download or screenshot</strong> the payment receipt.</li>
-                  <li>Click "Open Support Ticket" below.</li>
-                  <li>Send your receipt and your Seisen account details in the ticket.</li>
-                  <li>Wait for validation. Once confirmed valid, you will receive your keys.</li>
-                </ol>
+              <div className="w-full space-y-2">
+                <div className="flex items-start gap-3 rounded-lg px-3 py-2.5" style={{ backgroundColor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                  <span className="font-mono text-[10px] pt-0.5 shrink-0" style={{ color: 'var(--text-muted)' }}>01</span>
+                  <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Scan the QR with Maya or GCash app and send exactly <strong className="text-white">₱{pendingPlan.amount.toLocaleString()}</strong></p>
+                </div>
+                <div className="flex items-start gap-3 rounded-lg px-3 py-2.5" style={{ backgroundColor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                  <span className="font-mono text-[10px] pt-0.5 shrink-0" style={{ color: 'var(--text-muted)' }}>02</span>
+                  <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Screenshot your payment receipt</p>
+                </div>
+                <div className="flex items-start gap-3 rounded-lg px-3 py-2.5" style={{ backgroundColor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                  <span className="font-mono text-[10px] pt-0.5 shrink-0" style={{ color: 'var(--text-muted)' }}>03</span>
+                  <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Open a ticket in Discord with the screenshot and your <strong className="text-white">Discord ID</strong></p>
+                </div>
               </div>
             </div>
 
-            <div className="flex gap-3">
-              <Button variant="secondary" className="flex-1" onClick={() => setShowGcashModal(false)}>
-                Cancel
-              </Button>
-              <a href="https://discord.com/channels/1333251917098520628/1333435322603933706" target="_blank" className="flex-1" rel="noopener noreferrer">
-                <Button className="w-full">
-                  Open Support Ticket
-                </Button>
+            {/* Footer */}
+            <div className="px-5 pb-5">
+              <a
+                href="https://discord.gg/F4sAf6z8Ph"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2.5 w-full py-3 rounded-lg text-sm font-semibold text-white transition-all"
+                style={{ backgroundColor: '#5865F2' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = '#4752C4'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = '#5865F2'; }}
+              >
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/>
+                </svg>
+                Open a ticket on Discord
               </a>
             </div>
-          </Card>
-          
-          {/* Expanded QR Code Overlay */}
-          {isGcashQrExpanded && (
-            <div 
-              className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 p-4 animate-in fade-in duration-200 cursor-zoom-out"
-              onClick={() => setIsGcashQrExpanded(false)}
-              title="Click anywhere to close"
-            >
-              <div className="bg-white p-4 rounded-3xl shadow-2xl max-w-full max-h-full overflow-hidden flex items-center justify-center">
-                <img 
-                  src="/images/gcash-qr.jpg" 
-                  alt="Expanded GCash QR Code" 
-                  className="max-h-[85vh] max-w-[85vw] object-contain" 
-                />
-              </div>
-            </div>
-          )}
+          </div>
         </div>
       )}
+
+      {/* ─── Card Payment Modal ────────────────────────────────────────────────── */}
+      {showCardModal && pendingPlan && (
+        <CardPaymentModal
+          plan={pendingPlan.plan}
+          amount={pendingPlan.amount}
+          onClose={() => setShowCardModal(false)}
+          onSuccess={(transactionId, tier, amt) => {
+            setShowCardModal(false);
+            clearCart(); setCart([]);
+            setStatusModal({ isOpen: true, type: 'success', title: 'Payment Successful!', message: 'Your key has been generated. Redirecting to receipt...' });
+            localStorage.setItem('client_auth', 'true');
+            setTimeout(() => {
+              const params = new URLSearchParams({
+                orderId: transactionId,
+                tier: pendingPlan.plan,
+                amount: String(pendingPlan.amount),
+                currency: 'EUR',
+                method: 'card',
+                date: new Date().toISOString(),
+              });
+              router.push(`/success?${params.toString()}`);
+            }, 1000);
+          }}
+          onError={(msg) => {
+            setShowCardModal(false);
+            setStatusModal({ isOpen: true, type: 'error', title: 'Payment Failed', message: msg });
+          }}
+        />
+      )}
+
+      {/* ─── QR Fullscreen Zoom ────────────────────────────────────────────────── */}
+      {qrZoomed && (
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-black p-4 cursor-zoom-out"
+          onClick={() => setQrZoomed(false)}
+        >
+          <div className="flex flex-col items-center gap-3 w-full h-full justify-center">
+            <p className="font-mono text-[10px] uppercase tracking-[0.2em]" style={{ color: 'var(--text-muted)' }}>
+              {qrMethod === 'gcash' ? 'GCash' : 'Maya'} — Scan with your app
+            </p>
+            <div className="rounded-2xl overflow-hidden shadow-2xl" style={{ backgroundColor: 'white', width: 'min(92vw, 92vh)', height: 'min(92vw, 92vh)' }}>
+              <img
+                src={qrMethod === 'gcash' ? '/images/gcash-qr.jpg' : '/images/maya-qr.jpg'}
+                alt="QR Code"
+                className="w-full h-full object-contain"
+              />
+            </div>
+            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Tap anywhere to close</p>
+          </div>
+        </div>
+      )}
+
       {/* Discord Login / Switch Modal */}
       {showDiscordModal && (
         <DiscordLoginModal

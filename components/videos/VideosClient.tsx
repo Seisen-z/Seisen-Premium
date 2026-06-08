@@ -1,9 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Play, ExternalLink, Clock } from 'lucide-react';
-import { Card } from '@/components/ui/Card';
-import Button from '@/components/ui/Button';
+import { Play, ExternalLink, X } from 'lucide-react';
 import Image from 'next/image';
 
 interface Video {
@@ -18,156 +16,203 @@ interface VideosClientProps {
   initialVideos: Video[];
 }
 
-export default function VideosClient({ initialVideos }: VideosClientProps) {
-  const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
+function timeAgo(dateString: string) {
+  const s = Math.floor((Date.now() - new Date(dateString).getTime()) / 1000);
+  if (s / 31536000 > 1) return Math.floor(s / 31536000) + 'y ago';
+  if (s / 2592000  > 1) return Math.floor(s / 2592000)  + 'mo ago';
+  if (s / 604800   > 1) return Math.floor(s / 604800)   + 'w ago';
+  if (s / 86400    > 1) return Math.floor(s / 86400)    + 'd ago';
+  if (s / 3600     > 1) return Math.floor(s / 3600)     + 'h ago';
+  if (s / 60       > 1) return Math.floor(s / 60)       + 'm ago';
+  return s + 's ago';
+}
 
-  const getTimeAgo = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-    
-    let interval = seconds / 31536000;
-    if (interval > 1) return Math.floor(interval) + " years ago";
-    interval = seconds / 2592000;
-    if (interval > 1) return Math.floor(interval) + " months ago";
-    interval = seconds / 604800;
-    if (interval > 1) return Math.floor(interval) + " weeks ago";
-    interval = seconds / 86400;
-    if (interval > 1) return Math.floor(interval) + " days ago";
-    interval = seconds / 3600;
-    if (interval > 1) return Math.floor(interval) + " hours ago";
-    interval = seconds / 60;
-    if (interval > 1) return Math.floor(interval) + " minutes ago";
-    return Math.floor(seconds) + " seconds ago";
-  };
+export default function VideosClient({ initialVideos }: VideosClientProps) {
+  const [selected, setSelected] = useState<Video | null>(null);
+
+  const featured = initialVideos[0] ?? null;
+  const rest     = initialVideos.slice(1);
 
   return (
-    <div className="min-h-screen py-8 px-4 md:px-8">
-      <div className="max-w-6xl mx-auto space-y-8">
-        {/* Header */}
-        <section className="text-center animate-fade-in">
-          <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center rounded-2xl bg-gradient-to-br from-red-500 to-pink-500 shadow-lg shadow-red-500/30">
-            <Play className="w-8 h-8 text-white" />
-          </div>
-          <h1 className="text-lg font-bold text-white mb-2">Tutorial Videos</h1>
-          <p className="text-gray-500">
-            Watch guides, tutorials, and feature showcases
-          </p>
-        </section>
+    <div className="min-h-screen px-6 md:px-14 pt-16 pb-28 max-w-6xl mx-auto">
 
-        {/* YouTube Channel Link */}
-        <div className="text-center">
-          <a
-            href="https://www.youtube.com/@SeisenHub"
-            target="_blank"
-            rel="noopener noreferrer"
+      {/* ── Header ── */}
+      <div className="flex items-end justify-between gap-6 flex-wrap mb-16">
+        <div>
+          <h1
+            className="font-bold text-white leading-none mb-4"
+            style={{ fontSize: 'clamp(3rem, 8vw, 6rem)', letterSpacing: '-0.04em' }}
           >
-            <Button>
-              <Play className="w-4 h-4" />
-              Subscribe on YouTube
-              <ExternalLink className="w-4 h-4" />
-            </Button>
+            Videos
+          </h1>
+          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+            {initialVideos.length} tutorial{initialVideos.length !== 1 ? 's' : ''} — guides, showcases, updates
+          </p>
+        </div>
+        <a
+          href="https://www.youtube.com/@SeisenHub"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all shrink-0"
+          style={{ backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: 'var(--text-secondary)' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'white'; (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(255,255,255,0.09)'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)'; (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(255,255,255,0.05)'; }}
+        >
+          @SeisenHub <ExternalLink className="w-3.5 h-3.5 opacity-60" />
+        </a>
+      </div>
+
+      {initialVideos.length === 0 ? (
+        <div className="py-32" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No videos loaded.</p>
+          <a href="https://www.youtube.com/@SeisenHub" target="_blank" rel="noopener noreferrer"
+            className="text-sm mt-2 inline-block" style={{ color: 'var(--accent)' }}>
+            Visit channel →
           </a>
         </div>
-
-        {/* Video Player Modal */}
-        {selectedVideo && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4 animate-in fade-in duration-200"
-            onClick={() => setSelectedVideo(null)}
-          >
+      ) : (
+        <>
+          {/* ── Featured video ── */}
+          {featured && (
             <div
-              className="w-full max-w-5xl bg-[#101010] rounded-xl border border-[#333] overflow-hidden shadow-2xl"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="relative pt-[56.25%] bg-black">
-                <iframe
-                  src={`https://www.youtube.com/embed/${selectedVideo.id}?autoplay=1`}
-                  title={selectedVideo.title}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  className="absolute inset-0 w-full h-full"
-                />
-              </div>
-              <div className="p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-[#141414]">
-                <div>
-                    <h3 className="text-white font-bold text-lg line-clamp-1">{selectedVideo.title}</h3>
-                    <p className="text-gray-500 text-sm">{getTimeAgo(selectedVideo.publishedAt)}</p>
-                </div>
-                <Button variant="secondary" onClick={() => setSelectedVideo(null)}>
-                  Close
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Videos Grid */}
-        <section className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {initialVideos.map((video) => (
-            <Card
-              key={video.id}
-              variant="hover"
-              className="overflow-hidden cursor-pointer group bg-[#101010] border-[#1f1f1f]"
-              onClick={() => setSelectedVideo(video)}
+              className="flex flex-col lg:flex-row gap-0 mb-16 rounded-xl overflow-hidden cursor-pointer group"
+              style={{ border: '1px solid rgba(255,255,255,0.07)' }}
+              onClick={() => setSelected(featured)}
             >
               {/* Thumbnail */}
-              <div className="relative aspect-video bg-[#1a1a1a]">
-                <Image 
-                    src={video.thumbnail} 
-                    alt={video.title}
-                    fill
-                    className="object-cover transition-transform duration-500 group-hover:scale-105"
+              <div className="relative lg:w-[60%] aspect-video lg:aspect-auto bg-black shrink-0">
+                <Image
+                  src={featured.thumbnail}
+                  alt={featured.title}
+                  fill
+                  className="object-cover transition-transform duration-500 group-hover:scale-105"
                 />
-                <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <div className="w-14 h-14 rounded-full bg-red-600 flex items-center justify-center transform scale-75 group-hover:scale-100 transition-transform">
-                    <Play className="w-6 h-6 text-white ml-1" />
+                <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.7)', border: '1px solid rgba(255,255,255,0.2)' }}>
+                    <Play className="w-5 h-5 text-white ml-0.5" />
                   </div>
                 </div>
-                {/* Duration placeholder if available, otherwise omitted */}
-              </div>
-
-              {/* Info */}
-              <div className="p-5">
-                <h3 className="font-bold text-white mb-2 line-clamp-2 leading-tight min-h-[44px]">
-                  {video.title}
-                </h3>
-                <div className="flex items-center gap-4 text-xs text-gray-500">
-                  <span className="flex items-center gap-1">
-                    <Clock className="w-3 h-3" />
-                    {getTimeAgo(video.publishedAt)}
+                {/* Latest badge */}
+                <div className="absolute top-3 left-3">
+                  <span className="font-mono text-[9px] uppercase tracking-widest px-2 py-1 rounded" style={{ backgroundColor: 'var(--accent)', color: '#000' }}>
+                    Latest
                   </span>
                 </div>
               </div>
-            </Card>
-          ))}
-        </section>
 
-        {initialVideos.length === 0 && (
-          <div className="text-center py-20 bg-[#101010] rounded-xl border border-[#1f1f1f]">
-             <p className="text-gray-400">Unable to load videos at the moment.</p>
-             <a href="https://www.youtube.com/@SeisenHub" target="_blank" className="text-blue-500 hover:underline mt-2 inline-block">Visit our Channel</a>
-          </div>
-        )}
+              {/* Info */}
+              <div className="flex-1 p-7 lg:p-10 flex flex-col justify-between" style={{ backgroundColor: 'rgba(255,255,255,0.01)' }}>
+                <div>
+                  <p className="font-mono text-[10px] uppercase tracking-[0.2em] mb-4" style={{ color: 'var(--text-muted)' }}>
+                    {timeAgo(featured.publishedAt)}
+                  </p>
+                  <h2 className="font-bold text-white text-xl leading-tight mb-4 line-clamp-3">
+                    {featured.title}
+                  </h2>
+                </div>
+                <div
+                  className="inline-flex items-center gap-2 text-sm font-medium transition-colors"
+                  style={{ color: 'var(--accent)' }}
+                >
+                  <Play className="w-3.5 h-3.5" /> Watch now
+                </div>
+              </div>
+            </div>
+          )}
 
-        {/* More Videos CTA */}
-        <Card className="p-6 text-center bg-gradient-to-r from-[#141414] to-[#1a1a1a] border-[#2a2a2a]">
-          <h3 className="font-semibold text-white mb-2">Want more tutorials?</h3>
-          <p className="text-gray-500 text-sm mb-4">
-            Subscribe to our YouTube channel for the latest videos
-          </p>
-          <a
-            href="https://www.youtube.com/@SeisenHub"
-            target="_blank"
-            rel="noopener noreferrer"
+          {/* ── Rest grid ── */}
+          {rest.length > 0 && (
+            <>
+              <p className="font-mono text-[10px] uppercase tracking-[0.2em] mb-6" style={{ color: 'var(--text-muted)' }}>
+                All videos
+              </p>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {initialVideos.map((video, i) => (
+                  <div
+                    key={video.id}
+                    className="group cursor-pointer rounded-xl overflow-hidden"
+                    style={{ border: '1px solid rgba(255,255,255,0.07)' }}
+                    onClick={() => setSelected(video)}
+                  >
+                    <div className="relative aspect-video bg-black">
+                      <Image
+                        src={video.thumbnail}
+                        alt={video.title}
+                        fill
+                        className="object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}>
+                          <Play className="w-3.5 h-3.5 text-white ml-0.5" />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="p-4" style={{ backgroundColor: 'rgba(255,255,255,0.01)' }}>
+                      <div className="flex items-start gap-3">
+                        <span className="font-mono text-[10px] pt-0.5 shrink-0" style={{ color: 'rgba(255,255,255,0.2)' }}>
+                          {String(i + 1).padStart(2, '0')}
+                        </span>
+                        <div>
+                          <h3 className="text-sm font-medium text-white line-clamp-2 leading-snug mb-1.5">
+                            {video.title}
+                          </h3>
+                          <p className="font-mono text-[10px]" style={{ color: 'var(--text-muted)' }}>
+                            {timeAgo(video.publishedAt)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </>
+      )}
+
+      {/* ── Video modal ── */}
+      {selected && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
+          onClick={() => setSelected(null)}
+        >
+          <div
+            className="w-full max-w-5xl rounded-xl overflow-hidden"
+            style={{ border: '1px solid rgba(255,255,255,0.1)' }}
+            onClick={e => e.stopPropagation()}
           >
-            <Button variant="outline">
-              <Play className="w-4 h-4" />
-              Visit YouTube Channel
-            </Button>
-          </a>
-        </Card>
-      </div>
+            <div className="relative pt-[56.25%] bg-black">
+              <iframe
+                src={`https://www.youtube.com/embed/${selected.id}?autoplay=1`}
+                title={selected.title}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                className="absolute inset-0 w-full h-full"
+              />
+            </div>
+            <div
+              className="flex items-center justify-between gap-4 px-5 py-3"
+              style={{ backgroundColor: 'var(--bg-secondary)', borderTop: '1px solid rgba(255,255,255,0.07)' }}
+            >
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-white truncate">{selected.title}</p>
+                <p className="font-mono text-[10px] mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                  {timeAgo(selected.publishedAt)}
+                </p>
+              </div>
+              <button
+                onClick={() => setSelected(null)}
+                className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg transition-colors"
+                style={{ color: 'var(--text-muted)', backgroundColor: 'rgba(255,255,255,0.05)' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'white'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'; }}
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

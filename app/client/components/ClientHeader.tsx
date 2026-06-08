@@ -12,7 +12,6 @@ export default function ClientHeader() {
   const [hasUnread, setHasUnread] = useState(false);
   const [discord, setDiscord] = useState<DiscordSession | null>(null);
 
-  // Read Discord session for avatar display
   useEffect(() => {
     setDiscord(readDiscordSession());
   }, []);
@@ -37,16 +36,21 @@ export default function ClientHeader() {
     { href: '/client/support',   label: 'Support', icon: Headset },
   ];
 
-  // Display name: Discord tag > email prefix > raw email
   const displayName = discord?.tag
     ?? (email?.includes('@') ? email.split('@')[0] : email)
     ?? 'User';
 
   return (
-    <header className="w-full bg-[#0a0a0a] border-b border-[#1f1f1f] px-8 py-4">
-      <div className="max-w-7xl mx-auto flex justify-between items-center">
-        {/* Navigation */}
-        <nav className="flex items-center gap-1">
+    <header className="w-full border-b border-[#1a1a1a] bg-[#0a0a0a] sticky top-14 z-30">
+      <div className="max-w-7xl mx-auto px-6 flex items-center justify-between h-14">
+
+        {/* Brand */}
+        <Link href="/client/dashboard" className="text-sm font-bold text-white tracking-widest mr-8 shrink-0">
+          SEISEN
+        </Link>
+
+        {/* Nav */}
+        <nav className="flex items-center flex-1 gap-1">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href;
@@ -54,59 +58,54 @@ export default function ClientHeader() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`relative flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                className={`relative flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                   isActive
-                    ? 'bg-[#1a1a1a] text-white border border-[#2a2a2a]'
-                    : 'text-gray-400 hover:text-white hover:bg-[#141414]'
+                    ? 'bg-[#1a1a1a] text-white'
+                    : 'text-[#555] hover:text-[#999] hover:bg-[#111]'
                 }`}
               >
                 {item.label === 'Support' && hasUnread && (
-                  <span className="absolute top-1 right-1 flex h-2.5 w-2.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
+                  <span className="absolute top-1.5 right-1.5 flex h-1.5 w-1.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--accent)] opacity-75" />
+                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[var(--accent)]" />
                   </span>
                 )}
-                <Icon className={`w-4 h-4 ${isActive ? 'accent-text' : ''}`} />
+                <Icon className="w-3.5 h-3.5" />
                 {item.label}
               </Link>
             );
           })}
         </nav>
 
-        {/* User info + Logout */}
-        <div className="flex items-center gap-3">
-          {/* Discord badge (if connected) */}
+        {/* User + Logout */}
+        <div className="flex items-center gap-3 shrink-0">
           {discord ? (
             <div className="flex items-center gap-2">
-              <div className="relative">
-                <img
-                  src={discord.avatar}
-                  alt={discord.tag}
-                  className="w-7 h-7 rounded-full ring-2 ring-[#5865F2]/40"
-                />
-                <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-[#0a0a0a]" />
-              </div>
-              <span className="text-sm text-white font-medium hidden sm:block truncate max-w-[120px]">
+              <img
+                src={discord.avatar}
+                alt={discord.tag}
+                className="w-6 h-6 rounded-full ring-1 ring-[#2a2a2a]"
+              />
+              <span className="text-xs text-[#666] hidden sm:block truncate max-w-[120px]">
                 {discord.tag}
               </span>
             </div>
           ) : (
             email && (
-              <span className="text-xs text-gray-500 hidden sm:block truncate max-w-[140px]">
+              <span className="text-xs text-[#555] hidden sm:block truncate max-w-[140px]">
                 {displayName}
               </span>
             )
           )}
-
-          {/* Sign Out */}
           <button
             onClick={logout}
-            className="text-gray-500 hover:text-red-400 text-xs font-medium flex items-center gap-1.5 transition-colors"
+            className="flex items-center gap-1.5 text-xs text-[#444] hover:text-red-400 transition-colors px-2 py-1.5 rounded-lg hover:bg-red-500/5"
           >
             <LogOut className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Sign Out</span>
           </button>
         </div>
+
       </div>
     </header>
   );

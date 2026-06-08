@@ -1,12 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Shield, CreditCard, Settings, LogOut, Search, Copy, Check, Lock, Loader2, AlertCircle, MessageSquare, Eye, FileCode, Plus, Save, Trash2, X } from 'lucide-react';
-import { Card } from '@/components/ui/Card';
-import Button from '@/components/ui/Button';
+import {
+  Shield, CreditCard, Settings, LogOut, Search, Copy, Check,
+  Loader2, AlertCircle, MessageSquare, Eye, FileCode, Plus,
+  Save, Trash2, X, TrendingUp, Users, DollarSign, Zap,
+  ChevronRight, MoreHorizontal, Package
+} from 'lucide-react';
 import { getApiUrl, copyToClipboard } from '@/lib/utils';
 import Link from 'next/link';
-import Image from 'next/image';
 
 interface Payment {
   transaction_id: string;
@@ -41,22 +43,62 @@ interface Stats {
   robloxRevenue: number;
 }
 
-type PremiumTier = 'weekly' | 'monthly' | 'lifetime';
+type PremiumTier   = 'weekly' | 'monthly' | 'lifetime';
 type PaymentMethod = 'robux' | 'paypal' | 'gcash' | 'card';
 
-const PAYMENT_METHODS: { id: PaymentMethod; label: string; color: string; accent: string }[] = [
-  { id: 'robux',  label: 'Robux',  color: 'amber',  accent: '#fbbf24' },
-  { id: 'paypal', label: 'PayPal', color: 'blue',   accent: '#0070ba' },
-  { id: 'gcash',  label: 'GCash',  color: 'green',  accent: '#22c55e' },
-  { id: 'card',   label: 'Card',   color: 'purple', accent: '#9333ea' },
+const PAYMENT_METHODS: { id: PaymentMethod; label: string; color: string }[] = [
+  { id: 'robux',  label: 'Robux',  color: '#fbbf24' },
+  { id: 'paypal', label: 'PayPal', color: '#60a5fa' },
+  { id: 'gcash',  label: 'GCash',  color: '#34d399' },
+  { id: 'card',   label: 'Card',   color: '#c084fc' },
 ];
+
+function Avatar({ name, size = 'sm' }: { name: string; size?: 'sm' | 'md' }) {
+  const initials = name.slice(0, 2).toUpperCase();
+  const hue = name.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0) % 360;
+  const s = size === 'md' ? 'w-9 h-9 text-sm' : 'w-7 h-7 text-xs';
+  return (
+    <div
+      className={`${s} rounded-full flex items-center justify-center font-semibold text-white shrink-0`}
+      style={{ background: `hsl(${hue}, 50%, 30%)` }}
+    >
+      {initials}
+    </div>
+  );
+}
+
+function TierBadge({ tier }: { tier: string }) {
+  const map: Record<string, string> = {
+    weekly:   'bg-blue-500/15 text-blue-300 ring-blue-500/30',
+    monthly:  'bg-violet-500/15 text-violet-300 ring-violet-500/30',
+    lifetime: 'bg-emerald-500/15 text-emerald-300 ring-emerald-500/30',
+  };
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium ring-1 capitalize ${map[tier] || 'bg-white/5 text-white/50 ring-white/10'}`}>
+      {tier}
+    </span>
+  );
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const map: Record<string, string> = {
+    open:    'bg-blue-500/15 text-blue-300 ring-blue-500/30',
+    replied: 'bg-violet-500/15 text-violet-300 ring-violet-500/30',
+    closed:  'bg-white/5 text-white/30 ring-white/10',
+  };
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium ring-1 capitalize ${map[status] || 'bg-white/5 text-white/30 ring-white/10'}`}>
+      {status.replace('_', ' ')}
+    </span>
+  );
+}
 
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  
+
   const [activeTab, setActiveTab] = useState<'payments' | 'tickets' | 'scripts' | 'settings'>('payments');
   const [payments, setPayments] = useState<Payment[]>([]);
   const [tickets, setTickets] = useState<Ticket[]>([]);
@@ -68,8 +110,7 @@ export default function AdminPage() {
   const [isComposeOpen, setIsComposeOpen] = useState(false);
   const [composeData, setComposeData] = useState({ email: '', subject: '', message: '' });
   const [isComposing, setIsComposing] = useState(false);
-  
-  // Script metadata state
+
   const [scripts, setScripts] = useState<any[]>([]);
   const [metadata, setMetadata] = useState<Record<string, any>>({});
   const [saving, setSaving] = useState<string | null>(null);
@@ -83,6 +124,7 @@ export default function AdminPage() {
 
   type MethodStockMap = Record<PremiumTier, Record<PaymentMethod, number>>;
   type MethodDraftMap = Record<PremiumTier, Record<PaymentMethod, string>>;
+
   const defaultMethodStock = (): MethodStockMap => ({
     weekly:   { robux: 0, paypal: 0, gcash: 0, card: 0 },
     monthly:  { robux: 0, paypal: 0, gcash: 0, card: 0 },
@@ -93,1422 +135,806 @@ export default function AdminPage() {
     monthly:  { robux: '0', paypal: '0', gcash: '0', card: '0' },
     lifetime: { robux: '0', paypal: '0', gcash: '0', card: '0' },
   });
+
   const [methodStock, setMethodStock] = useState<MethodStockMap>(defaultMethodStock());
   const [methodDraft, setMethodDraft] = useState<MethodDraftMap>(defaultMethodDraft());
   const [savingMethodKey, setSavingMethodKey] = useState<string | null>(null);
 
-  // GitHub config state
-  const [githubConfig, setGithubConfig] = useState({
-    free_url: '',
-    premium_url: '',
-    discontinued_url: ''
-  });
+  const [githubConfig, setGithubConfig] = useState({ free_url: '', premium_url: '', discontinued_url: '' });
   const [savingGithub, setSavingGithub] = useState(false);
   const [githubLoading, setGithubLoading] = useState(false);
 
-  const ITEMS_PER_PAGE = 5;
+  const ITEMS_PER_PAGE       = 8;
   const TABLE_ITEMS_PER_PAGE = 10;
 
   useEffect(() => {
     const token = localStorage.getItem('adminToken');
-    if (token) {
-      setIsAuthenticated(true);
-      fetchData(token);
-    }
+    if (token) { setIsAuthenticated(true); fetchData(token); }
   }, []);
 
   const fetchData = async (token: string) => {
     try {
       setIsLoading(true);
-      const res = await fetch(`${getApiUrl()}/api/admin/payments`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (res.status === 401) {
-        logout();
-        return;
-      }
-
+      const res = await fetch(`${getApiUrl()}/api/admin/payments`, { headers: { 'Authorization': `Bearer ${token}` } });
+      if (res.status === 401) { logout(); return; }
       if (!res.ok) throw new Error('Failed to fetch data');
-
       const data = await res.json();
-      if (data.success) {
-        setPayments(data.payments);
-        setStats(data.stats);
-      }
-      
-      // Fetch tickets
-      const ticketRes = await fetch(`${getApiUrl()}/api/admin/tickets`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      if (data.success) { setPayments(data.payments); setStats(data.stats); }
+      const ticketRes = await fetch(`${getApiUrl()}/api/admin/tickets`, { headers: { 'Authorization': `Bearer ${token}` } });
       const ticketData = await ticketRes.json();
-      if (ticketData.success) {
-        setTickets(ticketData.tickets);
-      }
-
+      if (ticketData.success) setTickets(ticketData.tickets);
       await fetchPremiumStock(token);
-    } catch (err) {
-      console.error(err);
-      setError('Failed to load dashboard data');
-    } finally {
-      setIsLoading(false);
-    }
+    } catch { setError('Failed to load data'); }
+    finally { setIsLoading(false); }
   };
 
   const fetchPremiumStock = async (token: string) => {
     try {
       setStockLoading(true);
-      const res = await fetch(`${getApiUrl()}/api/admin/premium-stock?scope=paymentMethod`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
+      const res = await fetch(`${getApiUrl()}/api/admin/premium-stock?scope=paymentMethod`, { headers: { 'Authorization': `Bearer ${token}` } });
       if (res.ok) {
-        const methodData = await res.json();
-        const ms = methodData?.methodStocks || {};
-        const newStock = defaultMethodStock();
-        const newDraft = defaultMethodDraft();
-        for (const tier of ['weekly', 'monthly', 'lifetime'] as PremiumTier[]) {
+        const ms = (await res.json())?.methodStocks || {};
+        const newStock = defaultMethodStock(); const newDraft = defaultMethodDraft();
+        for (const t of ['weekly', 'monthly', 'lifetime'] as PremiumTier[])
           for (const m of ['robux', 'paypal', 'gcash', 'card'] as PaymentMethod[]) {
-            const val = Number(ms[tier]?.[m] || 0);
-            newStock[tier][m] = val;
-            newDraft[tier][m] = String(val);
+            const v = Number(ms[t]?.[m] || 0);
+            newStock[t][m] = v; newDraft[t][m] = String(v);
           }
-        }
-        setMethodStock(newStock);
-        setMethodDraft(newDraft);
+        setMethodStock(newStock); setMethodDraft(newDraft);
       }
-    } catch (error) {
-      console.error('Error fetching premium stock:', error);
-    } finally {
-      setStockLoading(false);
-    }
+    } finally { setStockLoading(false); }
   };
 
   const loadGitHubConfig = async () => {
     try {
       setGithubLoading(true);
       const res = await fetch(`${getApiUrl()}/api/admin/github-config`);
-      if (res.ok) {
-        const config = await res.json();
-        setGithubConfig({
-          free_url: config.free_url || '',
-          premium_url: config.premium_url || '',
-          discontinued_url: config.discontinued_url || ''
-        });
-      }
-    } catch (error) {
-      console.error('Error fetching GitHub config:', error);
-    } finally {
-      setGithubLoading(false);
-    }
+      if (res.ok) { const c = await res.json(); setGithubConfig({ free_url: c.free_url || '', premium_url: c.premium_url || '', discontinued_url: c.discontinued_url || '' }); }
+    } finally { setGithubLoading(false); }
   };
 
   const saveGitHubConfig = async () => {
     try {
       setSavingGithub(true);
       const token = localStorage.getItem('adminToken');
-      if (!token) return;
-
-      const res = await fetch(`${getApiUrl()}/api/admin/github-config`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(githubConfig),
-      });
-
-      if (!res.ok) throw new Error('Failed to save config');
-
-      const data = await res.json();
-      setGithubConfig(data);
-      alert('GitHub configuration saved successfully!');
-    } catch (error) {
-      console.error('Error saving GitHub config:', error);
-      alert('Failed to save GitHub configuration');
-    } finally {
-      setSavingGithub(false);
-    }
+      const res = await fetch(`${getApiUrl()}/api/admin/github-config`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(githubConfig) });
+      if (!res.ok) throw new Error('Failed');
+      setGithubConfig(await res.json());
+      alert('Saved!');
+    } catch { alert('Failed to save'); }
+    finally { setSavingGithub(false); }
   };
 
   const saveMethodStock = async (tier: PremiumTier, method: PaymentMethod) => {
+    const token = localStorage.getItem('adminToken');
+    const value = Number(methodDraft[tier][method]);
+    if (!Number.isInteger(value) || value < 0) return alert('Must be a non-negative integer');
+    const key = `${method}-${tier}`;
+    setSavingMethodKey(key);
     try {
-      const token = localStorage.getItem('adminToken');
-      if (!token) return;
-
-      const value = Number(methodDraft[tier][method]);
-      if (!Number.isInteger(value) || value < 0) {
-        alert('Stock must be a non-negative integer.');
-        return;
-      }
-
-      const key = `${method}-${tier}`;
-      setSavingMethodKey(key);
-
-      const res = await fetch(`${getApiUrl()}/api/admin/premium-stock`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ tier, method, stock: value }),
-      });
-
+      const res = await fetch(`${getApiUrl()}/api/admin/premium-stock`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ tier, method, stock: value }) });
       const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || 'Failed to update stock');
-
+      if (!res.ok) throw new Error(data?.error || 'Failed');
       const ms = data.methodStocks || {};
-      const newStock = defaultMethodStock();
-      const newDraft = defaultMethodDraft();
-      for (const t of ['weekly', 'monthly', 'lifetime'] as PremiumTier[]) {
+      const s = defaultMethodStock(); const d = defaultMethodDraft();
+      for (const t of ['weekly', 'monthly', 'lifetime'] as PremiumTier[])
         for (const m of ['robux', 'paypal', 'gcash', 'card'] as PaymentMethod[]) {
-          const val = Number(ms[t]?.[m] || 0);
-          newStock[t][m] = val;
-          newDraft[t][m] = String(val);
+          const v = Number(ms[t]?.[m] || 0); s[t][m] = v; d[t][m] = String(v);
         }
-      }
-      setMethodStock(newStock);
-      setMethodDraft(newDraft);
-    } catch (error) {
-      console.error('Error saving method stock:', error);
-      const message = error instanceof Error ? error.message : 'Failed to save stock';
-      alert(message);
-    } finally {
-      setSavingMethodKey(null);
-    }
+      setMethodStock(s); setMethodDraft(d);
+    } catch (e) { alert(e instanceof Error ? e.message : 'Failed'); }
+    finally { setSavingMethodKey(null); }
   };
 
   const loadScriptData = async () => {
     try {
-      // Fetch scripts from API
-      const scriptsRes = await fetch('/api/scripts');
-      const scriptsData = await scriptsRes.json();
-      setScripts(scriptsData);
-
-      // Fetch existing metadata from database
-      const response = await fetch('/api/admin/script-metadata');
-      const metadataData = await response.json();
-      
-      // Convert to map for easy lookup
-      const metadataMap: Record<string, any> = {};
-      metadataData.forEach((item: any) => {
-        metadataMap[item.script_name] = item;
-      });
-      
-      setMetadata(metadataMap);
-    } catch (error) {
-      console.error('Error loading script data:', error);
-    }
+      setScripts(await (await fetch('/api/scripts')).json());
+      const md = await (await fetch('/api/admin/script-metadata')).json();
+      const map: Record<string, any> = {};
+      md.forEach((i: any) => { map[i.script_name] = i; });
+      setMetadata(map);
+    } catch {}
   };
 
   useEffect(() => {
-    if (activeTab === 'scripts' && scripts.length === 0) {
-      loadScriptData();
-    }
-    if (activeTab === 'settings' && !githubConfig.free_url) {
-      loadGitHubConfig();
-    }
+    if (activeTab === 'scripts' && scripts.length === 0) loadScriptData();
+    if (activeTab === 'settings' && !githubConfig.free_url) loadGitHubConfig();
   }, [activeTab]);
 
   const login = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setIsLoading(true);
-
+    e.preventDefault(); setError(''); setIsLoading(true);
     try {
-      const res = await fetch(`${getApiUrl()}/api/admin/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password })
-      });
-
-      const data = await res.json();
-      
-      if (data.success) {
-        // The backend returns a token, but the frontend in admin.js sends the password as the token?
-        // backend/server.js expects `Bearer ${adminPassword}` in GET /api/admin/payments.
-        // It returns a random token on login, but check middleware...
-        // Ah, `app.get('/api/admin/payments'...)` checks `authHeader !== 'Bearer ' + adminPassword`?
-        // Wait, line 944 of server.js: `if (!authHeader || authHeader !== 'Bearer ' + adminPassword)`.
-        // So the token returned by login isn't used! The PASSWORD is used as the token.
-        // I will store the password as the token, matching the logic I see in server.js.
-        // Wait, `js/admin.js` line 41: `adminToken = password;`
-        
-        localStorage.setItem('adminToken', data.token);
-        setIsAuthenticated(true);
-        fetchData(data.token);
-      } else {
-        setError(data.error || 'Invalid password');
-      }
-    } catch (err) {
-      setError('Login failed');
-    } finally {
-      setIsLoading(false);
-    }
+      const data = await (await fetch(`${getApiUrl()}/api/admin/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password }) })).json();
+      if (data.success) { localStorage.setItem('adminToken', data.token); setIsAuthenticated(true); fetchData(data.token); }
+      else setError(data.error || 'Invalid password');
+    } catch { setError('Login failed'); }
+    finally { setIsLoading(false); }
   };
 
-  const logout = () => {
-    localStorage.removeItem('adminToken');
-    setIsAuthenticated(false);
-    setPassword('');
-    setPayments([]);
-  };
+  const logout = () => { localStorage.removeItem('adminToken'); setIsAuthenticated(false); setPassword(''); setPayments([]); };
 
   const handleCopy = async (text: string) => {
-    const success = await copyToClipboard(text);
-    if (success) {
-      setCopiedKey(text);
-      setTimeout(() => setCopiedKey(null), 2000);
-    }
+    if (await copyToClipboard(text)) { setCopiedKey(text); setTimeout(() => setCopiedKey(null), 2000); }
   };
 
-  const deletePayment = async (transactionId: string) => {
-    if (!confirm('Are you sure you want to delete this payment?')) return;
-    try {
-      const token = localStorage.getItem('adminToken');
-      const res = await fetch('/api/admin/payments', {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ transactionId })
-      });
-      if (!res.ok) throw new Error('Failed to delete payment');
-      setPayments(payments.filter(p => p.transaction_id !== transactionId));
-    } catch (err) {
-      console.error(err);
-      alert('Error deleting payment');
-    }
+  const deletePayment = async (id: string) => {
+    if (!confirm('Delete this payment?')) return;
+    const token = localStorage.getItem('adminToken');
+    await fetch('/api/admin/payments', { method: 'DELETE', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ transactionId: id }) });
+    setPayments(prev => prev.filter(p => p.transaction_id !== id));
   };
 
-  const deleteTicket = async (ticketNumber: string) => {
-    if (!confirm('Are you sure you want to delete this ticket?')) return;
-    try {
-      const token = localStorage.getItem('adminToken');
-      const res = await fetch('/api/admin/tickets', {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ ticketNumber })
-      });
-      if (!res.ok) throw new Error('Failed to delete ticket');
-      setTickets(tickets.filter(t => t.ticket_number !== ticketNumber));
-    } catch (err) {
-      console.error(err);
-      alert('Error deleting ticket');
-    }
+  const deleteTicket = async (num: string) => {
+    if (!confirm('Delete this ticket?')) return;
+    const token = localStorage.getItem('adminToken');
+    await fetch('/api/admin/tickets', { method: 'DELETE', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ ticketNumber: num }) });
+    setTickets(prev => prev.filter(t => t.ticket_number !== num));
   };
 
   const handleComposeSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsComposing(true);
+    e.preventDefault(); setIsComposing(true);
     try {
-      const res = await fetch('/api/tickets', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: composeData.email,
-          subject: composeData.subject,
-          category: 'other',
-          message: composeData.message
-        })
-      });
-      if (!res.ok) throw new Error('Failed to create conversation');
-      
-      const { ticket } = await res.json();
-      
+      const { ticket } = await (await fetch('/api/tickets', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: composeData.email, subject: composeData.subject, category: 'other', message: composeData.message }) })).json();
       const token = localStorage.getItem('adminToken');
-      await fetch(`/api/admin/tickets/${ticket.ticketNumber}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ status: 'replied' })
-      });
-
-      setTickets([{
-        id: ticket.id,
-        ticket_number: ticket.ticketNumber,
-        user_name: composeData.email.split('@')[0],
-        user_email: composeData.email,
-        subject: composeData.subject,
-        status: 'replied',
-        created_at: new Date().toISOString()
-      }, ...tickets]);
-      
-      setIsComposeOpen(false);
-      setComposeData({ email: '', subject: '', message: '' });
-    } catch (error) {
-      console.error(error);
-      alert('Error starting conversation');
-    } finally {
-      setIsComposing(false);
-    }
+      await fetch(`/api/admin/tickets/${ticket.ticketNumber}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ status: 'replied' }) });
+      setTickets(prev => [{ id: ticket.id, ticket_number: ticket.ticketNumber, user_name: composeData.email.split('@')[0], user_email: composeData.email, subject: composeData.subject, status: 'replied', created_at: new Date().toISOString() }, ...prev]);
+      setIsComposeOpen(false); setComposeData({ email: '', subject: '', message: '' });
+    } catch { alert('Error'); }
+    finally { setIsComposing(false); }
   };
 
-  // Script metadata functions
-  const saveMetadata = async (scriptName: string) => {
+  const saveMetadata = async (name: string) => {
     try {
-      setSaving(scriptName);
-      const data = metadata[scriptName];
-      if (!data) return;
-
-      const method = data.id ? 'PUT' : 'POST';
-      const response = await fetch('/api/admin/script-metadata', {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) throw new Error('Failed to save');
-
-      const savedData = await response.json();
-      setMetadata(prev => ({ ...prev, [scriptName]: savedData }));
-      alert('Saved successfully!');
-    } catch (error) {
-      console.error('Error saving metadata:', error);
-      alert('Failed to save metadata');
-    } finally {
-      setSaving(null);
-    }
+      setSaving(name);
+      const data = metadata[name]; if (!data) return;
+      const saved = await (await fetch('/api/admin/script-metadata', { method: data.id ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })).json();
+      setMetadata(prev => ({ ...prev, [name]: saved })); alert('Saved!');
+    } catch { alert('Failed'); }
+    finally { setSaving(null); }
   };
 
-  const deleteMetadata = async (scriptName: string) => {
-    if (!confirm(`Delete metadata for ${scriptName}?`)) return;
-
-    try {
-      const data = metadata[scriptName];
-      if (!data?.id) return;
-
-      const response = await fetch(`/api/admin/script-metadata?id=${data.id}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) throw new Error('Failed to delete');
-
-      setMetadata(prev => {
-        const newMetadata = { ...prev };
-        delete newMetadata[scriptName];
-        return newMetadata;
-      });
-      alert('Deleted successfully!');
-    } catch (error) {
-      console.error('Error deleting metadata:', error);
-      alert('Failed to delete metadata');
-    }
+  const deleteMetadata = async (name: string) => {
+    if (!confirm(`Delete metadata for ${name}?`)) return;
+    const data = metadata[name]; if (!data?.id) return;
+    await fetch(`/api/admin/script-metadata?id=${data.id}`, { method: 'DELETE' });
+    setMetadata(prev => { const n = { ...prev }; delete n[name]; return n; });
   };
 
-  const updateMetadata = (scriptName: string, field: string, value: any) => {
-    setMetadata(prev => ({
-      ...prev,
-      [scriptName]: {
-        ...prev[scriptName],
-        script_name: scriptName,
-        [field]: value,
-      }
-    }));
-  };
-
-  const addFeature = (scriptName: string) => {
-    const current = metadata[scriptName]?.features || [];
-    updateMetadata(scriptName, 'features', [...current, '']);
-  };
-
-  const updateFeature = (scriptName: string, index: number, value: string) => {
-    const current = metadata[scriptName]?.features || [];
-    const updated = [...current];
-    updated[index] = value;
-    updateMetadata(scriptName, 'features', updated);
-  };
-
-  const removeFeature = (scriptName: string, index: number) => {
-    const current = metadata[scriptName]?.features || [];
-    const updated = current.filter((_: string, i: number) => i !== index);
-    updateMetadata(scriptName, 'features', updated);
-  };
-
-  const importBulkFeatures = (scriptName: string) => {
-    if (!bulkFeatures.trim()) return;
-    
-    // Parse features from text - split by newlines and filter lines starting with * or -
-    const features = bulkFeatures
-      .split('\n')
-      .map(line => line.trim())
-      .filter(line => line.startsWith('*') || line.startsWith('-'))
-      .map(line => line.replace(/^[\*\-]\s*/, '').trim())
-      .filter(line => line.length > 0);
-    
-    if (features.length === 0) {
-      alert('No features found. Make sure each feature starts with * or -');
-      return;
-    }
-
-    const current = metadata[scriptName]?.features || [];
-    updateMetadata(scriptName, 'features', [...current, ...features]);
-    setBulkFeatures('');
-    alert(`Imported ${features.length} features!`);
+  const updateMetadata = (name: string, field: string, value: any) =>
+    setMetadata(prev => ({ ...prev, [name]: { ...prev[name], script_name: name, [field]: value } }));
+  const addFeature    = (s: string) => updateMetadata(s, 'features', [...(metadata[s]?.features || []), '']);
+  const updateFeature = (s: string, i: number, v: string) => { const f = [...(metadata[s]?.features || [])]; f[i] = v; updateMetadata(s, 'features', f); };
+  const removeFeature = (s: string, i: number) => updateMetadata(s, 'features', (metadata[s]?.features || []).filter((_: any, idx: number) => idx !== i));
+  const importBulk = (name: string) => {
+    const features = bulkFeatures.split('\n').map(l => l.replace(/^[\*\-]\s*/, '').trim()).filter(Boolean);
+    if (!features.length) return alert('No features found');
+    updateMetadata(name, 'features', [...(metadata[name]?.features || []), ...features]);
+    setBulkFeatures(''); alert(`Imported ${features.length}!`);
   };
 
   const filteredPayments = payments.filter(p => {
-    const search = searchQuery.toLowerCase();
-    return (
-      (p.payer_email || '').toLowerCase().includes(search) ||
-      (p.roblox_username || '').toLowerCase().includes(search) ||
-      p.transaction_id.toLowerCase().includes(search) ||
-      p.tier.toLowerCase().includes(search)
-    );
+    const s = searchQuery.toLowerCase();
+    return [p.payer_email, p.roblox_username, p.transaction_id, p.tier].some(v => (v || '').toLowerCase().includes(s));
   });
-
   const totalPaymentPages = Math.max(1, Math.ceil(filteredPayments.length / TABLE_ITEMS_PER_PAGE));
-  const paginatedPayments = filteredPayments.slice(
-    (paymentsPage - 1) * TABLE_ITEMS_PER_PAGE,
-    paymentsPage * TABLE_ITEMS_PER_PAGE
-  );
+  const paginatedPayments = filteredPayments.slice((paymentsPage - 1) * TABLE_ITEMS_PER_PAGE, paymentsPage * TABLE_ITEMS_PER_PAGE);
 
   const filteredTickets = tickets.filter(t => {
-    const search = ticketSearch.toLowerCase();
-    return (
-      (t.user_email || '').toLowerCase().includes(search) ||
-      (t.user_name || '').toLowerCase().includes(search) ||
-      (t.ticket_number || '').toLowerCase().includes(search) ||
-      (t.subject || '').toLowerCase().includes(search)
-    );
+    const s = ticketSearch.toLowerCase();
+    return [t.user_email, t.user_name, t.ticket_number, t.subject].some(v => (v || '').toLowerCase().includes(s));
   });
-
   const totalTicketPages = Math.max(1, Math.ceil(filteredTickets.length / TABLE_ITEMS_PER_PAGE));
-  const paginatedTickets = filteredTickets.slice(
-    (ticketsPage - 1) * TABLE_ITEMS_PER_PAGE,
-    ticketsPage * TABLE_ITEMS_PER_PAGE
-  );
+  const paginatedTickets = filteredTickets.slice((ticketsPage - 1) * TABLE_ITEMS_PER_PAGE, ticketsPage * TABLE_ITEMS_PER_PAGE);
 
-  useEffect(() => {
-    setPaymentsPage(1);
-  }, [searchQuery]);
+  useEffect(() => { setPaymentsPage(1); }, [searchQuery, payments.length]);
+  useEffect(() => { setTicketsPage(1); }, [ticketSearch, tickets.length]);
 
-  useEffect(() => {
-    setPaymentsPage(1);
-  }, [payments.length]);
+  const getKey = (p: Payment) => {
+    try {
+      if (Array.isArray(p.generated_keys) && p.generated_keys.length > 0) return p.generated_keys[0];
+      if (typeof p.generated_keys === 'string')
+        return p.generated_keys.startsWith('[') ? (JSON.parse(p.generated_keys)[0] ?? 'N/A') : p.generated_keys;
+    } catch {}
+    return 'N/A';
+  };
 
-  useEffect(() => {
-    setTicketsPage(1);
-  }, [ticketSearch]);
-
-  useEffect(() => {
-    setTicketsPage(1);
-  }, [tickets.length]);
-
+  // ── Login ──────────────────────────────────────────────────────────────────
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4">
-        <Card className="w-full max-w-md p-8 animate-fade-in">
-            <div className="flex flex-col items-center mb-8">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-gray-800 to-black border border-gray-700 flex items-center justify-center mb-4 shadow-xl">
-                    <Shield className="w-8 h-8 text-white" />
-                </div>
-                <h1 className="text-2xl font-bold text-white">Admin Access</h1>
-                <p className="text-gray-500 text-sm">Authorized personnel only</p>
+      <div className="min-h-[90vh] flex items-center justify-center px-4">
+        <div className="w-full max-w-[360px]">
+          <div className="text-center mb-8">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-red-500/20 to-red-600/10 border border-red-500/20 flex items-center justify-center mx-auto mb-5 shadow-lg shadow-red-500/10">
+              <Shield className="w-7 h-7 text-red-400" />
             </div>
+            <h1 className="text-2xl font-bold text-white">Admin Access</h1>
+            <p className="text-sm text-[#666] mt-1.5">This area is restricted to authorized staff.</p>
+          </div>
 
+          <div className="bg-white/[0.03] rounded-2xl border border-white/[0.06] p-6 shadow-2xl">
             <form onSubmit={login} className="space-y-4">
-                <div>
-                   <input 
-                     type="password"
-                     value={password}
-                     onChange={(e) => setPassword(e.target.value)}
-                     placeholder="Enter admin password"
-                     className="w-full p-3 bg-[#141414] border border-[#2a2a2a] rounded-lg text-white focus:outline-none focus:border-emerald-500 transition-colors"
-                     autoFocus
-                   />
+              <div>
+                <label className="block text-xs font-medium text-[#888] mb-2 uppercase tracking-wider">Password</label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter password"
+                  className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl focus:border-white/20 px-4 py-3 text-sm text-white outline-none transition-colors placeholder:text-white/20"
+                  autoFocus
+                />
+              </div>
+              {error && (
+                <div className="flex items-center gap-2 rounded-xl bg-red-500/10 border border-red-500/20 px-3.5 py-2.5 text-sm text-red-400">
+                  <AlertCircle className="w-4 h-4 shrink-0" /> {error}
                 </div>
-                
-                {error && (
-                    <div className="flex items-center gap-2 text-red-500 text-sm bg-red-500/10 p-3 rounded-lg border border-red-500/20">
-                        <AlertCircle className="w-4 h-4" />
-                        {error}
-                    </div>
-                )}
-
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Login'}
-                </Button>
+              )}
+              <button type="submit" disabled={isLoading} className="w-full bg-white text-black font-semibold py-3 text-sm rounded-xl hover:bg-white/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-50">
+                {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Sign In'}
+              </button>
             </form>
-        </Card>
+          </div>
+        </div>
       </div>
     );
   }
 
+  const navItems = [
+    { id: 'payments', label: 'Payments',  icon: CreditCard,  count: payments.length },
+    { id: 'tickets',  label: 'Tickets',   icon: MessageSquare, count: tickets.filter(t => t.status === 'open').length || undefined },
+    { id: 'scripts',  label: 'Scripts',   icon: FileCode,    count: undefined },
+    { id: 'settings', label: 'Settings',  icon: Settings,    count: undefined },
+  ];
+
+  const totalRevenue = stats.paypalRevenue + (stats.robloxRevenue * 0.0035);
+
   return (
-    <div className="min-h-screen py-8 px-4 md:px-8">
-      <div className="max-w-6xl mx-auto space-y-8">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/20">
-              <Shield className="w-6 h-6 text-white" />
+    <div className="flex min-h-screen">
+
+      {/* Sidebar */}
+      <aside className="w-60 shrink-0 border-r border-white/[0.06] bg-[#080808] flex flex-col sticky top-14 h-[calc(100vh-56px)]">
+        <div className="p-4 border-b border-white/[0.06]">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-red-500/30 to-red-600/10 border border-red-500/20 flex items-center justify-center">
+              <Shield className="w-4 h-4 text-red-400" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-white">Admin Panel</h1>
-              <p className="text-gray-500 text-sm">Dashboard Overview</p>
+              <p className="text-sm font-semibold text-white">Admin</p>
+              <p className="text-xs text-[#555]">Dashboard</p>
             </div>
           </div>
-          <Button variant="secondary" onClick={logout}>
-            <LogOut className="w-4 h-4" />
-            Logout
-          </Button>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            <Card className="p-5 border-l-4 border-l-blue-500">
-                <p className="text-gray-500 text-xs uppercase font-bold tracking-wider">Total Orders</p>
-                <p className="text-2xl font-bold text-white mt-1">{stats.totalPurchases}</p>
-            </Card>
-            <Card className="p-5 border-l-4 border-l-[#0070ba]">
-                <p className="text-gray-500 text-xs uppercase font-bold tracking-wider">PayPal</p>
-                <p className="text-2xl font-bold text-white mt-1">{stats.paypalPurchases}</p>
-                <p className="text-sm text-[#0070ba] font-semibold mt-1">${stats.paypalRevenue.toFixed(2)}</p>
-            </Card>
-            <Card className="p-5 border-l-4 border-l-[#fbbf24]">
-                <p className="text-gray-500 text-xs uppercase font-bold tracking-wider">Roblox</p>
-                <p className="text-2xl font-bold text-white mt-1">{stats.robloxPurchases}</p>
-                <p className="text-sm text-[#fbbf24] font-semibold mt-1">{stats.robloxRevenue.toLocaleString()} R$</p>
-            </Card>
-        </div>
-
-        {/* Tabs */}
-        <div className="flex gap-2 border-b border-[#2a2a2a] pb-4">
-          {[
-            { id: 'payments', label: 'Recent Payments', icon: CreditCard },
-            { id: 'tickets', label: 'Support Tickets', icon: MessageSquare },
-            { id: 'scripts', label: 'Script Metadata', icon: FileCode },
-            { id: 'settings', label: 'Settings', icon: Settings },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as typeof activeTab)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
-                activeTab === tab.id
-                  ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/30'
-                  : 'text-gray-400 hover:text-white hover:bg-[#1a1a1a]'
-              }`}
-            >
-              <tab.icon className="w-4 h-4" />
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Content */}
-        {activeTab === 'payments' && (
-          <div className="space-y-4">
-            {/* Search */}
-            <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
-                <input
-                    type="text"
-                    placeholder="Search by email, username, transaction ID..."
-                    value={searchQuery}
-                    onChange={(e) => {
-                      setSearchQuery(e.target.value);
-                      setPaymentsPage(1);
-                    }}
-                    className="w-full pl-10 pr-4 py-3 bg-[#141414] border border-[#2a2a2a] rounded-lg text-white placeholder:text-gray-500 focus:outline-none focus:border-emerald-500/50"
-                />
-            </div>
-
-            {/* Payments Table */}
-            <Card className="overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-[#0a0a0a]">
-                    <tr>
-                      <th className="text-left p-4 text-gray-400 font-medium">Order ID</th>
-                      <th className="text-left p-4 text-gray-400 font-medium">Date</th>
-                      <th className="text-left p-4 text-gray-400 font-medium">User</th>
-                      <th className="text-left p-4 text-gray-400 font-medium">Plan</th>
-                      <th className="text-left p-4 text-gray-400 font-medium">Amount</th>
-                      <th className="text-left p-4 text-gray-400 font-medium">Method</th>
-                      <th className="text-left p-4 text-gray-400 font-medium">Key</th>
-                      <th className="text-left p-4 text-gray-400 font-medium text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#1f1f1f]">
-                    {isLoading ? (
-                        <tr>
-                        <td colSpan={8} className="p-8 text-center text-gray-500">
-                                <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
-                                Loading data...
-                            </td>
-                        </tr>
-                    ) : filteredPayments.length === 0 ? (
-                        <tr>
-                        <td colSpan={8} className="p-8 text-center text-gray-500">No payments found</td>
-                        </tr>
-                    ) : (
-                      paginatedPayments.map((p) => {
-                            let key = 'N/A';
-                            try {
-                                if (Array.isArray(p.generated_keys) && p.generated_keys.length > 0) key = p.generated_keys[0];
-                                else if (typeof p.generated_keys === 'string') {
-                                    if (p.generated_keys.startsWith('[')) {
-                                        const parsed = JSON.parse(p.generated_keys);
-                                        if (parsed.length > 0) key = parsed[0];
-                                    } else {
-                                        key = p.generated_keys;
-                                    }
-                                }
-                            } catch (e) {}
-
-                            return (
-                                <tr key={p.transaction_id} className="hover:bg-[#1a1a1a] transition-colors">
-                                    <td className="p-4 text-gray-500 font-mono text-xs">{p.transaction_id.substring(0, 12)}...</td>
-                                    <td className="p-4 text-gray-300 whitespace-nowrap">
-                                        {new Date(p.created_at).toLocaleDateString()}
-                                        <div className="text-xs text-gray-600">{new Date(p.created_at).toLocaleTimeString()}</div>
-                                    </td>
-                                    <td className="p-4 text-white font-medium">{p.payer_email || p.roblox_username || 'N/A'}</td>
-                                    <td className="p-4 capitalize">
-                                        <span className="px-2 py-1 rounded-md bg-[#252525] border border-[#333] text-gray-300 text-xs">
-                                            {p.tier}
-                                        </span>
-                                    </td>
-                                    <td className="p-4 text-white font-medium">
-                                        {p.currency === 'ROBUX' ? `${p.amount} R$` : `$${p.amount}`}
-                                    </td>
-                                    <td className="p-4">
-                                        {p.currency === 'ROBUX' ? (
-                                            <span className="text-amber-500 flex items-center gap-1 text-xs font-bold">● Robux</span>
-                                        ) : (
-                                            <span className="text-blue-500 flex items-center gap-1 text-xs font-bold">● PayPal</span>
-                                        )}
-                                    </td>
-                                    <td className="p-4">
-                                        <div className="flex items-center gap-2">
-                                            <code className="bg-[#111] px-2 py-1 rounded text-xs text-emerald-500 max-w-[100px] truncate">{key}</code>
-                                            <button 
-                                                onClick={() => handleCopy(key)}
-                                                className="text-gray-500 hover:text-white transition-colors"
-                                                title="Copy Key"
-                                            >
-                                                {copiedKey === key ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
-                                            </button>
-                                        </div>
-                                    </td>
-                                    <td className="p-4 text-right">
-                                        <div className="flex justify-end items-center gap-2">
-                                            <Link 
-                                              href={`/success?orderId=${p.transaction_id}&tier=${p.tier}&amount=${p.amount}&currency=${p.currency}&key=${key}&email=${p.payer_email || ''}&payerId=${p.payer_email || ''}&date=${p.created_at}&method=${p.currency === 'ROBUX' ? 'Robux' : 'PayPal'}&admin=1${p.discord_tag ? `&discordTag=${encodeURIComponent(p.discord_tag)}&discordId=${encodeURIComponent(p.discord_id || '')}&discordAvatar=${encodeURIComponent(p.discord_avatar || '')}` : ''}`}
-                                              target="_blank"
-                                            >
-                                              <Button size="sm" variant="secondary" className="h-8 px-2 flex items-center justify-center gap-1">
-                                                <Eye className="w-3.5 h-3.5" />
-                                                View
-                                              </Button>
-                                            </Link>
-                                            <Button 
-                                              size="sm" 
-                                              variant="secondary" 
-                                              onClick={() => deletePayment(p.transaction_id)}
-                                              className="h-8 px-2 flex items-center justify-center gap-1 text-red-500 hover:text-red-400 hover:bg-red-500/10"
-                                            >
-                                                <Trash2 className="w-3.5 h-3.5" />
-                                            </Button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            );
-                        })
-                    )}
-                  </tbody>
-                </table>
-              </div>
-
-              {filteredPayments.length > 0 && totalPaymentPages > 1 && (
-                <div className="flex items-center justify-between p-4 border-t border-[#1f1f1f]">
-                  <div className="text-sm text-gray-500">
-                    Showing {((paymentsPage - 1) * TABLE_ITEMS_PER_PAGE) + 1} to {Math.min(paymentsPage * TABLE_ITEMS_PER_PAGE, filteredPayments.length)} of {filteredPayments.length} payments
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={() => setPaymentsPage((p) => Math.max(1, p - 1))}
-                      disabled={paymentsPage === 1}
-                      size="sm"
-                      variant="secondary"
-                    >
-                      Previous
-                    </Button>
-                    <div className="flex items-center gap-1">
-                      {Array.from({ length: totalPaymentPages }, (_, i) => i + 1).map((page) => (
-                        <button
-                          key={page}
-                          onClick={() => setPaymentsPage(page)}
-                          className={`px-3 py-1 rounded text-sm ${
-                            paymentsPage === page
-                              ? 'bg-emerald-500 text-white'
-                              : 'bg-[#1a1a1a] text-gray-400 hover:bg-[#252525]'
-                          }`}
-                        >
-                          {page}
-                        </button>
-                      ))}
-                    </div>
-                    <Button
-                      onClick={() => setPaymentsPage((p) => Math.min(totalPaymentPages, p + 1))}
-                      disabled={paymentsPage === totalPaymentPages}
-                      size="sm"
-                      variant="secondary"
-                    >
-                      Next
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </Card>
-          </div>
-        )}
-
-        {activeTab === 'tickets' && (
-          <div className="space-y-4">
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                <input
-                  type="text"
-                  placeholder="Search tickets by ID, name, email, or subject..."
-                  className="w-full pl-10 pr-4 h-10 bg-[#0a0a0a] border border-[#252525] rounded-md text-sm text-gray-200 placeholder:text-gray-600 focus:outline-none focus:border-[#444] focus:ring-1 focus:ring-[#444] transition-all"
-                  value={ticketSearch}
-                  onChange={(e) => setTicketSearch(e.target.value)}
-                />
-              </div>
-              <Button onClick={() => setIsComposeOpen(true)} className="flex items-center gap-2 whitespace-nowrap h-10 px-4 text-emerald-100 bg-emerald-600 hover:bg-emerald-700">
-                <MessageSquare className="w-4 h-4" />
-                New Message
-              </Button>
-            </div>
-             <Card className="overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-[#0a0a0a]">
-                    <tr>
-                      <th className="text-left p-4 text-gray-400 font-medium">Ticket #</th>
-                      <th className="text-left p-4 text-gray-400 font-medium">Status</th>
-                      <th className="text-left p-4 text-gray-400 font-medium">Subject</th>
-                      <th className="text-left p-4 text-gray-400 font-medium">User</th>
-                      <th className="text-left p-4 text-gray-400 font-medium">Date</th>
-                      <th className="text-left p-4 text-gray-400 font-medium">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#1f1f1f]">
-                    {tickets.length === 0 ? (
-                        <tr>
-                            <td colSpan={6} className="p-8 text-center text-gray-500">No tickets found</td>
-                        </tr>
-                    ) : (
-                      paginatedTickets.map((t) => (
-                            <tr key={t.id} className="hover:bg-[#1a1a1a] transition-colors">
-                                <td className="p-4 text-white font-mono">{t.ticket_number}</td>
-                                <td className="p-4">
-                                    <span className={`px-2 py-1 rounded text-xs border ${
-                                        t.status === 'open' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' :
-                                        t.status === 'closed' ? 'bg-gray-500/10 text-gray-500 border-gray-500/20' :
-                                        'bg-purple-500/10 text-purple-500 border-purple-500/20'
-                                    } capitalize`}>
-                                        {t.status.replace('_', ' ')}
-                                    </span>
-                                </td>
-                                <td className="p-4 text-white">{t.subject}</td>
-                                <td className="p-4 text-gray-400">
-                                    <div className="text-white">{t.user_name}</div>
-                                    <div className="text-xs">{t.user_email}</div>
-                                </td>
-                                <td className="p-4 text-gray-500 text-xs">
-                                    {new Date(t.created_at).toLocaleDateString()}
-                                </td>
-                                 <td className="p-4">
-                                     <div className="flex items-center gap-2">
-                                         <Link href={`/admin/tickets/${t.ticket_number}`}>
-                                             <Button size="sm" variant="secondary" className="h-8 px-2 flex items-center justify-center gap-1">
-                                                 <Eye className="w-3.5 h-3.5" />
-                                                 View
-                                             </Button>
-                                         </Link>
-                                         <Button 
-                                             size="sm" 
-                                             variant="secondary" 
-                                             onClick={() => deleteTicket(t.ticket_number)}
-                                             className="h-8 px-2 flex items-center justify-center gap-1 text-red-500 hover:text-red-400 hover:bg-red-500/10"
-                                         >
-                                             <Trash2 className="w-3.5 h-3.5" />
-                                         </Button>
-                                     </div>
-                                 </td>
-                            </tr>
-                        ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-
-              {tickets.length > 0 && totalTicketPages > 1 && (
-                <div className="flex items-center justify-between p-4 border-t border-[#1f1f1f]">
-                  <div className="text-sm text-gray-500">
-                    Showing {((ticketsPage - 1) * TABLE_ITEMS_PER_PAGE) + 1} to {Math.min(ticketsPage * TABLE_ITEMS_PER_PAGE, tickets.length)} of {tickets.length} tickets
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={() => setTicketsPage((p) => Math.max(1, p - 1))}
-                      disabled={ticketsPage === 1}
-                      size="sm"
-                      variant="secondary"
-                    >
-                      Previous
-                    </Button>
-                    <div className="flex items-center gap-1">
-                      {Array.from({ length: totalTicketPages }, (_, i) => i + 1).map((page) => (
-                        <button
-                          key={page}
-                          onClick={() => setTicketsPage(page)}
-                          className={`px-3 py-1 rounded text-sm ${
-                            ticketsPage === page
-                              ? 'bg-emerald-500 text-white'
-                              : 'bg-[#1a1a1a] text-gray-400 hover:bg-[#252525]'
-                          }`}
-                        >
-                          {page}
-                        </button>
-                      ))}
-                    </div>
-                    <Button
-                      onClick={() => setTicketsPage((p) => Math.min(totalTicketPages, p + 1))}
-                      disabled={ticketsPage === totalTicketPages}
-                      size="sm"
-                      variant="secondary"
-                    >
-                      Next
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </Card>
-          </div>
-        )}
-
-        {activeTab === 'scripts' && (
-
-  <div className="space-y-4">
-    {/* Search */}
-    <div className="relative">
-      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
-      <input
-        type="text"
-        placeholder="Search scripts..."
-        value={scriptSearch}
-        onChange={(e) => {
-          setScriptSearch(e.target.value);
-          setCurrentPage(1);
-        }}
-        className="w-full pl-10 pr-4 py-3 bg-[#141414] border border-[#2a2a2a] rounded-lg text-white placeholder:text-gray-500 focus:outline-none focus:border-emerald-500/50"
-      />
-    </div>
-
-    {/* Scripts Table */}
-    <Card className="overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-[#0a0a0a]">
-            <tr>
-              <th className="text-left p-4 text-gray-400 font-medium">Title</th>
-              <th className="text-left p-4 text-gray-400 font-medium">Status</th>
-              <th className="text-left p-4 text-gray-400 font-medium">Type</th>
-              <th className="text-left p-4 text-gray-400 font-medium">Last Updated</th>
-              <th className="text-right p-4 text-gray-400 font-medium">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[#1f1f1f]">
-            {(() => {
-              const filteredScripts = scripts.filter(s => 
-                s.name.toLowerCase().includes(scriptSearch.toLowerCase())
-              );
-              const totalPages = Math.ceil(filteredScripts.length / ITEMS_PER_PAGE);
-              const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-              const paginatedScripts = filteredScripts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-
-              if (paginatedScripts.length === 0) {
-                return (
-                  <tr>
-                    <td colSpan={5} className="p-8 text-center text-gray-500">
-                      {scriptSearch ? `No scripts found matching "${scriptSearch}"` : 'No scripts available'}
-                    </td>
-                  </tr>
-                );
-              }
-
-              return paginatedScripts.map((script) => {
-                const hasMeta = !!metadata[script.name]?.id;
-                const lastUpdated = metadata[script.name]?.updated_at || metadata[script.name]?.created_at;
-                // Use unique key combining id and name to avoid duplicates
-                const uniqueKey = `${script.id}-${script.name.replace(/\s+/g, '-')}`;
-
-                return (
-                  <tr key={uniqueKey} className="hover:bg-[#1a1a1a] transition-colors">
-                    <td className="p-4 text-white font-medium">{script.name}</td>
-                    <td className="p-4">
-                      <span className={`text-xs px-2 py-1 rounded border ${
-                        script.status === 'Working' 
-                          ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' 
-                          : 'bg-red-500/10 text-red-500 border-red-500/20'
-                      }`}>
-                        {script.status}
-                      </span>
-                    </td>
-                    <td className="p-4">
-                      <span className={`text-xs px-2 py-1 rounded border ${
-                        script.type === 'Premium'
-                          ? 'bg-purple-500/10 text-purple-500 border-purple-500/20'
-                          : 'bg-blue-500/10 text-blue-500 border-blue-500/20'
-                      }`}>
-                        {script.type}
-                      </span>
-                    </td>
-                    <td className="p-4 text-gray-500 text-xs">
-                      {lastUpdated ? new Date(lastUpdated).toLocaleDateString() : 'Never'}
-                    </td>
-                    <td className="p-4 text-right">
-                      <Button
-                        onClick={() => setSelectedScript(script)}
-                        size="sm"
-                        variant="secondary"
-                        className="h-8 px-3 flex items-center justify-center gap-1 ml-auto"
-                      >
-                        <Eye className="w-3.5 h-3.5" />
-                        View
-                      </Button>
-                    </td>
-                  </tr>
-                );
-              });
-            })()}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Pagination */}
-      {(() => {
-        const filteredScripts = scripts.filter(s => 
-          s.name.toLowerCase().includes(scriptSearch.toLowerCase())
-        );
-        const totalPages = Math.ceil(filteredScripts.length / ITEMS_PER_PAGE);
-
-        if (totalPages > 1) {
-          return (
-            <div className="flex items-center justify-between p-4 border-t border-[#1f1f1f]">
-              <div className="text-sm text-gray-500">
-                Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, filteredScripts.length)} of {filteredScripts.length} scripts
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                  size="sm"
-                  variant="secondary"
-                >
-                  Previous
-                </Button>
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                    <button
-                      key={page}
-                      onClick={() => setCurrentPage(page)}
-                      className={`px-3 py-1 rounded text-sm ${
-                        currentPage === page
-                          ? 'bg-emerald-500 text-white'
-                          : 'bg-[#1a1a1a] text-gray-400 hover:bg-[#252525]'
-                      }`}
-                    >
-                      {page}
-                    </button>
-                  ))}
-                </div>
-                <Button
-                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                  disabled={currentPage === totalPages}
-                  size="sm"
-                  variant="secondary"
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
-          );
-        }
-        return null;
-      })()}
-    </Card>
-
-    {/* Edit Modal */}
-    {selectedScript && (
-      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-          <div className="p-6">
-            {/* Header */}
-            <div className="flex items-start justify-between mb-6">
-              <div>
-                <h3 className="text-2xl font-bold text-white">{selectedScript.name}</h3>
-                <div className="flex gap-2 mt-2">
-                  <span className="text-xs px-2 py-1 rounded bg-[#333] text-gray-300">
-                    {selectedScript.type}
-                  </span>
-                  <span className={`text-xs px-2 py-1 rounded ${
-                    selectedScript.status === 'Working' 
-                      ? 'bg-emerald-500/20 text-emerald-400' 
-                      : 'bg-red-500/20 text-red-400'
-                  }`}>
-                    {selectedScript.status}
-                  </span>
-                </div>
-              </div>
+        <nav className="flex-1 p-3 space-y-0.5">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const active = activeTab === item.id;
+            return (
               <button
-                onClick={() => setSelectedScript(null)}
-                className="text-gray-400 hover:text-white transition-colors"
+                key={item.id}
+                onClick={() => setActiveTab(item.id as typeof activeTab)}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                  active
+                    ? 'bg-white/[0.08] text-white shadow-sm'
+                    : 'text-[#555] hover:text-[#999] hover:bg-white/[0.04]'
+                }`}
               >
-                <X className="w-6 h-6" />
+                <Icon className={`w-4 h-4 ${active ? 'text-[var(--accent)]' : ''}`} />
+                <span className="flex-1 text-left">{item.label}</span>
+                {item.count !== undefined && item.count > 0 && (
+                  <span className={`text-xs px-1.5 py-0.5 rounded-md font-medium ${active ? 'bg-[var(--accent)]/20 text-[var(--accent)]' : 'bg-white/[0.06] text-[#666]'}`}>
+                    {item.count}
+                  </span>
+                )}
               </button>
-            </div>
+            );
+          })}
+        </nav>
 
-            {/* Description */}
-            <div className="mb-6">
-              <label className="block text-sm font-semibold text-gray-300 mb-2">
-                Description
-              </label>
-              <textarea
-                value={metadata[selectedScript.name]?.description || ''}
-                onChange={(e) => updateMetadata(selectedScript.name, 'description', e.target.value)}
-                placeholder="Enter script description..."
-                rows={4}
-                className="w-full px-4 py-3 bg-black border border-[#333] rounded-lg text-white focus:outline-none focus:border-emerald-500/50 resize-none"
-              />
-            </div>
+        <div className="p-3 border-t border-white/[0.06]">
+          <button
+            onClick={logout}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-[#555] hover:text-red-400 hover:bg-red-500/5 transition-all"
+          >
+            <LogOut className="w-4 h-4" />
+            Sign Out
+          </button>
+        </div>
+      </aside>
 
-            {/* Features */}
-            <div className="mb-6">
-              <div className="flex items-center justify-between mb-3">
-                <label className="block text-sm font-semibold text-gray-300">
-                  Features
-                </label>
-                <Button
-                  onClick={() => addFeature(selectedScript.name)}
-                  variant="secondary"
-                  size="sm"
-                >
-                  <Plus className="w-4 h-4 mr-1" />
-                  Add Feature
-                </Button>
+      {/* Main content */}
+      <main className="flex-1 min-w-0 bg-[#080808]">
+
+        {/* Page header */}
+        <div className="border-b border-white/[0.06] px-8 py-5 flex items-center justify-between">
+          <div>
+            <h1 className="text-lg font-bold text-white capitalize">{activeTab}</h1>
+            <p className="text-xs text-[#555] mt-0.5">
+              {activeTab === 'payments' && `${payments.length} total transactions`}
+              {activeTab === 'tickets'  && `${tickets.length} total tickets`}
+              {activeTab === 'scripts'  && `${scripts.length} scripts`}
+              {activeTab === 'settings' && 'Configure store settings'}
+            </p>
+          </div>
+          {activeTab === 'payments' && (
+            <div className="flex items-center gap-3">
+              <div className="text-right">
+                <p className="text-xs text-[#555]">Est. Revenue</p>
+                <p className="text-sm font-bold text-[var(--accent)]">${(stats.paypalRevenue).toFixed(0)}+</p>
               </div>
-              
-              {/* Bulk Import */}
-              <div className="mb-4 p-4 bg-[#0a0a0a] rounded-lg border border-[#2a2a2a]">
-                <label className="block text-sm font-semibold text-gray-300 mb-2">
-                  Bulk Import Features
-                </label>
-                <p className="text-xs text-gray-500 mb-2">
-                  Paste a list of features (one per line, starting with * or -). Example:
-                </p>
-                <textarea
-                  value={bulkFeatures}
-                  onChange={(e) => setBulkFeatures(e.target.value)}
-                  placeholder="* Auto Farm&#10;- Kill Aura&#10;* Auto Quest&#10;- Auto Collect"
-                  rows={4}
-                  className="w-full px-3 py-2 bg-black border border-[#333] rounded text-white text-sm focus:outline-none focus:border-emerald-500/50 resize-none mb-2"
-                />
-                <Button
-                  onClick={() => importBulkFeatures(selectedScript.name)}
-                  variant="secondary"
-                  size="sm"
-                  disabled={!bulkFeatures.trim()}
-                >
-                  Import Features
-                </Button>
-              </div>
+            </div>
+          )}
+          {activeTab === 'tickets' && (
+            <button
+              onClick={() => setIsComposeOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--accent)]/10 hover:bg-[var(--accent)]/20 text-[var(--accent)] text-sm font-medium transition-colors border border-[var(--accent)]/20"
+            >
+              <MessageSquare className="w-4 h-4" />
+              New Message
+            </button>
+          )}
+        </div>
 
-              <div className="space-y-2">
-                {(metadata[selectedScript.name]?.features || []).map((feature: string, index: number) => (
-                  <div key={index} className="flex gap-2">
-                    <input
-                      type="text"
-                      value={feature}
-                      onChange={(e) => updateFeature(selectedScript.name, index, e.target.value)}
-                      placeholder={`Feature ${index + 1}`}
-                      className="flex-1 px-4 py-2 bg-black border border-[#333] rounded-lg text-white focus:outline-none focus:border-emerald-500/50"
-                    />
-                    <Button
-                      onClick={() => removeFeature(selectedScript.name, index)}
-                      variant="secondary"
-                      size="sm"
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
+        <div className="p-8 space-y-6">
+
+          {/* ── Payments ──────────────────────────────────────────────── */}
+          {activeTab === 'payments' && (
+            <>
+              {/* Stat cards */}
+              <div className="grid grid-cols-4 gap-4">
+                {[
+                  { label: 'Total Orders', value: stats.totalPurchases, sub: 'all time', icon: Package, color: 'text-white' },
+                  { label: 'PayPal Orders', value: stats.paypalPurchases, sub: `$${stats.paypalRevenue.toFixed(2)}`, icon: DollarSign, color: 'text-blue-400' },
+                  { label: 'Robux Orders',  value: stats.robloxPurchases, sub: `${stats.robloxRevenue.toLocaleString()} R$`, icon: Zap, color: 'text-yellow-400' },
+                  { label: 'Customers',     value: new Set(payments.map(p => p.payer_email || p.roblox_username)).size, sub: 'unique', icon: Users, color: 'text-violet-400' },
+                ].map((card) => (
+                  <div key={card.label} className="bg-white/[0.03] rounded-2xl border border-white/[0.06] p-5">
+                    <div className="flex items-start justify-between mb-4">
+                      <p className="text-xs text-[#555] font-medium">{card.label}</p>
+                      <div className="w-8 h-8 rounded-xl bg-white/[0.04] flex items-center justify-center">
+                        <card.icon className={`w-4 h-4 ${card.color}`} />
+                      </div>
+                    </div>
+                    <p className="text-3xl font-bold text-white">{card.value}</p>
+                    <p className={`text-xs mt-1 ${card.color} opacity-70`}>{card.sub}</p>
                   </div>
                 ))}
-                {(!metadata[selectedScript.name]?.features || metadata[selectedScript.name].features.length === 0) && (
-                  <p className="text-sm text-gray-500 italic">No features added yet</p>
-                )}
               </div>
-            </div>
 
-            {/* Actions */}
-            <div className="flex gap-3">
-              <Button
-                onClick={() => {
-                  saveMetadata(selectedScript.name);
-                  setSelectedScript(null);
-                }}
-                disabled={saving === selectedScript.name}
-                className="flex-1"
-              >
-                <Save className="w-4 h-4 mr-2" />
-                {saving === selectedScript.name ? 'Saving...' : 'Save Changes'}
-              </Button>
-              {metadata[selectedScript.name]?.id && (
-                <Button
-                  onClick={() => {
-                    deleteMetadata(selectedScript.name);
-                    setSelectedScript(null);
-                  }}
-                  variant="secondary"
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Delete
-                </Button>
-              )}
-              <Button
-                onClick={() => setSelectedScript(null)}
-                variant="secondary"
-              >
-                Cancel
-              </Button>
-            </div>
-          </div>
-        </Card>
-      </div>
-    )}
-  </div>
-)}
-
-
-        {activeTab === 'settings' && (
-            <div className="space-y-6">
-              <Card className="p-6 space-y-6">
-                <div>
-                  <h3 className="text-lg font-semibold text-white mb-1">Stock by Payment Method</h3>
-                  <p className="text-gray-500 text-sm">Set individual stock for Robux, PayPal, and GCash per tier.</p>
-                </div>
-
-                {stockLoading ? (
-                  <div className="text-gray-400 text-sm flex items-center gap-2">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Loading stock...
-                  </div>
-                ) : (
-                  <div className="space-y-6">
-                    {PAYMENT_METHODS.map(({ id: methodId, label, accent }) => (
-                      <div key={methodId}>
-                        <div className="flex items-center gap-2 mb-3">
-                          <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: accent }} />
-                          <p className="text-white font-semibold text-sm">{label}</p>
-                        </div>
-                        <div className="grid md:grid-cols-3 gap-4">
-                          {(['weekly', 'monthly', 'lifetime'] as PremiumTier[]).map((tier) => {
-                            const saveKey = `${methodId}-${tier}`;
-                            const currentVal = methodStock[tier][methodId];
-                            return (
-                              <div
-                                key={tier}
-                                className="bg-[#101010] border border-[#2a2a2a] rounded-xl p-4 space-y-3"
-                              >
-                                <div className="flex items-center justify-between">
-                                  <p className="text-white font-semibold capitalize text-sm">{tier}</p>
-                                  <span
-                                    className={`text-xs px-2 py-1 rounded border ${
-                                      currentVal > 0
-                                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                                        : 'bg-red-500/10 text-red-400 border-red-500/30'
-                                    }`}
-                                  >
-                                    {currentVal > 0 ? 'In Stock' : 'Out of Stock'}
-                                  </span>
-                                </div>
-
-                                <input
-                                  type="number"
-                                  min={0}
-                                  value={methodDraft[tier][methodId]}
-                                  onChange={(e) =>
-                                    setMethodDraft((prev) => ({
-                                      ...prev,
-                                      [tier]: { ...prev[tier], [methodId]: e.target.value },
-                                    }))
-                                  }
-                                  className="w-full p-2.5 bg-[#141414] border border-[#2a2a2a] rounded-lg text-white focus:outline-none focus:border-emerald-500/50"
-                                />
-
-                                <Button
-                                  className="w-full"
-                                  onClick={() => saveMethodStock(tier, methodId)}
-                                  disabled={savingMethodKey === saveKey}
-                                >
-                                  {savingMethodKey === saveKey ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                  ) : (
-                                    <Save className="w-4 h-4" />
-                                  )}
-                                  Save
-                                </Button>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </Card>
-
-              <Card className="p-6 space-y-6">
-                <div>
-                  <h3 className="text-lg font-semibold text-white mb-1">GitHub Repository Configuration</h3>
-                  <p className="text-gray-500 text-sm">Manage the GitHub URLs for fetching game lists. No need to change code when switching repositories.</p>
-                </div>
-
-                {githubLoading ? (
-                  <div className="text-gray-400 text-sm flex items-center gap-2">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Loading configuration...
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-300 mb-2">
-                        Free Games URL
-                      </label>
-                      <input
-                        type="text"
-                        value={githubConfig.free_url}
-                        onChange={(e) => setGithubConfig({ ...githubConfig, free_url: e.target.value })}
-                        placeholder="https://raw.githubusercontent.com/..."
-                        className="w-full px-4 py-3 bg-[#141414] border border-[#2a2a2a] rounded-lg text-white focus:outline-none focus:border-emerald-500/50 text-sm"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">URL to the free games list</p>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-300 mb-2">
-                        Premium Games URL
-                      </label>
-                      <input
-                        type="text"
-                        value={githubConfig.premium_url}
-                        onChange={(e) => setGithubConfig({ ...githubConfig, premium_url: e.target.value })}
-                        placeholder="https://raw.githubusercontent.com/..."
-                        className="w-full px-4 py-3 bg-[#141414] border border-[#2a2a2a] rounded-lg text-white focus:outline-none focus:border-emerald-500/50 text-sm"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">URL to the premium games list</p>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-300 mb-2">
-                        Discontinued Games URL
-                      </label>
-                      <input
-                        type="text"
-                        value={githubConfig.discontinued_url}
-                        onChange={(e) => setGithubConfig({ ...githubConfig, discontinued_url: e.target.value })}
-                        placeholder="https://raw.githubusercontent.com/..."
-                        className="w-full px-4 py-3 bg-[#141414] border border-[#2a2a2a] rounded-lg text-white focus:outline-none focus:border-emerald-500/50 text-sm"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">URL to the discontinued games list</p>
-                    </div>
-
-                    <Button
-                      onClick={saveGitHubConfig}
-                      disabled={savingGithub}
-                      className="w-full flex items-center justify-center gap-2"
-                    >
-                      {savingGithub ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Save className="w-4 h-4" />
-                      )}
-                      {savingGithub ? 'Saving...' : 'Save Configuration'}
-                    </Button>
-                  </div>
-                )}
-              </Card>
-            </div>
-        )}
-      </div>
-
-      {isComposeOpen && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
-          <Card className="w-full max-w-lg p-6 bg-[#0a0a0a] border-[#252525]">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold flex items-center gap-2">
-                <MessageSquare className="w-5 h-5 text-emerald-500" />
-                Message Customer
-              </h3>
-              <button 
-                onClick={() => setIsComposeOpen(false)} 
-                className="text-gray-500 hover:text-white transition-colors"
-                title="Close"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <form onSubmit={handleComposeSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-1">Customer Email</label>
-                <input
-                  type="email"
-                  required
-                  className="w-full h-10 px-3 bg-[#111] border border-[#333] rounded-md text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors"
-                  value={composeData.email}
-                  onChange={e => setComposeData({...composeData, email: e.target.value})}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-1">Subject</label>
+              {/* Search */}
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#444]" />
                 <input
                   type="text"
-                  required
-                  className="w-full h-10 px-3 bg-[#111] border border-[#333] rounded-md text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors"
-                  value={composeData.subject}
-                  onChange={e => setComposeData({...composeData, subject: e.target.value})}
+                  placeholder="Search by email, username, or transaction ID…"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-11 pr-4 py-3 bg-white/[0.03] border border-white/[0.06] rounded-xl focus:border-white/10 text-sm text-white outline-none transition-colors placeholder:text-[#444]"
+                />
+              </div>
+
+              {/* Table */}
+              <div className="bg-white/[0.02] rounded-2xl border border-white/[0.06] overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-white/[0.06]">
+                      <th className="text-left px-5 py-3.5 text-xs font-medium text-[#555] uppercase tracking-wide">Customer</th>
+                      <th className="text-left px-5 py-3.5 text-xs font-medium text-[#555] uppercase tracking-wide">Plan</th>
+                      <th className="text-left px-5 py-3.5 text-xs font-medium text-[#555] uppercase tracking-wide">Amount</th>
+                      <th className="text-left px-5 py-3.5 text-xs font-medium text-[#555] uppercase tracking-wide">Date</th>
+                      <th className="text-left px-5 py-3.5 text-xs font-medium text-[#555] uppercase tracking-wide">Key</th>
+                      <th className="px-5 py-3.5" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {isLoading ? (
+                      <tr><td colSpan={6} className="py-16 text-center"><Loader2 className="w-5 h-5 animate-spin text-[#444] mx-auto" /></td></tr>
+                    ) : paginatedPayments.length === 0 ? (
+                      <tr><td colSpan={6} className="py-16 text-center text-sm text-[#444]">No payments found</td></tr>
+                    ) : paginatedPayments.map((p) => {
+                      const key = getKey(p);
+                      const name = p.payer_email || p.roblox_username || 'Unknown';
+                      return (
+                        <tr key={p.transaction_id} className="border-t border-white/[0.04] hover:bg-white/[0.02] transition-colors group">
+                          <td className="px-5 py-4">
+                            <div className="flex items-center gap-3">
+                              <Avatar name={name} />
+                              <div>
+                                <p className="text-sm text-white font-medium truncate max-w-[180px]">{name}</p>
+                                <p className="text-xs text-[#444] mt-0.5">{p.transaction_id.substring(0, 16)}…</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-5 py-4"><TierBadge tier={p.tier} /></td>
+                          <td className="px-5 py-4">
+                            <span className="text-sm font-bold text-white">
+                              {p.currency === 'ROBUX' ? `${p.amount} R$` : `$${p.amount}`}
+                            </span>
+                            <span className={`ml-2 text-xs ${p.currency === 'ROBUX' ? 'text-yellow-400' : 'text-blue-400'}`}>
+                              {p.currency === 'ROBUX' ? 'Robux' : 'PayPal'}
+                            </span>
+                          </td>
+                          <td className="px-5 py-4 text-xs text-[#555]">{new Date(p.created_at).toLocaleDateString()}</td>
+                          <td className="px-5 py-4">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-[var(--accent)] bg-[var(--accent)]/10 px-2 py-1 rounded-lg max-w-[100px] truncate block">
+                                {key}
+                              </span>
+                              <button onClick={() => handleCopy(key)} className="opacity-0 group-hover:opacity-100 transition-opacity text-[#444] hover:text-white">
+                                {copiedKey === key ? <Check className="w-3.5 h-3.5 text-[var(--accent)]" /> : <Copy className="w-3.5 h-3.5" />}
+                              </button>
+                            </div>
+                          </td>
+                          <td className="px-5 py-4">
+                            <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Link href={`/success?orderId=${p.transaction_id}&tier=${p.tier}&amount=${p.amount}&currency=${p.currency}&key=${key}&email=${p.payer_email || ''}&payerId=${p.payer_email || ''}&date=${p.created_at}&method=${p.currency === 'ROBUX' ? 'Robux' : 'PayPal'}&admin=1`} target="_blank">
+                                <button className="p-2 rounded-lg hover:bg-white/[0.06] text-[#555] hover:text-white transition-colors">
+                                  <Eye className="w-4 h-4" />
+                                </button>
+                              </Link>
+                              <button onClick={() => deletePayment(p.transaction_id)} className="p-2 rounded-lg hover:bg-red-500/10 text-[#555] hover:text-red-400 transition-colors">
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+                {totalPaymentPages > 1 && (
+                  <div className="flex items-center justify-between px-5 py-3.5 border-t border-white/[0.06]">
+                    <span className="text-xs text-[#555]">{filteredPayments.length} results</span>
+                    <div className="flex gap-1">
+                      {Array.from({ length: totalPaymentPages }, (_, i) => i + 1).map(p => (
+                        <button key={p} onClick={() => setPaymentsPage(p)} className={`w-8 h-8 rounded-lg text-xs font-medium transition-colors ${p === paymentsPage ? 'bg-white/10 text-white' : 'text-[#555] hover:text-white hover:bg-white/[0.04]'}`}>{p}</button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* ── Tickets ───────────────────────────────────────────────── */}
+          {activeTab === 'tickets' && (
+            <>
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#444]" />
+                <input type="text" placeholder="Search tickets…" value={ticketSearch} onChange={(e) => setTicketSearch(e.target.value)}
+                  className="w-full pl-11 pr-4 py-3 bg-white/[0.03] border border-white/[0.06] rounded-xl focus:border-white/10 text-sm text-white outline-none transition-colors placeholder:text-[#444]"
+                />
+              </div>
+
+              <div className="bg-white/[0.02] rounded-2xl border border-white/[0.06] overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-white/[0.06]">
+                      <th className="text-left px-5 py-3.5 text-xs font-medium text-[#555] uppercase tracking-wide">User</th>
+                      <th className="text-left px-5 py-3.5 text-xs font-medium text-[#555] uppercase tracking-wide">Subject</th>
+                      <th className="text-left px-5 py-3.5 text-xs font-medium text-[#555] uppercase tracking-wide">Status</th>
+                      <th className="text-left px-5 py-3.5 text-xs font-medium text-[#555] uppercase tracking-wide">Date</th>
+                      <th className="px-5 py-3.5" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paginatedTickets.length === 0 ? (
+                      <tr><td colSpan={5} className="py-16 text-center text-sm text-[#444]">No tickets</td></tr>
+                    ) : paginatedTickets.map((t) => (
+                      <tr key={t.id} className="border-t border-white/[0.04] hover:bg-white/[0.02] transition-colors group">
+                        <td className="px-5 py-4">
+                          <div className="flex items-center gap-3">
+                            <Avatar name={t.user_name || t.user_email} />
+                            <div>
+                              <p className="text-sm text-white font-medium">{t.user_name}</p>
+                              <p className="text-xs text-[#444] mt-0.5">{t.user_email}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-5 py-4">
+                          <p className="text-sm text-white">{t.subject}</p>
+                          <p className="text-xs text-[#444] mt-0.5">#{t.ticket_number}</p>
+                        </td>
+                        <td className="px-5 py-4"><StatusBadge status={t.status} /></td>
+                        <td className="px-5 py-4 text-xs text-[#555]">{new Date(t.created_at).toLocaleDateString()}</td>
+                        <td className="px-5 py-4">
+                          <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Link href={`/admin/tickets/${t.ticket_number}`}>
+                              <button className="p-2 rounded-lg hover:bg-white/[0.06] text-[#555] hover:text-white transition-colors"><Eye className="w-4 h-4" /></button>
+                            </Link>
+                            <button onClick={() => deleteTicket(t.ticket_number)} className="p-2 rounded-lg hover:bg-red-500/10 text-[#555] hover:text-red-400 transition-colors"><Trash2 className="w-4 h-4" /></button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {totalTicketPages > 1 && (
+                  <div className="flex items-center justify-between px-5 py-3.5 border-t border-white/[0.06]">
+                    <span className="text-xs text-[#555]">{filteredTickets.length} results</span>
+                    <div className="flex gap-1">
+                      {Array.from({ length: totalTicketPages }, (_, i) => i + 1).map(p => (
+                        <button key={p} onClick={() => setTicketsPage(p)} className={`w-8 h-8 rounded-lg text-xs font-medium transition-colors ${p === ticketsPage ? 'bg-white/10 text-white' : 'text-[#555] hover:text-white hover:bg-white/[0.04]'}`}>{p}</button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* ── Scripts ───────────────────────────────────────────────── */}
+          {activeTab === 'scripts' && (
+            <>
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#444]" />
+                <input type="text" placeholder="Search scripts…" value={scriptSearch} onChange={(e) => { setScriptSearch(e.target.value); setCurrentPage(1); }}
+                  className="w-full pl-11 pr-4 py-3 bg-white/[0.03] border border-white/[0.06] rounded-xl focus:border-white/10 text-sm text-white outline-none transition-colors placeholder:text-[#444]"
+                />
+              </div>
+
+              <div className="bg-white/[0.02] rounded-2xl border border-white/[0.06] overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-white/[0.06]">
+                      <th className="text-left px-5 py-3.5 text-xs font-medium text-[#555] uppercase tracking-wide">Script</th>
+                      <th className="text-left px-5 py-3.5 text-xs font-medium text-[#555] uppercase tracking-wide">Type</th>
+                      <th className="text-left px-5 py-3.5 text-xs font-medium text-[#555] uppercase tracking-wide">Status</th>
+                      <th className="text-left px-5 py-3.5 text-xs font-medium text-[#555] uppercase tracking-wide">Updated</th>
+                      <th className="px-5 py-3.5" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(() => {
+                      const filtered = scripts.filter(s => s.name.toLowerCase().includes(scriptSearch.toLowerCase()));
+                      const pages    = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+                      const page     = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+                      if (!page.length) return <tr><td colSpan={5} className="py-16 text-center text-sm text-[#444]">No scripts</td></tr>;
+                      return page.map((script) => (
+                        <tr key={script.id} className="border-t border-white/[0.04] hover:bg-white/[0.02] transition-colors group">
+                          <td className="px-5 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-xl bg-white/[0.04] flex items-center justify-center">
+                                <FileCode className="w-4 h-4 text-[#555]" />
+                              </div>
+                              <p className="text-sm text-white font-medium">{script.name}</p>
+                            </div>
+                          </td>
+                          <td className="px-5 py-4">
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium ring-1 ${
+                              script.type === 'Premium' ? 'bg-violet-500/15 text-violet-300 ring-violet-500/30' : 'bg-blue-500/15 text-blue-300 ring-blue-500/30'
+                            }`}>{script.type}</span>
+                          </td>
+                          <td className="px-5 py-4">
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium ring-1 ${
+                              script.status === 'Working' ? 'bg-emerald-500/15 text-emerald-300 ring-emerald-500/30' : 'bg-red-500/15 text-red-300 ring-red-500/30'
+                            }`}>{script.status}</span>
+                          </td>
+                          <td className="px-5 py-4 text-xs text-[#555]">
+                            {metadata[script.name]?.updated_at ? new Date(metadata[script.name].updated_at).toLocaleDateString() : 'Never'}
+                          </td>
+                          <td className="px-5 py-4">
+                            <button onClick={() => setSelectedScript(script)} className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/[0.06] hover:bg-white/10 text-xs text-[#888] hover:text-white ml-auto">
+                              Edit <ChevronRight className="w-3 h-3" />
+                            </button>
+                          </td>
+                        </tr>
+                      ));
+                    })()}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+
+          {/* ── Settings ──────────────────────────────────────────────── */}
+          {activeTab === 'settings' && (
+            <div className="grid lg:grid-cols-2 gap-6">
+
+              <div className="bg-white/[0.02] rounded-2xl border border-white/[0.06] overflow-hidden">
+                <div className="px-6 py-5 border-b border-white/[0.06]">
+                  <h3 className="text-sm font-semibold text-white">Stock Management</h3>
+                  <p className="text-xs text-[#555] mt-1">Available keys per payment method and tier.</p>
+                </div>
+                <div className="p-6">
+                  {stockLoading ? (
+                    <div className="flex items-center gap-2 text-sm text-[#555]"><Loader2 className="w-4 h-4 animate-spin" /> Loading…</div>
+                  ) : (
+                    <div className="space-y-5">
+                      {PAYMENT_METHODS.map(({ id: mId, label, color }) => (
+                        <div key={mId}>
+                          <div className="flex items-center gap-2 mb-3">
+                            <span className="w-2 h-2 rounded-full" style={{ background: color }} />
+                            <p className="text-xs font-semibold text-white uppercase tracking-wide">{label}</p>
+                          </div>
+                          <div className="grid grid-cols-3 gap-2">
+                            {(['weekly', 'monthly', 'lifetime'] as PremiumTier[]).map((tier) => {
+                              const k = `${mId}-${tier}`;
+                              const v = methodStock[tier][mId];
+                              return (
+                                <div key={tier} className="bg-white/[0.03] rounded-xl border border-white/[0.06] p-3 space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <p className="text-xs font-medium text-white capitalize">{tier}</p>
+                                    <span className={`text-xs px-1.5 py-0.5 rounded-md font-medium ${v > 0 ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
+                                      {v > 0 ? v : '0'}
+                                    </span>
+                                  </div>
+                                  <input
+                                    type="number" min={0}
+                                    value={methodDraft[tier][mId]}
+                                    onChange={(e) => setMethodDraft(prev => ({ ...prev, [tier]: { ...prev[tier], [mId]: e.target.value } }))}
+                                    className="w-full px-2.5 py-1.5 bg-white/[0.04] border border-white/[0.06] rounded-lg text-xs text-white outline-none focus:border-white/15 transition-colors"
+                                  />
+                                  <button
+                                    onClick={() => saveMethodStock(tier, mId)}
+                                    disabled={savingMethodKey === k}
+                                    className="w-full flex items-center justify-center gap-1 py-1.5 rounded-lg bg-white/[0.06] hover:bg-white/10 text-xs text-[#888] hover:text-white transition-colors disabled:opacity-40"
+                                  >
+                                    {savingMethodKey === k ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+                                    Save
+                                  </button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="bg-white/[0.02] rounded-2xl border border-white/[0.06] overflow-hidden">
+                <div className="px-6 py-5 border-b border-white/[0.06]">
+                  <h3 className="text-sm font-semibold text-white">GitHub Configuration</h3>
+                  <p className="text-xs text-[#555] mt-1">Raw URL endpoints for game list fetching.</p>
+                </div>
+                <div className="p-6">
+                  {githubLoading ? (
+                    <div className="flex items-center gap-2 text-sm text-[#555]"><Loader2 className="w-4 h-4 animate-spin" /> Loading…</div>
+                  ) : (
+                    <div className="space-y-4">
+                      {[
+                        { key: 'free_url',         label: 'Free Games URL' },
+                        { key: 'premium_url',      label: 'Premium Games URL' },
+                        { key: 'discontinued_url', label: 'Discontinued Games URL' },
+                      ].map(({ key, label }) => (
+                        <div key={key}>
+                          <label className="block text-xs font-medium text-[#888] mb-1.5 uppercase tracking-wide">{label}</label>
+                          <input
+                            type="text"
+                            value={(githubConfig as any)[key]}
+                            onChange={(e) => setGithubConfig({ ...githubConfig, [key]: e.target.value })}
+                            placeholder="https://raw.githubusercontent.com/…"
+                            className="w-full px-3.5 py-2.5 bg-white/[0.03] border border-white/[0.06] rounded-xl focus:border-white/10 text-sm text-white outline-none transition-colors placeholder:text-[#333]"
+                          />
+                        </div>
+                      ))}
+                      <button
+                        onClick={saveGitHubConfig}
+                        disabled={savingGithub}
+                        className="w-full flex items-center justify-center gap-2 py-2.5 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-black font-semibold text-sm rounded-xl transition-colors disabled:opacity-50 mt-2"
+                      >
+                        {savingGithub ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                        {savingGithub ? 'Saving…' : 'Save Configuration'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+            </div>
+          )}
+
+        </div>
+      </main>
+
+      {/* Script edit modal */}
+      {selectedScript && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-white/[0.08] bg-[#0e0e0e] shadow-2xl">
+            <div className="p-6 space-y-5">
+              <div className="flex items-start justify-between pb-4 border-b border-white/[0.06]">
+                <div>
+                  <h3 className="text-lg font-bold text-white">{selectedScript.name}</h3>
+                  <p className="text-xs text-[#555] mt-1">Edit script metadata and features</p>
+                </div>
+                <button onClick={() => setSelectedScript(null)} className="p-2 rounded-xl hover:bg-white/[0.06] text-[#555] hover:text-white transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-[#888] mb-2 uppercase tracking-wide">Description</label>
+                <textarea value={metadata[selectedScript.name]?.description || ''} onChange={(e) => updateMetadata(selectedScript.name, 'description', e.target.value)} placeholder="Enter script description…" rows={4}
+                  className="w-full px-3.5 py-2.5 bg-white/[0.03] border border-white/[0.06] rounded-xl focus:border-white/10 text-sm text-white outline-none transition-colors placeholder:text-[#333] resize-none"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-400 mb-1">Message</label>
-                <textarea
-                  required
-                  rows={5}
-                  className="w-full p-3 bg-[#111] border border-[#333] rounded-md text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors resize-none"
-                  value={composeData.message}
-                  onChange={e => setComposeData({...composeData, message: e.target.value})}
-                ></textarea>
+                <div className="flex items-center justify-between mb-3">
+                  <label className="text-xs font-medium text-[#888] uppercase tracking-wide">Features</label>
+                  <button onClick={() => addFeature(selectedScript.name)} className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white/[0.06] hover:bg-white/10 text-xs text-[#666] hover:text-white transition-colors">
+                    <Plus className="w-3 h-3" /> Add
+                  </button>
+                </div>
+                <div className="bg-white/[0.02] rounded-xl border border-white/[0.06] p-4 mb-3">
+                  <label className="block text-xs font-medium text-[#888] mb-2">Bulk Import <span className="text-[#444]">(* or - per line)</span></label>
+                  <textarea value={bulkFeatures} onChange={(e) => setBulkFeatures(e.target.value)} rows={3} placeholder="* Auto Farm&#10;- Kill Aura"
+                    className="w-full px-3 py-2 bg-white/[0.03] border border-white/[0.06] rounded-lg focus:border-white/10 text-sm text-white outline-none transition-colors placeholder:text-[#333] resize-none mb-2"
+                  />
+                  <button onClick={() => importBulk(selectedScript.name)} disabled={!bulkFeatures.trim()}
+                    className="px-3 py-1.5 rounded-lg bg-white/[0.06] hover:bg-white/10 text-xs text-[#666] hover:text-white transition-colors disabled:opacity-30">
+                    Import
+                  </button>
+                </div>
+                <div className="space-y-1.5">
+                  {(metadata[selectedScript.name]?.features || []).map((f: string, i: number) => (
+                    <div key={i} className="flex gap-2">
+                      <input value={f} onChange={(e) => updateFeature(selectedScript.name, i, e.target.value)}
+                        className="flex-1 px-3 py-2 bg-white/[0.03] border border-white/[0.06] rounded-lg focus:border-white/10 text-sm text-white outline-none transition-colors"
+                      />
+                      <button onClick={() => removeFeature(selectedScript.name, i)} className="p-2 rounded-lg text-[#444] hover:text-red-400 hover:bg-red-500/10 transition-colors">
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                  {!metadata[selectedScript.name]?.features?.length && <p className="text-sm text-[#333] italic">No features yet.</p>}
+                </div>
               </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <Button type="button" variant="secondary" onClick={() => setIsComposeOpen(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={isComposing} className="flex items-center gap-2">
-                  {isComposing ? <Loader2 className="w-4 h-4 animate-spin" /> : <MessageSquare className="w-4 h-4" />}
-                  {isComposing ? 'Sending...' : 'Send Message'}
-                </Button>
+              <div className="flex gap-2 pt-2 border-t border-white/[0.06]">
+                <button onClick={() => { saveMetadata(selectedScript.name); setSelectedScript(null); }} disabled={saving === selectedScript.name}
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-black font-semibold text-sm rounded-xl transition-colors disabled:opacity-50">
+                  <Save className="w-4 h-4" /> {saving === selectedScript.name ? 'Saving…' : 'Save Changes'}
+                </button>
+                {metadata[selectedScript.name]?.id && (
+                  <button onClick={() => { deleteMetadata(selectedScript.name); setSelectedScript(null); }}
+                    className="p-2.5 rounded-xl border border-red-500/20 text-red-400 hover:bg-red-500/10 transition-colors">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
+                <button onClick={() => setSelectedScript(null)} className="px-4 py-2.5 rounded-xl bg-white/[0.06] hover:bg-white/10 text-sm text-[#666] hover:text-white transition-colors">Cancel</button>
               </div>
-            </form>
-          </Card>
+            </div>
+          </div>
         </div>
       )}
+
+      {/* Compose modal */}
+      {isComposeOpen && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="w-full max-w-lg rounded-2xl border border-white/[0.08] bg-[#0e0e0e] shadow-2xl">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
+              <p className="text-sm font-semibold text-white">Message Customer</p>
+              <button onClick={() => setIsComposeOpen(false)} className="p-2 rounded-xl hover:bg-white/[0.06] text-[#555] hover:text-white transition-colors"><X className="w-4 h-4" /></button>
+            </div>
+            <form onSubmit={handleComposeSubmit} className="p-6 space-y-4">
+              {['email', 'subject'].map((f) => (
+                <div key={f}>
+                  <label className="block text-xs font-medium text-[#888] mb-2 uppercase tracking-wide">{f === 'email' ? 'Customer Email' : 'Subject'}</label>
+                  <input type={f === 'email' ? 'email' : 'text'} required
+                    className="w-full bg-white/[0.03] border border-white/[0.06] rounded-xl focus:border-white/10 px-3.5 py-2.5 text-sm text-white outline-none transition-colors"
+                    value={(composeData as any)[f]} onChange={(e) => setComposeData({ ...composeData, [f]: e.target.value })}
+                  />
+                </div>
+              ))}
+              <div>
+                <label className="block text-xs font-medium text-[#888] mb-2 uppercase tracking-wide">Message</label>
+                <textarea required rows={5}
+                  className="w-full bg-white/[0.03] border border-white/[0.06] rounded-xl focus:border-white/10 px-3.5 py-2.5 text-sm text-white outline-none transition-colors resize-none"
+                  value={composeData.message} onChange={(e) => setComposeData({ ...composeData, message: e.target.value })}
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button type="button" onClick={() => setIsComposeOpen(false)} className="px-4 py-2.5 rounded-xl bg-white/[0.06] hover:bg-white/10 text-sm text-[#666] hover:text-white transition-colors">Cancel</button>
+                <button type="submit" disabled={isComposing}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-black font-semibold text-sm rounded-xl transition-colors disabled:opacity-50">
+                  {isComposing ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Send Message'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

@@ -11,25 +11,31 @@ const Card = forwardRef<HTMLDivElement, CardProps>(
 
     const variantStyles: Record<string, CSSProperties> = {
       default: {
-        backgroundColor: 'var(--bg-secondary)',
-        border: '1px solid var(--border)',
+        backgroundColor: 'rgba(255,255,255,0.02)',
+        borderColor: 'rgba(255,255,255,0.06)',
       },
       hover: {
-        backgroundColor: 'var(--bg-secondary)',
-        border: '1px solid var(--accent)',
-        boxShadow: '0 0 20px rgba(var(--accent-rgb), 0.1)',
+        backgroundColor: 'rgba(255,255,255,0.02)',
+        borderColor: 'rgba(255,255,255,0.06)',
       },
       featured: {
-        backgroundColor: 'var(--bg-secondary)',
-        border: '1px solid var(--accent)',
-        boxShadow: '0 10px 15px -3px rgba(var(--accent-rgb), 0.05)',
+        backgroundColor: 'rgba(255,255,255,0.03)',
+        borderColor: 'rgba(var(--accent-rgb), 0.35)',
+        borderLeftWidth: '2px',
+        borderLeftColor: 'var(--accent)',
       },
     };
 
+    const hoverMap: Record<string, string> = {
+      default:  '',
+      hover:    'hover:bg-white/[0.04] hover:border-white/10',
+      featured: 'hover:border-[rgba(var(--accent-rgb),0.5)]',
+    };
+
     return (
-      <div 
-        ref={ref} 
-        className={cn(baseStyles, className)} 
+      <div
+        ref={ref}
+        className={cn(baseStyles, hoverMap[variant], className)}
         style={{ ...variantStyles[variant], ...style }}
         {...props}
       >
@@ -40,20 +46,19 @@ const Card = forwardRef<HTMLDivElement, CardProps>(
 );
 
 Card.displayName = 'Card';
-
 export { Card };
 
-// Card Header
 export function CardHeader({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return <div className={cn('p-6 pb-4', className)} {...props} />;
 }
-
-// Card Content
 export function CardContent({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return <div className={cn('p-6 pt-0', className)} {...props} />;
 }
-
-// Card Footer
 export function CardFooter({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn('p-6 pt-4', className)} {...props} />;
+  return (
+    <div
+      className={cn('p-6 pt-4 border-t border-white/[0.06]', className)}
+      {...props}
+    />
+  );
 }

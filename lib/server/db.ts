@@ -320,7 +320,7 @@ export class TicketDatabase {
     return this.premiumTiers.includes(normalized) ? normalized : null;
   }
 
-  private readonly paymentMethods = ['robux', 'paypal', 'gcash', 'card', 'stripe'];
+  private readonly paymentMethods = ['robux', 'paypal', 'maya', 'card', 'paddle'];
 
   private normalizeMethod(method: string) {
     const m = (method || '').toLowerCase();

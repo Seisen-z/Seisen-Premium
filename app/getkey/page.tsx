@@ -1,204 +1,171 @@
 'use client';
 
 import { useState } from 'react';
-import { Key, ExternalLink, CheckCircle, Clock, AlertCircle, Crown, Shield, Terminal, Copy, Zap, Lock } from 'lucide-react';
-import { Card } from '@/components/ui/Card';
-import Button from '@/components/ui/Button';
-import { getApiUrl, copyToClipboard } from '@/lib/utils';
+import { ExternalLink, Crown, Copy, Check, Terminal, ArrowRight } from 'lucide-react';
+import { copyToClipboard } from '@/lib/utils';
 import Link from 'next/link';
 
+const LOADER = `loadstring(game:HttpGet("https://api.junkie-development.de/api/v1/luascripts/public/8ac2e97282ac0718aeeb3bb3856a2821d71dc9e57553690ab508ebdb0d1569da/download"))()`;
+
 export default function GetKeyPage() {
-  const [generatedKey, setGeneratedKey] = useState<string | null>(null);
-  const [copiedLoader, setCopiedLoader] = useState(false);
+  const [copied, setCopied] = useState(false);
 
-  const scriptLoader = `loadstring(game:HttpGet("https://api.junkie-development.de/api/v1/luascripts/public/8ac2e97282ac0718aeeb3bb3856a2821d71dc9e57553690ab508ebdb0d1569da/download"))()`;
-
-
-
-  const handleCopyLoader = async () => {
-    await copyToClipboard(scriptLoader);
-    setCopiedLoader(true);
-    setTimeout(() => setCopiedLoader(false), 2000);
+  const handleCopy = async () => {
+    await copyToClipboard(LOADER);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
-    <div className="min-h-screen py-12 px-4 md:px-8">
-      <div className="max-w-6xl mx-auto space-y-12">
-        {/* Header */}
-        <section className="text-center animate-fade-in space-y-4">
-          <h1 className="text-4xl md:text-5xl font-bold text-white tracking-tight">
-            Access Key System
-          </h1>
-          <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-            Choose your preferred method to access premium scripts
-          </p>
-        </section>
+    <div className="min-h-screen px-6 md:px-14 pt-16 pb-28 max-w-6xl mx-auto">
 
-        {/* Access Cards Grid */}
-        <div className="grid md:grid-cols-2 gap-8 items-start">
-          
-          {/* Free Access Card */}
-          <div className="relative group">
-            <div className="absolute inset-0 accent-bg blur-3xl opacity-20 group-hover:opacity-40 transition-opacity rounded-3xl" />
-            <Card className="h-full border-[#2a2a2a] bg-[#0a0a0a]/80 backdrop-blur-sm p-8 flex flex-col relative overflow-hidden">
-               {/* Shine effect */}
-               <div className="absolute top-0 right-0 w-64 h-64 bg-[var(--accent)]/5 rounded-full blur-3xl -mr-32 -mt-32" />
-               
-               <div className="flex items-center gap-3 mb-6 relative z-10">
-                 <div className="p-3 rounded-xl accent-bg border accent-border accent-text">
-                   <Key className="w-6 h-6" />
-                 </div>
-                 <h2 className="text-2xl font-bold text-white">Free Access Key</h2>
-               </div>
+      {/* ── Big header ── */}
+      <div className="mb-16">
+        <h1
+          className="font-bold text-white leading-none mb-4"
+          style={{ fontSize: 'clamp(3rem, 8vw, 6rem)', letterSpacing: '-0.04em' }}
+        >
+          Get Key
+        </h1>
+        <p className="text-sm max-w-sm" style={{ color: 'var(--text-muted)' }}>
+          Two access tiers. Free expires. Premium doesn't.
+        </p>
+      </div>
 
-                 <div className="space-y-6 flex-1 relative z-10">
-                   <p className="text-gray-400">
-                     Complete a quick verification process to get your temporary access key.
-                   </p>
-                   
-                   <ul className="space-y-4">
-                     <li className="flex items-center gap-3 text-sm text-gray-300">
-                         <div className="w-5 h-5 rounded-full accent-bg flex items-center justify-center">
-                            <CheckCircle className="w-3 h-3 accent-text" />
-                         </div>
-                         Key valid for: <span className="font-bold text-white ml-1">1h, 10h, 24h, or 48h</span>
-                     </li>
-                     <li className="flex items-center gap-3 text-sm text-gray-300">
-                         <div className="w-5 h-5 rounded-full accent-bg flex items-center justify-center">
-                            <AlertCircle className="w-3 h-3 accent-text" />
-                         </div>
-                         Page opens in new tab for verification
-                     </li>
-                     <li className="flex items-center gap-3 text-sm text-gray-300">
-                         <div className="w-5 h-5 rounded-full accent-bg flex items-center justify-center">
-                            <Zap className="w-3 h-3 accent-text" />
-                         </div>
-                         Tip: Use different browser or disable ad-blockers if issues occur
-                     </li>
-                   </ul>
+      {/* ── Split layout ── */}
+      <div className="flex flex-col lg:flex-row gap-0" style={{ border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', overflow: 'hidden' }}>
 
-                   <div className="pt-4 mt-auto">
-                     <a href="https://jnkie.com/get-key/seisenhub" target="_blank" rel="noopener noreferrer">
-                        <Button 
-                          className="w-full h-12 text-lg bg-[var(--accent)] hover:opacity-90 shadow-lg shadow-[var(--accent)]/20"
-                        >
-                          <ExternalLink className="w-5 h-5 mr-2" />
-                          Get Free Key
-                        </Button>
-                     </a>
-                     
-                     <div className="text-left text-xs text-gray-500 mt-6 pt-4 border-t border-[#1f1f1f]">
-                       <span className="block mb-2">Secured & Powered by</span>
-                       <div className="flex items-center gap-4">
-                          <a href="https://work.ink" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity">
-                            <img src="/images/partners/workink.webp" alt="Work.ink" className="h-6 w-auto" />
-                          </a>
-                          <span className="text-[#2a2a2a] h-4 w-px bg-[#2a2a2a]" />
-                          <a href="https://lockr.so" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity">
-                            <img src="/images/partners/lockr.webp" alt="Lockr.so" className="h-5 w-auto" />
-                          </a>
-                       </div>
-                     </div>
-                   </div>
-                 </div>
-            </Card>
+        {/* ── Left: Free Key ── */}
+        <div className="flex-1 p-8 lg:p-10" style={{ backgroundColor: 'rgba(255,255,255,0.01)' }}>
+          <div className="flex items-center gap-2 mb-8">
+            <span className="font-mono text-xs uppercase tracking-[0.2em]" style={{ color: 'var(--text-muted)' }}>01</span>
+            <span className="w-8 h-px" style={{ backgroundColor: 'rgba(255,255,255,0.1)' }} />
+            <span className="font-mono text-xs uppercase tracking-[0.2em]" style={{ color: 'var(--accent)' }}>Free</span>
           </div>
 
-          {/* Premium Access Card */}
-          <div className="relative group">
-            <div className="absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-amber-500 to-transparent opacity-50" />
-            <div className="absolute inset-x-0 -bottom-px h-px bg-gradient-to-r from-transparent via-amber-500 to-transparent opacity-50" />
-            <div className="absolute inset-0 bg-amber-500/5 blur-3xl opacity-20 group-hover:opacity-40 transition-opacity rounded-3xl" />
-            
-            <Card className="h-full border-[#2a2a2a] bg-[#0a0a0a]/80 backdrop-blur-sm p-8 flex flex-col relative overflow-hidden group-hover:border-amber-500/30 transition-colors">
-               <div className="absolute top-4 right-4 animate-pulse">
-                   <div className="px-3 py-1 bg-amber-500 text-black text-xs font-bold rounded-full shadow-[0_0_10px_rgba(245,158,11,0.5)]">
-                       RECOMMENDED
-                   </div>
-               </div>
-               
-               <div className="flex items-center gap-3 mb-6">
-                 <div className="p-3 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-lg shadow-amber-500/20">
-                   <Crown className="w-6 h-6" />
-                 </div>
-                 <h2 className="text-2xl font-bold text-white">Instant Premium Access</h2>
-               </div>
+          <h2 className="text-2xl font-bold text-white mb-2">Free Key</h2>
+          <p className="text-sm mb-10" style={{ color: 'var(--text-muted)' }}>Expires after 1h, 10h, 24h, or 48h. Renew anytime.</p>
 
-               <div className="space-y-6 flex-1">
-                 <p className="text-gray-400">
-                   Skip the key system entirely with lifetime premium membership.
-                 </p>
-                 
-                 <ul className="space-y-4">
-                   {[
-                     'Unlimited access - no keys needed',
-                     'Instant script execution',
-                     'Priority support & early access',
-                     'Exclusive premium-only scripts',
-                     'Custom discord role & badge',
-                     'Access to private community'
-                   ].map((item, i) => (
-                     <li key={i} className="flex items-center gap-3 text-sm text-gray-300">
-                       <div className="w-5 h-5 rounded-full bg-amber-500/10 flex items-center justify-center">
-                          <Crown className="w-3 h-3 text-amber-500" />
-                       </div>
-                       {item}
-                     </li>
-                   ))}
-                 </ul>
-                 
-                 <div className="mt-auto space-y-3 pt-6">
-                     <Link href="/premium" className="block">
-                        <Button 
-                            className="w-full h-12 text-lg bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white shadow-lg shadow-amber-900/20 border-0"
-                        >
-                            Get Premium
-                            <Crown className="w-4 h-4 ml-2" />
-                        </Button>
-                     </Link>
-                     <Link href="/legal" className="block">
-                         <Button variant="secondary" className="w-full hover:bg-[#1a1a1a]">
-                             View Terms
-                         </Button>
-                     </Link>
-                 </div>
-               </div>
-            </Card>
+          <ol className="space-y-6 mb-10">
+            {[
+              ['Get Key', 'Opens verification — takes under 60 seconds'],
+              ['Complete it', 'Copy the key from the page'],
+              ['Paste into executor', 'Then run the loader below'],
+            ].map(([title, desc], i) => (
+              <li key={i} className="flex gap-5">
+                <span
+                  className="font-mono text-xs pt-0.5 w-5 shrink-0"
+                  style={{ color: 'rgba(255,255,255,0.2)' }}
+                >
+                  {String(i + 1).padStart(2, '0')}
+                </span>
+                <div>
+                  <p className="text-sm font-medium text-white mb-0.5">{title}</p>
+                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{desc}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+
+          <a
+            href="https://jnkie.com/get-key/seisenhub"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium text-white transition-all"
+            style={{ backgroundColor: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(255,255,255,0.13)'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(255,255,255,0.08)'; }}
+          >
+            Get Free Key <ExternalLink className="w-3.5 h-3.5 opacity-60" />
+          </a>
+
+          <div className="flex items-center gap-4 mt-8 pt-8" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+            <span className="text-[10px] uppercase tracking-widest font-mono" style={{ color: 'var(--text-muted)' }}>Via</span>
+            <a href="https://work.ink" target="_blank" rel="noopener noreferrer" className="opacity-40 hover:opacity-70 transition-opacity">
+              <img src="/images/partners/workink.webp" alt="Work.ink" className="h-4 w-auto" />
+            </a>
+            <a href="https://lockr.so" target="_blank" rel="noopener noreferrer" className="opacity-40 hover:opacity-70 transition-opacity">
+              <img src="/images/partners/lockr.webp" alt="Lockr.so" className="h-3.5 w-auto" />
+            </a>
           </div>
         </div>
 
-        {/* Script Loader Section */}
-        <section className="animate-fade-in animation-delay-200">
-            <div className="flex items-center justify-center gap-2 mb-4">
-                <Terminal className="w-5 h-5 accent-text" />
-                <h2 className="text-xl font-bold text-white">Script Loader</h2>
-            </div>
-            <p className="text-center text-gray-500 text-sm mb-6 max-w-lg mx-auto">
-                Copy and paste this loader into your executor after obtaining a key to run the script hub.
-            </p>
+        {/* ── Divider ── */}
+        <div className="w-px hidden lg:block" style={{ backgroundColor: 'rgba(255,255,255,0.07)' }} />
+        <div className="h-px lg:hidden" style={{ backgroundColor: 'rgba(255,255,255,0.07)' }} />
 
-            <Card className="max-w-3xl mx-auto bg-[#050505] border-[#222]">
-                <div className="flex items-center justify-between px-4 py-2 border-b border-[#222] bg-[#0a0a0a]">
-                    <div className="flex gap-1.5">
-                        <div className="w-3 h-3 rounded-full bg-red-500/20" />
-                        <div className="w-3 h-3 rounded-full bg-yellow-500/20" />
-                        <div className="w-3 h-3 rounded-full accent-bg" />
-                    </div>
-                    <span className="text-xs text-gray-600 font-mono">loader.lua</span>
-                </div>
-                <div className="p-6 relative group">
-                    <pre className="accent-text font-mono text-sm break-all whitespace-pre-wrap">
-                        {scriptLoader}
-                    </pre>
-                    <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button size="sm" variant="secondary" onClick={handleCopyLoader}>
-                            {copiedLoader ? <CheckCircle className="w-4 h-4 accent-text" /> : <Copy className="w-4 h-4" />}
-                            {copiedLoader ? 'Copied' : 'Copy'}
-                        </Button>
-                    </div>
-                </div>
-            </Card>
-        </section>
+        {/* ── Right: Premium ── */}
+        <div className="lg:w-72 p-8 lg:p-10 flex flex-col" style={{ backgroundColor: 'rgba(var(--accent-rgb),0.03)' }}>
+          <div className="flex items-center gap-2 mb-8">
+            <span className="font-mono text-xs uppercase tracking-[0.2em]" style={{ color: 'var(--text-muted)' }}>02</span>
+            <span className="w-8 h-px" style={{ backgroundColor: 'rgba(255,255,255,0.1)' }} />
+            <span className="font-mono text-xs uppercase tracking-[0.2em]" style={{ color: 'var(--accent)' }}>Premium</span>
+          </div>
+
+          <h2 className="text-2xl font-bold text-white mb-2">No key. Ever.</h2>
+          <p className="text-sm mb-10" style={{ color: 'var(--text-muted)' }}>Instant access to every script. No waiting, no expiry.</p>
+
+          <ul className="space-y-3 text-sm flex-1 mb-10">
+            {[
+              'All scripts unlocked',
+              'No key system',
+              'Weekly / Monthly / Lifetime',
+              'Priority support',
+              'Early access',
+            ].map(f => (
+              <li key={f} className="flex items-center gap-3" style={{ color: 'var(--text-secondary)' }}>
+                <span className="w-1 h-1 rounded-full shrink-0" style={{ backgroundColor: 'var(--accent)' }} />
+                {f}
+              </li>
+            ))}
+          </ul>
+
+          <Link
+            href="/premium"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all"
+            style={{ backgroundColor: 'var(--accent)', color: '#000' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--accent-hover)'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--accent)'; }}
+          >
+            <Crown className="w-3.5 h-3.5" /> Upgrade <ArrowRight className="w-3.5 h-3.5 ml-auto" />
+          </Link>
+        </div>
+      </div>
+
+      {/* ── Script Loader ── */}
+      <div className="mt-16">
+        <div className="flex items-center gap-3 mb-4">
+          <Terminal className="w-3.5 h-3.5" style={{ color: 'var(--text-muted)' }} />
+          <span className="font-mono text-xs uppercase tracking-[0.15em]" style={{ color: 'var(--text-muted)' }}>Script Loader</span>
+          <span className="text-xs" style={{ color: 'var(--text-muted)', opacity: 0.5 }}>— paste into executor</span>
+        </div>
+
+        <div className="rounded-lg overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.07)' }}>
+          <div className="flex items-center justify-between px-4 py-2.5" style={{ backgroundColor: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-red-500/40" />
+              <span className="w-2 h-2 rounded-full bg-yellow-500/40" />
+              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: 'rgba(var(--accent-rgb),0.5)' }} />
+            </div>
+            <span className="font-mono text-[10px]" style={{ color: 'var(--text-muted)' }}>loader.lua</span>
+            <button
+              onClick={handleCopy}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium transition-all"
+              style={{
+                backgroundColor: copied ? 'rgba(var(--accent-rgb),0.12)' : 'rgba(255,255,255,0.04)',
+                color: copied ? 'var(--accent)' : 'var(--text-muted)',
+              }}
+            >
+              {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+              {copied ? 'Copied' : 'Copy'}
+            </button>
+          </div>
+          <div className="px-5 py-4">
+            <code className="text-xs font-mono break-all leading-relaxed" style={{ color: 'var(--accent)' }}>
+              {LOADER}
+            </code>
+          </div>
+        </div>
       </div>
     </div>
   );

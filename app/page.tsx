@@ -1,286 +1,298 @@
 import Link from 'next/link';
-import {
-  Zap,
-  Crown,
-  CheckCircle,
-  Bell,
-  Smartphone,
-  Play,
-  Briefcase,
-  ExternalLink,
-  ArrowRight,
-  Key,
-} from 'lucide-react';
-import { Logo } from '@/components/ui/Logo';
+import { Crown, Key, ArrowRight, Play, Zap, Shield, RefreshCw } from 'lucide-react';
 import Button from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
 import { fetchScripts } from '@/lib/scripts';
 import { fetchVideos } from '@/lib/videos';
-import ScriptCarousel from '@/components/ScriptCarousel';
 import YoutubeCarousel from '@/components/YoutubeCarousel';
-
 import Testimonials from '@/components/sections/Testimonials';
 import PartnerLogos from '@/components/sections/PartnerLogos';
+import ScriptShowcase from '@/components/ScriptShowcase';
 
 export default async function HomePage() {
   const scripts = await fetchScripts();
-  const videos = await fetchVideos();
-  
-  // Randomize scripts
-  const shuffledScripts = [...scripts].sort(() => 0.5 - Math.random());
+  const videos  = await fetchVideos();
 
+  const freeCount    = scripts.filter(s => s.type === 'Free'    || s.displayType === 'Free & Premium').length;
+  const premiumCount = scripts.filter(s => s.type === 'Premium' || s.displayType === 'Free & Premium').length;
+  const workingCount = scripts.filter(s => s.status === 'Working').length;
 
   return (
-    <div className="min-h-screen py-8 px-4 md:px-8 relative">
-      {/* Status Indicator (Viewport Top Right) */}
-      <a
-        href="https://discord.gg/F4sAf6z8Ph"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="absolute top-8 right-8 hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all group z-10"
-      >
-        <span className="relative flex h-2.5 w-2.5">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
-        </span>
-        <span className="text-xs font-medium text-gray-300 group-hover:text-white transition-colors">
-          Status: Online
-        </span>
-      </a>
-      <div className="max-w-5xl mx-auto space-y-16">
-        {/* Hero Section */}
-        <section className="text-center py-12 animate-fade-in relative">
+    <div className="min-h-screen">
 
-          {/* Logo */}
-          <div className="w-24 h-24 mx-auto mb-6 flex items-center justify-center">
-            <Logo className="w-20 h-20" style={{ color: 'var(--accent)' }} />
-          </div>
+      {/* ── HERO ──────────────────────────────────────────────── */}
+      <section className="relative overflow-hidden px-6 md:px-14 pt-20 pb-28 max-w-6xl mx-auto">
+        {/* Radial glow behind headline */}
+        <div
+          className="absolute pointer-events-none"
+          style={{
+            top: '-10%', left: '-5%',
+            width: '70%', height: '80%',
+            background: 'radial-gradient(ellipse, rgba(var(--accent-rgb), 0.07) 0%, transparent 65%)',
+          }}
+        />
 
-          {/* Title */}
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
-            Seisen
-          </h1>
+        {/* Status */}
+        <a
+          href="https://discord.gg/F4sAf6z8Ph"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2.5 mb-10 px-3 py-1.5 rounded-full transition-all hover:brightness-110"
+          style={{ backgroundColor: 'rgba(var(--accent-rgb),0.08)', border: '1px solid rgba(var(--accent-rgb),0.2)' }}
+        >
+          <span className="relative flex h-1.5 w-1.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-500" />
+          </span>
+          <span className="text-xs font-medium" style={{ color: 'var(--accent)' }}>All systems operational</span>
+        </a>
 
-          {/* Subtitle */}
-          <p className="text-gray-400 text-lg max-w-xl mx-auto mb-8">
-            Premium scripts for enhanced gaming experiences and functionality.
-          </p>
+        {/* Headline */}
+        <h1
+          className="font-bold text-white leading-none mb-5"
+          style={{ fontSize: 'clamp(3.5rem, 10vw, 8rem)', letterSpacing: '-0.04em' }}
+        >
+          Seisen
+        </h1>
 
-          {/* CTA Buttons */}
-          <div className="flex flex-wrap items-center justify-center gap-4">
-            <Link href="/scripts">
-              <Button size="lg">
-                <Play className="w-5 h-5" />
-                Browse Scripts
-              </Button>
-            </Link>
-            <Link href="#access-options">
-              <Button variant="outline" size="lg">
-                <Key className="w-5 h-5" />
-                Get Access Key
-              </Button>
-            </Link>
-            <Link href="/premium">
-              <Button variant="outline" size="lg">
-                <Crown className="w-5 h-5" />
-                Go Premium
-              </Button>
-            </Link>
-          </div>
-        </section>
+        {/* Tagline */}
+        <p className="text-base md:text-lg max-w-xl mb-3 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+          Premium Roblox scripts for enhanced gaming.
+        </p>
+        <p className="text-sm mb-10" style={{ color: 'var(--text-muted)' }}>
+          Free access available — no sign-up required.
+        </p>
 
-        {/* Features Grid */}
-        <section className="grid md:grid-cols-3 gap-6">
-          <Card variant="hover" className="p-6">
-            <div className="flex items-start gap-4">
-              <div className="p-2 rounded-lg" style={{ backgroundColor: 'rgba(var(--accent-rgb), 0.1)' }}>
-                <CheckCircle className="w-6 h-6" style={{ color: 'var(--accent)' }} />
-              </div>
-              <div>
-                <h3 className="font-semibold text-white mb-1">Premium Scripts</h3>
-                <p className="text-gray-500 text-sm">
-                  Access high-quality scripts with advanced features and regular updates.
-                </p>
-              </div>
-            </div>
-          </Card>
-
-          <Card variant="hover" className="p-6">
-            <div className="flex items-start gap-4">
-              <div className="p-2 rounded-lg" style={{ backgroundColor: 'rgba(var(--accent-rgb), 0.1)' }}>
-                <Bell className="w-6 h-6" style={{ color: 'var(--accent)' }} />
-              </div>
-              <div>
-                <h3 className="font-semibold text-white mb-1">Frequent Updates</h3>
-                <p className="text-gray-500 text-sm">
-                  Get instant notifications when new scripts are released or updated.
-                </p>
-              </div>
-            </div>
-          </Card>
-
-          <Card variant="hover" className="p-6">
-            <div className="flex items-start gap-4">
-              <div className="p-2 rounded-lg" style={{ backgroundColor: 'rgba(var(--accent-rgb), 0.1)' }}>
-                <Smartphone className="w-6 h-6" style={{ color: 'var(--accent)' }} />
-              </div>
-              <div>
-                <h3 className="font-semibold text-white mb-1">Easy Access</h3>
-                <p className="text-gray-500 text-sm">
-                  Simple key-based system for quick and secure script access.
-                </p>
-              </div>
-            </div>
-          </Card>
-        </section>
-
-
-        {/* Featured Scripts Carousel */}
-        <section className="animate-fade-in animation-delay-200">
-           <div className="flex items-center justify-between mb-8 px-2">
-              <div>
-                  <h2 className="text-2xl font-bold text-white mb-1">Featured Scripts</h2>
-                  <p className="text-gray-500 text-sm">Most popular scripts available right now</p>
-              </div>
-              <Link href="/scripts" className="hidden md:flex items-center gap-2 text-sm font-medium transition-colors accent-link">
-                  View All <ArrowRight className="w-4 h-4" />
-              </Link>
-           </div>
-           
-           <ScriptCarousel scripts={shuffledScripts} />
-           
-           <div className="md:hidden text-center mt-6">
-              <Link href="/scripts">
-                  <Button variant="outline" className="w-full">View All Scripts</Button>
-              </Link>
-           </div>
-        </section>
-
-
-
-        {/* YouTube Videos Carousel */}
-        <section className="animate-fade-in animation-delay-300">
-           <div className="flex items-center justify-between mb-8 px-2">
-              <div>
-                  <h2 className="text-2xl font-bold text-white mb-1">Latest Videos</h2>
-                  <p className="text-gray-500 text-sm">Watch our latest showcases and tutorials</p>
-              </div>
-              <a href="https://www.youtube.com/@SeisenHub" target="_blank" rel="noreferrer" className="hidden md:flex items-center gap-2 text-red-500 hover:text-red-400 text-sm font-medium transition-colors">
-                  Visit Channel <ArrowRight className="w-4 h-4" />
-              </a>
-           </div>
-           
-           <YoutubeCarousel videos={videos} />
-           
-           <div className="md:hidden text-center mt-6">
-              <a href="https://www.youtube.com/@SeisenHub" target="_blank" rel="noreferrer">
-                  <Button variant="outline" className="w-full">Visit Channel</Button>
-              </a>
-           </div>
-        </section>
-
-
-
-
-        {/* Partners Section */}
-        {/* Partners & Testimonials Group */}
-        <div className="space-y-4">
-          <PartnerLogos />
-          <Testimonials />
+        {/* CTAs */}
+        <div className="flex flex-wrap items-center gap-3 mb-16">
+          <Link href="/scripts"><Button size="lg"><Play className="w-4 h-4" /> Browse Scripts</Button></Link>
+          <Link href="#scripts"><Button variant="outline" size="lg">All Scripts →</Button></Link>
+          <Link href="/premium"><Button variant="ghost" size="lg"><Crown className="w-4 h-4" /> Premium</Button></Link>
         </div>
 
-        {/* Access Options Section */}
-        <section id="access-options">
-          <div className="text-center mb-10">
-            <h2 className="text-2xl font-bold text-white mb-2">Choose Your Plan</h2>
-            <p className="text-gray-500">Select the option that works best for you</p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-6">
-            <Card variant="hover" className="p-6 text-center">
-              <div className="w-14 h-14 mx-auto mb-4 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'rgba(var(--accent-rgb), 0.1)' }}>
-                <Key className="w-7 h-7" style={{ color: 'var(--accent)' }} />
-              </div>
-              <h3 className="font-semibold text-white mb-2">Free Tier</h3>
-              <p className="text-gray-500 text-sm mb-6">
-                Access to basic scripts with time-based key system
-              </p>
-              <Link href="/getkey">
-                <Button variant="secondary" className="w-full">
-                  <Key className="w-4 h-4" />
-                  Get Free Key
-                </Button>
-              </Link>
-            </Card>
-
-            <Card variant="featured" className="p-6 text-center">
-              <div className="w-14 h-14 mx-auto mb-4 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(to bottom right, var(--accent), var(--accent-hover))' }}>
-                <Crown className="w-7 h-7 text-white" />
-              </div>
-              <h3 className="font-semibold text-white mb-2">Premium Plan</h3>
-              <p className="text-gray-500 text-sm mb-6">
-                Full access to all premium scripts with no limitations
-              </p>
-              <Link href="/premium">
-                <Button className="w-full">
-                  <Crown className="w-4 h-4" />
-                  Upgrade Now
-                </Button>
-              </Link>
-            </Card>
-
-            <Card variant="hover" className="p-6 text-center">
-              <div className="w-14 h-14 mx-auto mb-4 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'rgba(var(--accent-rgb), 0.1)' }}>
-                <svg className="w-7 h-7" viewBox="0 0 24 24" fill="currentColor" style={{ color: 'var(--accent)' }}>
-                  <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.947 2.418-2.157 2.418z"/>
-                </svg>
-              </div>
-              <h3 className="font-semibold text-white mb-2">Community</h3>
-              <p className="text-gray-500 text-sm mb-6">
-                Get help, share tips, and connect with other users on Discord
-              </p>
-              <a
-                href="https://discord.gg/F4sAf6z8Ph"
-                target="_blank"
-                rel="noopener noreferrer"
+        {/* Stat chips */}
+        <div className="flex flex-wrap gap-3">
+          {[
+            { val: scripts.length, label: 'Total Scripts' },
+            { val: freeCount,      label: 'Free Scripts',    accent: false },
+            { val: premiumCount,   label: 'Premium',         accent: true },
+            { val: workingCount,   label: 'Working Now',     green: true },
+          ].map(stat => (
+            <div
+              key={stat.label}
+              className="flex items-center gap-2.5 px-4 py-2 rounded-xl"
+              style={{ backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
+            >
+              <span
+                className="font-bold text-lg leading-none"
+                style={{ color: stat.green ? '#22c55e' : stat.accent ? 'var(--accent)' : 'white' }}
               >
-                <Button variant="secondary" className="w-full">
-                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.947 2.418-2.157 2.418z"/>
-                  </svg>
-                  Join Discord
+                {stat.val}
+              </span>
+              <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{stat.label}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── MARQUEE STRIP ─────────────────────────────────────── */}
+      <div
+        className="py-4 overflow-hidden relative"
+      >
+        <div className="flex animate-marquee gap-0 whitespace-nowrap">
+          {Array(4).fill(['Premium Scripts', 'Free Access', 'Roblox', 'Updated Daily', 'Verified', 'Trusted', 'Script Hub', 'No Sign-up']).flat().map((item, i) => (
+            <span key={i} className="inline-flex items-center gap-4 px-6 text-xs font-medium uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
+              {item}
+              <span style={{ color: 'var(--accent)', opacity: 0.5 }}>·</span>
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* ── SCRIPT SHOWCASE ───────────────────────────────────── */}
+      <section id="scripts" className="px-6 md:px-14 py-24 max-w-6xl mx-auto">
+        <div className="flex items-end justify-between mb-4">
+          <div>
+            <p className="section-label mb-2">Script Hub</p>
+            <h2 className="font-bold text-white" style={{ fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', letterSpacing: '-0.02em' }}>
+              All Scripts
+            </h2>
+          </div>
+          <Link
+            href="/scripts"
+            className="hidden md:flex items-center gap-1.5 text-sm font-medium transition-colors hover:text-white"
+            style={{ color: 'var(--text-muted)' }}
+          >
+            Open Script Hub <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
+        <p className="text-sm mb-10" style={{ color: 'var(--text-muted)' }}>
+          Click any script to copy the loader — or visit the full hub for details and features.
+        </p>
+
+        <ScriptShowcase scripts={scripts} />
+
+        <div className="mt-8 text-center md:hidden">
+          <Link href="/scripts">
+            <Button variant="outline">View All in Script Hub</Button>
+          </Link>
+        </div>
+      </section>
+
+      {/* ── WHY SEISEN ────────────────────────────────────────── */}
+      <section className="px-6 md:px-14 py-24 max-w-6xl mx-auto">
+        <p className="section-label mb-12">Why Seisen</p>
+        <div className="grid md:grid-cols-3 gap-8">
+          {[
+            {
+              icon: <Shield className="w-5 h-5" />,
+              title: 'Verified & Tested',
+              body: 'Every script is verified by the Seisen team before release. No untested, broken, or dangerous code.',
+            },
+            {
+              icon: <RefreshCw className="w-5 h-5" />,
+              title: 'Regular Updates',
+              body: 'Scripts get patched and updated as Roblox games change. We keep them working so you don\'t have to.',
+            },
+            {
+              icon: <Zap className="w-5 h-5" />,
+              title: 'Instant Access',
+              body: 'Free key delivered instantly. Premium unlocks everything with no waiting — just copy, paste, and play.',
+            },
+          ].map((item, i) => (
+            <div
+              key={i}
+              className="p-6 rounded-2xl group hover-lift"
+              style={{ backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}
+            >
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center mb-5"
+                style={{ backgroundColor: 'rgba(var(--accent-rgb),0.1)', color: 'var(--accent)' }}
+              >
+                {item.icon}
+              </div>
+              <h3 className="font-semibold text-white text-base mb-2">{item.title}</h3>
+              <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>{item.body}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── VIDEOS ────────────────────────────────────────────── */}
+      <section className="py-24">
+        <div className="px-6 md:px-14 max-w-6xl mx-auto mb-10 flex items-end justify-between">
+          <div>
+            <p className="section-label mb-2">Media</p>
+            <h2 className="font-bold text-white text-2xl" style={{ letterSpacing: '-0.02em' }}>Scripts in Action</h2>
+            <p className="text-sm mt-2" style={{ color: 'var(--text-muted)' }}>Watch before you use — see exactly what each script does.</p>
+          </div>
+          <a
+            href="https://www.youtube.com/@SeisenHub"
+            target="_blank"
+            rel="noreferrer"
+            className="hidden md:flex items-center gap-1.5 text-sm font-medium text-red-400 hover:text-red-300 transition-colors"
+          >
+            YouTube <ArrowRight className="w-4 h-4" />
+          </a>
+        </div>
+        <YoutubeCarousel videos={videos} />
+      </section>
+
+      {/* ── SOCIAL PROOF ──────────────────────────────────────── */}
+      <div className="py-8">
+        <PartnerLogos />
+        <Testimonials />
+      </div>
+
+      {/* ── PLANS ─────────────────────────────────────────────── */}
+      <section id="access-options" className="px-6 md:px-14 py-24 max-w-6xl mx-auto">
+        <p className="section-label mb-4">Access</p>
+        <h2 className="font-bold text-white mb-4" style={{ fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', letterSpacing: '-0.02em' }}>
+          Choose your plan
+        </h2>
+        <p className="text-sm mb-14" style={{ color: 'var(--text-muted)' }}>
+          Start free, upgrade when you're ready.
+        </p>
+
+        <div className="space-y-3">
+          {/* Free */}
+          <div
+            className="flex flex-col md:flex-row md:items-center gap-5 md:gap-10 p-6 rounded-2xl group transition-all duration-200"
+            style={{ backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}
+          >
+            <div className="md:w-28 shrink-0">
+              <span className="section-label">Tier 01</span>
+              <h3 className="font-bold text-white text-xl mt-1">Free</h3>
+            </div>
+            <p className="text-sm leading-relaxed flex-1 md:max-w-sm" style={{ color: 'var(--text-muted)' }}>
+              Access our free script library with a time-based key. Renewed in minutes.
+            </p>
+            <div className="md:ml-auto shrink-0">
+              <Link href="/getkey">
+                <Button variant="outline" size="lg">
+                  <Key className="w-4 h-4" /> Get Free Key
                 </Button>
-              </a>
-            </Card>
+              </Link>
+            </div>
           </div>
 
-          {/* Premium CTA */}
-          <Card variant="default" className="mt-8 p-6 flex flex-col md:flex-row items-center justify-between gap-6 bg-gradient-to-r from-[#141414] to-[#1a1a1a]">
-            <div>
-              <h3 className="text-lg font-semibold text-white mb-1">
-                Ready to unlock all scripts?
-              </h3>
-              <p className="text-gray-500 text-sm">
-                Upgrade to Premium for instant access to our entire script library
-              </p>
+          {/* Premium */}
+          <div
+            className="flex flex-col md:flex-row md:items-center gap-5 md:gap-10 p-6 rounded-2xl relative overflow-hidden group transition-all duration-200"
+            style={{
+              backgroundColor: 'rgba(var(--accent-rgb), 0.06)',
+              border: '1px solid rgba(var(--accent-rgb), 0.25)',
+            }}
+          >
+            {/* Glow */}
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{ background: 'radial-gradient(ellipse 60% 80% at 0% 50%, rgba(var(--accent-rgb),0.08) 0%, transparent 70%)' }}
+            />
+            <div className="md:w-28 shrink-0 relative">
+              <span className="section-label">Tier 02</span>
+              <div className="flex items-center gap-2 mt-1">
+                <h3 className="font-bold text-white text-xl">Premium</h3>
+                <span
+                  className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full"
+                  style={{ backgroundColor: 'var(--accent)', color: '#000' }}
+                >
+                  Best
+                </span>
+              </div>
             </div>
-            <div className="flex gap-3">
-              <Link href="#access-options">
-                <Button variant="outline">
-                  <ExternalLink className="w-4 h-4" />
-                  Learn More
-                </Button>
-              </Link>
+            <p className="text-sm leading-relaxed flex-1 md:max-w-sm relative" style={{ color: 'var(--text-secondary)' }}>
+              Full access to every script — free and premium — with no key system, no limits. Weekly, monthly, or lifetime.
+            </p>
+            <div className="md:ml-auto shrink-0 relative">
               <Link href="/premium">
-                <Button>
-                  <Zap className="w-4 h-4" />
-                  Upgrade Now
+                <Button size="lg">
+                  <Crown className="w-4 h-4" /> Upgrade Now
                 </Button>
               </Link>
             </div>
-          </Card>
-        </section>
-      </div>
+          </div>
+
+          {/* Community */}
+          <div
+            className="flex flex-col md:flex-row md:items-center gap-5 md:gap-10 p-6 rounded-2xl group transition-all duration-200"
+            style={{ backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}
+          >
+            <div className="md:w-28 shrink-0">
+              <span className="section-label">Tier 03</span>
+              <h3 className="font-bold text-white text-xl mt-1">Community</h3>
+            </div>
+            <p className="text-sm leading-relaxed flex-1 md:max-w-sm" style={{ color: 'var(--text-muted)' }}>
+              Join the Discord for script updates, help, and community support.
+            </p>
+            <div className="md:ml-auto shrink-0">
+              <a href="https://discord.gg/F4sAf6z8Ph" target="_blank" rel="noopener noreferrer">
+                <Button variant="secondary" size="lg">Join Discord</Button>
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
     </div>
   );
 }

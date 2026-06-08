@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Code, Search, Check, Copy, X, Crown } from 'lucide-react';
-import { Card } from '@/components/ui/Card';
-import TiltCard from '@/components/ui/TiltCard';
+import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
+import { Search, Copy, Check, Crown, Code, X, ChevronRight } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { copyToClipboard } from '@/lib/utils';
 import Image from 'next/image';
+import Link from 'next/link';
+import { AnimatePresence, motion } from 'framer-motion';
 
 interface Script {
   id: string;
@@ -25,626 +26,334 @@ interface ScriptsClientProps {
   initialScripts: Script[];
 }
 
+const LOADER = `loadstring(game:HttpGet("https://api.junkie-development.de/api/v1/luascripts/public/8ac2e97282ac0718aeeb3bb3856a2821d71dc9e57553690ab508ebdb0d1569da/download"))()`;
+
 export default function ScriptsClient({ initialScripts }: ScriptsClientProps) {
-  const [scripts, setScripts] = useState<Script[]>(initialScripts);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filter, setFilter] = useState<'all' | 'free' | 'premium'>('all');
-  const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [thumbnails, setThumbnails] = useState<Record<string, string>>({});
-  const [selectedScript, setSelectedScript] = useState<Script | null>(null);
-  const [detailsPosition, setDetailsPosition] = useState<'left' | 'right'>('right');
-  const [clickedCardRect, setClickedCardRect] = useState<{top: number, left: number, width: number, height: number} | null>(null);
-  
-  // Generate random heights for each script card
-  const getCardHeight = (scriptId: string) => {
-    // Use script ID as seed for consistent random heights
-    let hash = 0;
-    for (let i = 0; i < scriptId.length; i++) {
-      const char = scriptId.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash = hash & hash; // Convert to 32-bit integer
-    }
-    
-    // Generate height between 200px and 450px based on hash
-    const minHeight = 200;
-    const maxHeight = 450;
-    const height = minHeight + (Math.abs(hash) % (maxHeight - minHeight));
-    return height;
-  };
+  const [searchQuery, setSearchQuery]   = useState('');
+  const [filter, setFilter]             = useState<'all' | 'free' | 'premium'>('all');
+  const [copiedId, setCopiedId]         = useState<string | null>(null);
+  const [thumbnails, setThumbnails]     = useState<Record<string, string>>({});
+  const [selected, setSelected]         = useState<Script | null>(null);
+  const panelRef                        = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted]           = useState(false);
+  useEffect(() => setMounted(true), []);
 
+  // Fetch thumbnails
   useEffect(() => {
-    // Fetch thumbnails for games with universeId
-    const fetchThumbnails = async () => {
-      const universeIds = initialScripts
-        .filter(s => s.universeId)
-        .map(s => s.universeId)
-        .join(',');
-      
-      if (!universeIds) return;
-
-      // Processing in chunks to avoid URL length issues if many
-      const chunks = initialScripts.reduce((acc, script) => {
-        if (!script.universeId) return acc;
-        if (acc.length === 0 || acc[acc.length - 1].length >= 100) {
-          acc.push([script.universeId]);
-        } else {
-          acc[acc.length - 1].push(script.universeId);
+    const ids = initialScripts.map(s => s.universeId).filter(Boolean) as string[];
+    const chunks: string[][] = [];
+    for (let i = 0; i < ids.length; i += 100) chunks.push(ids.slice(i, i + 100));
+    chunks.forEach(async chunk => {
+      try {
+        const res  = await fetch(`/api/proxy/thumbnails?universeIds=${chunk.join(',')}`);
+        const data = await res.json();
+        if (data.data) {
+          setThumbnails(prev => {
+            const next = { ...prev };
+            data.data.forEach((item: any) => { next[item.targetId] = item.imageUrl; });
+            return next;
+          });
         }
-        return acc;
-      }, [] as string[][]);
-
-      for (const chunk of chunks) {
-        try {
-          const ids = chunk.join(',');
-          const res = await fetch(`/api/proxy/thumbnails?universeIds=${ids}`);
-          const data = await res.json();
-          
-          if (data.data) {
-            setThumbnails(prev => {
-              const newThumbs = { ...prev };
-              data.data.forEach((item: any) => {
-                newThumbs[item.targetId] = item.imageUrl;
-              });
-              return newThumbs;
-            });
-          }
-        } catch (e) {
-          console.error('Thumbnail fetch error:', e);
-        }
-      }
-    };
-
-    fetchThumbnails();
+      } catch { /* silent */ }
+    });
   }, [initialScripts]);
 
-  // Click outside to close details panel
+  // Close panel on outside click
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (selectedScript) {
-        const target = event.target as Element;
-        const detailsPanel = target.closest('[data-details-panel="true"]');
-        const scriptCard = target.closest('[data-script-card="true"]');
-        
-        // Close if clicked outside both the details panel and script cards
-        if (!detailsPanel && !scriptCard) {
-          setSelectedScript(null);
-        }
+    const handler = (e: MouseEvent) => {
+      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
+        const card = (e.target as Element).closest('[data-script-card]');
+        if (!card) setSelected(null);
       }
     };
-
-    if (selectedScript) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [selectedScript]);
-
-  // Click outside to close details panel
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (selectedScript) {
-        const target = event.target as Element;
-        const detailsPanel = target.closest('[data-details-panel="true"]');
-        const scriptCard = target.closest('[data-script-card="true"]');
-        
-        // Close if clicked outside both the details panel and script cards
-        if (!detailsPanel && !scriptCard) {
-          setSelectedScript(null);
-        }
-      }
-    };
-
-    if (selectedScript) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [selectedScript]);
-
-  const handleScriptClick = (e: React.MouseEvent, script: Script) => {
-    e.stopPropagation();
-    const isCurrentlySelected = selectedScript?.id === script.id;
-    const newSelectedScript = isCurrentlySelected ? null : script;
-    
-    if (newSelectedScript) {
-      // Get the card element to check its position
-      const cardElement = document.getElementById(`script-card-${script.id}`);
-      if (cardElement) {
-        const cardRect = cardElement.getBoundingClientRect();
-        // Store rect relative to viewport, we'll add scrollY when rendering absolute
-        setClickedCardRect({
-            top: cardRect.top,
-            left: cardRect.left,
-            width: cardRect.width,
-            height: cardRect.height
-        });
-
-        const viewportWidth = window.innerWidth;
-        
-        // Check if there's enough space on the right (420px for details + 24px margin)
-        const spaceOnRight = viewportWidth - (cardRect.right + 24);
-        const detailsWidth = 420;
-        
-        // Position on left if not enough space on right
-        setDetailsPosition(spaceOnRight < detailsWidth ? 'left' : 'right');
-      }
-    } else {
-        setClickedCardRect(null);
-    }
-    
-    setSelectedScript(newSelectedScript);
-  };
-
-  const filteredScripts = scripts.filter((script) => {
-    const matchesSearch =
-      script.name.toLowerCase().includes(searchQuery.toLowerCase());
-
-    const isPremium = script.type.toLowerCase().includes('premium') || script.displayType?.toLowerCase().includes('premium');
-    
-    // Logic: Free filter shows Free-only and Free/Premium. Premium filter shows Premium-only and Free/Premium.
-    const matchesFilter =
-      filter === 'all' ||
-      (filter === 'free' && (script.type === 'Free' || script.displayType === 'Free & Premium')) ||
-      (filter === 'premium' && (script.type === 'Premium' || script.displayType === 'Free & Premium'));
-
-    return matchesSearch && matchesFilter;
-  });
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   const handleCopy = async (e: React.MouseEvent, script: Script) => {
     e.stopPropagation();
-    const textToCopy = `loadstring(game:HttpGet("https://api.junkie-development.de/api/v1/luascripts/public/8ac2e97282ac0718aeeb3bb3856a2821d71dc9e57553690ab508ebdb0d1569da/download"))()`;
-    
-    const success = await copyToClipboard(textToCopy);
-    if (success) {
+    const ok = await copyToClipboard(LOADER);
+    if (ok) {
       setCopiedId(script.id);
       setTimeout(() => setCopiedId(null), 2000);
     }
   };
 
-  return (
-    <div className="min-h-screen py-8 px-4 md:px-8 relative">
-      <div className="max-w-7xl mx-auto space-y-8">
-        {/* Header */}
-        <section className="text-center animate-fade-in">
-          <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-500 shadow-lg shadow-blue-500/30">
-            <Code className="w-8 h-8 text-white" />
-          </div>
-          <h1 className="text-lg font-bold text-white mb-2">Script Hub</h1>
-          <p className="text-gray-500">
-            Browse our collection of {initialScripts.length} premium and free scripts
-          </p>
-        </section>
+  const filtered = initialScripts.filter(s => {
+    const matchSearch = s.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchFilter =
+      filter === 'all' ||
+      (filter === 'free'    && (s.type === 'Free'    || s.displayType === 'Free & Premium')) ||
+      (filter === 'premium' && (s.type === 'Premium' || s.displayType === 'Free & Premium'));
+    return matchSearch && matchFilter;
+  });
 
-        {/* Search and Filters */}
-        <section className="flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+  const counts = {
+    all:     initialScripts.length,
+    free:    initialScripts.filter(s => s.type === 'Free'    || s.displayType === 'Free & Premium').length,
+    premium: initialScripts.filter(s => s.type === 'Premium' || s.displayType === 'Free & Premium').length,
+  };
+
+  const isPremiumOnly = (s: Script) => s.type === 'Premium' && s.displayType !== 'Free & Premium';
+
+  return (
+    <div className="flex flex-col" style={{ height: 'calc(100vh - 3.5rem)' }}>
+
+      {/* ── Top bar — never scrolls ── */}
+      <div className="shrink-0 px-6 md:px-12 py-3 z-[500]" style={{ backgroundColor: 'var(--bg-primary)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-start sm:items-center gap-3">
+
+          {/* Search */}
+          <div className="relative flex-1 w-full">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: 'var(--text-muted)' }} />
             <input
               type="text"
-              placeholder="Search scripts..."
+              placeholder="Search scripts…"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-[#141414] border border-[#2a2a2a] rounded-lg text-white placeholder:text-gray-500 focus:outline-none focus:border-[rgba(var(--accent-rgb),0.5)] transition-colors"
+              onChange={e => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 rounded-lg text-sm bg-transparent text-white placeholder:text-[var(--text-muted)] focus:outline-none transition-colors"
+              style={{ backgroundColor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
             />
           </div>
 
-          <div className="flex gap-2">
-            {(['all', 'free', 'premium'] as const).map((f) => (
+          {/* Filter pills */}
+          <div className="flex items-center gap-1 p-1 rounded-lg shrink-0" style={{ backgroundColor: 'rgba(255,255,255,0.04)' }}>
+            {(['all', 'free', 'premium'] as const).map(f => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
-                style={filter === f ? {
-                  backgroundColor: 'rgba(var(--accent-rgb), 0.1)',
-                  borderColor: 'rgba(var(--accent-rgb), 0.5)',
-                  color: 'var(--accent)'
-                } : undefined}
-                className={`px-4 py-2.5 rounded-lg border transition-all capitalize ${
-                  filter === f
-                    ? ''
-                    : 'bg-[#1a1a1a] border-[#2a2a2a] text-gray-400 hover:border-[#3a3a3a]'
-                }`}
+                className="px-3 py-1.5 rounded-md text-xs font-medium capitalize transition-all duration-150"
+                style={{
+                  backgroundColor: filter === f ? 'rgba(255,255,255,0.1)' : 'transparent',
+                  color: filter === f ? 'white' : 'var(--text-muted)',
+                }}
               >
-                {f}
+                {f} <span className="ml-1 opacity-50">{counts[f]}</span>
               </button>
             ))}
           </div>
-        </section>
-
-        {/* Scripts Masonry Grid */}
-        <section className="relative">
-          <div 
-            className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 xl:columns-5 gap-6 space-y-6"
-          >
-            {filteredScripts.map((script, index) => {
-              const isSelected = selectedScript?.id === script.id;
-              // Use unique key combining id and name to avoid duplicates when same game has free+premium
-              const uniqueKey = `${script.id}-${script.name.replace(/\s+/g, '-')}`;
-
-              return (
-                <div
-                  key={uniqueKey}
-                  className="relative mb-6 break-inside-avoid"
-                  id={`script-card-${script.id}`}
-                  data-script-card="true"
-                >
-                  <TiltCard>
-                    <Card
-                      variant="hover"
-                      className={`group relative overflow-hidden cursor-pointer transition-all ${
-                        isSelected ? 'z-50' : selectedScript ? 'blur-sm opacity-60' : ''
-                      }`}
-                      onClick={(e) => handleScriptClick(e, script)}
-                      style={{
-                        height: `${getCardHeight(script.id)}px`,
-                        ...(script.status === 'Discontinued' ? {
-                          backgroundColor: 'rgb(69 10 10 / 0.3)',
-                          border: isSelected ? '2px solid rgb(239 68 68 / 0.8)' : '1px solid rgb(239 68 68 / 0.4)',
-                          boxShadow: isSelected ? '0 0 0 2px rgb(239 68 68 / 0.4), 0 0 20px rgb(239 68 68 / 0.2)' : '0 0 20px rgb(239 68 68 / 0.1)',
-                        } : {
-                          ...(isSelected ? { outline: '2px solid var(--accent)', outlineOffset: '0px' } : {})
-                        })
-                      }}
-                    >
-                      {/* Full Image Background */}
-                      {script.universeId && thumbnails[script.universeId] ? (
-                        <Image
-                          src={thumbnails[script.universeId]}
-                          alt={script.name}
-                          fill
-                          className="object-cover transition-transform duration-500 group-hover:scale-110"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-[#1a1a1a]">
-                          <Code className="w-16 h-16 text-[#333]" />
-                        </div>
-                      )}
-
-                      {/* Overlay Gradient */}
-                      <div className={`absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent ${script.status === 'Discontinued' ? 'opacity-80' : ''}`} />
-
-                      {/* Discontinued Banner */}
-                      {script.status === 'Discontinued' && (
-                        <div className="absolute top-3 left-0 right-0 flex justify-center z-30">
-                          <span className="px-3 py-1 rounded-full text-xs font-bold bg-red-500/20 text-red-400 border border-red-500/40 backdrop-blur-sm">
-                            Discontinued
-                          </span>
-                        </div>
-                      )}
-
-                      {/* Name Overlay */}
-                      <div className="absolute bottom-0 left-0 right-0 p-5 z-20">
-                        <div className="flex items-center gap-2 mb-1">
-                          {script.status === 'Working' ? (
-                            <div className="relative flex-shrink-0">
-                              <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full"></div>
-                              <div className="absolute inset-0 w-2.5 h-2.5 bg-emerald-500 rounded-full animate-ping opacity-75"></div>
-                            </div>
-                          ) : (
-                            <div className="relative flex-shrink-0">
-                              <div className="w-2.5 h-2.5 bg-red-500 rounded-full"></div>
-                              <div className="absolute inset-0 w-2.5 h-2.5 bg-red-500 rounded-full animate-ping opacity-75"></div>
-                            </div>
-                          )}
-                          <h3 className="text-xl font-bold text-white drop-shadow-md">
-                            {script.name}
-                          </h3>
-                        </div>
-                        {/* Floating Action Button (Quick Copy) */}
-                        {script.status !== 'Discontinued' && (
-                          <button
-                            onClick={(e) => handleCopy(e, script)}
-                            className="absolute bottom-5 right-5 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-sm transition-all opacity-0 group-hover:opacity-100"
-                            title="Quick Copy Loader"
-                          >
-                            {copiedId === script.id ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                          </button>
-                        )}
-                      </div>
-                    </Card>
-                  </TiltCard>
-
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* Global Details Panels (Rendered outside grid to prevent layout shift) */}
-        {selectedScript && (
-            <>
-                {/* Desktop Details Panel */}
-                <div 
-                    className="absolute w-[420px] rounded-3xl shadow-2xl overflow-hidden z-[100] animate-in duration-300 hidden lg:block"
-                    data-details-panel="true"
-                    style={{ 
-                        background: `linear-gradient(135deg, #1a1a1a 0%, #0f0f0f 100%)`,
-                        borderColor: selectedScript.status === 'Discontinued' ? 'rgb(239 68 68 / 0.6)' : 'var(--accent)',
-                        borderWidth: '2px',
-                        borderStyle: 'solid',
-                        maxHeight: '750px',
-                        height: '750px',
-                        top: clickedCardRect ? (clickedCardRect.top + (typeof window !== 'undefined' ? window.scrollY : 0)) : 0,
-                        left: clickedCardRect ? (detailsPosition === 'right' ? (clickedCardRect.left + clickedCardRect.width + 24) : (clickedCardRect.left - 420 - 24)) : 0,
-                    }}
-                >
-                      {/* Decorative gradient overlay */}
-                      <div 
-                        className="absolute inset-0 pointer-events-none opacity-20"
-                        style={{
-                          background: selectedScript.status === 'Discontinued'
-                            ? `radial-gradient(circle at top right, rgb(239 68 68), transparent 60%)`
-                            : `radial-gradient(circle at top right, var(--accent), transparent 60%)`
-                        }}
-                      ></div>
-
-                      {/* Close Button */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedScript(null);
-                        }}
-                        className="absolute top-6 right-6 p-2.5 rounded-xl bg-black/20 hover:bg-black/30 text-white/80 hover:text-white transition-all backdrop-blur-sm shadow-lg z-[110]"
-                      >
-                        <X className="w-5 h-5" />
-                      </button>
-                      
-                      <div className={`relative p-8 h-full overflow-y-auto ${selectedScript.status === 'Discontinued' ? 'discontinued-scrollbar' : 'custom-scrollbar'}`}>
-
-                        {/* Mini Card Preview with Glow */}
-                        <div className="mb-8 relative">
-                          <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent blur-2xl"></div>
-                          <div className="relative aspect-square w-44 mx-auto rounded-2xl overflow-hidden shadow-2xl ring-4 ring-white/20">
-                            {selectedScript.universeId && thumbnails[selectedScript.universeId] ? (
-                              <Image
-                                src={thumbnails[selectedScript.universeId]}
-                                alt={selectedScript.name}
-                                fill
-                                className="object-contain"
-                                />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-black/30 to-black/50">
-                                <Code className="w-12 h-12 text-white/40" />
-                              </div>
-                            )}
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-
-                          </div>
-                        </div>
-
-                        {/* Type Badge with Gradient */}
-                        <div className="mb-8 text-center">
-                          <span className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold backdrop-blur-md shadow-xl ${
-                            selectedScript.status === 'Discontinued'
-                              ? 'bg-red-500/20 text-red-400 border border-red-500/40'
-                              : 'bg-gradient-to-r from-black/30 to-black/20 text-white border border-white/20'
-                          }`}>
-                            <div className={`w-2 h-2 rounded-full ${selectedScript.status === 'Discontinued' ? 'bg-red-400' : 'bg-white/60'}`}></div>
-                            {selectedScript.displayType || selectedScript.type}
-                          </span>
-                        </div>
-
-                        {/* Description with Glass Effect */}
-                        <div className="mb-6 backdrop-blur-md bg-white/10 rounded-2xl p-6 border border-white/20 shadow-xl">
-                          <div className="flex items-center gap-3 mb-3">
-                            <div className="w-1.5 h-8 bg-gradient-to-b from-white/80 to-white/40 rounded-full shadow-lg"></div>
-                            <h3 className="text-lg font-bold text-white">Description</h3>
-                          </div>
-                          <p className="text-white/90 leading-relaxed text-sm">
-                            {selectedScript.description || "No description available for this script. Verified and tested by the Seisen Team."}
-                          </p>
-                        </div>
-
-                        {/* Features with Glass Effect */}
-                        <div className="mb-8 backdrop-blur-md bg-white/10 rounded-2xl p-6 border border-white/20 shadow-xl">
-                          <div className="flex items-center gap-3 mb-4">
-                            <div className="w-1.5 h-8 bg-gradient-to-b from-white/80 to-white/40 rounded-full shadow-lg"></div>
-                            <h3 className="text-lg font-bold text-white">Features</h3>
-                          </div>
-                          {selectedScript.features && selectedScript.features.length > 0 ? (
-                            <ul className="space-y-3">
-                              {selectedScript.features.map((feature, idx) => (
-                                <li key={idx} className="flex items-start gap-3 text-white/90 text-sm group">
-                                  <div className="mt-0.5 w-5 h-5 rounded-full bg-gradient-to-br from-white/30 to-white/10 flex items-center justify-center flex-shrink-0 shadow-lg group-hover:scale-110 transition-transform">
-                                    <Check className="w-3 h-3 text-white" />
-                                  </div>
-                                  <span className="flex-1">{feature}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          ) : (
-                            <div className="text-white/60 italic text-sm">
-                              Features list not available.
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Action Button with Gradient */}
-                        {selectedScript.status !== 'Discontinued' && (
-                          <>
-                            {selectedScript.type === 'Premium' && selectedScript.displayType !== 'Free & Premium' ? (
-                              <Button className="w-full justify-center h-12 text-base font-bold bg-gradient-to-r from-black via-black/90 to-black text-white hover:from-black/90 hover:via-black/80 hover:to-black/90 shadow-2xl border border-white/20 backdrop-blur-sm" onClick={() => window.location.href = '/premium'}>
-                                <Crown className="w-5 h-5 mr-2" />
-                                Get Premium Access
-                              </Button>
-                            ) : (
-                              <Button 
-                                className={`w-full justify-center h-12 text-base font-bold transition-all shadow-2xl border border-white/20 backdrop-blur-sm ${
-                                  copiedId === selectedScript.id 
-                                    ? 'bg-gradient-to-r from-emerald-600 via-emerald-500 to-emerald-600' 
-                                    : 'bg-gradient-to-r from-black via-black/90 to-black hover:from-black/90 hover:via-black/80 hover:to-black/90'
-                                } text-white`}
-                                onClick={(e) => handleCopy(e, selectedScript)}
-                              >
-                                {copiedId === selectedScript.id ? (
-                                  <>
-                                    <Check className="w-5 h-5 mr-2" />
-                                    Copied Successfully!
-                                  </>
-                                ) : (
-                                  <>
-                                    <Copy className="w-5 h-5 mr-2" />
-                                    Copy Loader Script
-                                  </>
-                                )}
-                              </Button>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Mobile Details Panel - Centered overlay */}
-                    <div 
-                      className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[420px] max-w-[90vw] rounded-3xl shadow-2xl overflow-hidden z-[100] animate-in duration-300 lg:hidden"
-                      data-details-panel="true"
-                      style={{ 
-                        background: `linear-gradient(135deg, #1a1a1a 0%, #0f0f0f 100%)`,
-                        borderColor: selectedScript.status === 'Discontinued' ? 'rgb(239 68 68 / 0.6)' : 'var(--accent)',
-                        borderWidth: '2px',
-                        borderStyle: 'solid',
-                        maxHeight: '90vh',
-                        height: 'auto'
-                      }}
-                    >
-                      {/* Decorative gradient overlay */}
-                      <div 
-                        className="absolute inset-0 pointer-events-none opacity-20"
-                        style={{
-                          background: selectedScript.status === 'Discontinued'
-                            ? `radial-gradient(circle at top right, rgb(239 68 68), transparent 60%)`
-                            : `radial-gradient(circle at top right, var(--accent), transparent 60%)`
-                        }}
-                      ></div>
-
-                      {/* Close Button */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedScript(null);
-                        }}
-                        className="absolute top-4 right-4 p-2.5 rounded-xl bg-black/20 hover:bg-black/30 text-white/80 hover:text-white transition-all backdrop-blur-sm shadow-lg z-[110]"
-                      >
-                        <X className="w-5 h-5" />
-                      </button>
-                      
-                      <div className={`relative p-6 h-full overflow-y-auto ${selectedScript.status === 'Discontinued' ? 'discontinued-scrollbar' : 'custom-scrollbar'}`}>
-
-                        {/* Mini Card Preview with Glow */}
-                        <div className="mb-6 relative">
-                          <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent blur-2xl"></div>
-                          <div className="relative aspect-square w-32 mx-auto rounded-2xl overflow-hidden shadow-2xl ring-4 ring-white/20">
-                            {selectedScript.universeId && thumbnails[selectedScript.universeId] ? (
-                              <Image
-                                src={thumbnails[selectedScript.universeId]}
-                                alt={selectedScript.name}
-                                fill
-                                className="object-contain"
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-black/30 to-black/50">
-                                <Code className="w-10 h-10 text-white/40" />
-                              </div>
-                            )}
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                          </div>
-                        </div>
-
-                        {/* Type Badge with Gradient */}
-                        <div className="mb-6 text-center">
-                          <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold backdrop-blur-md shadow-xl ${
-                            selectedScript.status === 'Discontinued'
-                              ? 'bg-red-500/20 text-red-400 border border-red-500/40'
-                              : 'bg-gradient-to-r from-black/30 to-black/20 text-white border border-white/20'
-                          }`}>
-                            <div className={`w-2 h-2 rounded-full ${selectedScript.status === 'Discontinued' ? 'bg-red-400' : 'bg-white/60'}`}></div>
-                            {selectedScript.displayType || selectedScript.type}
-                          </span>
-                        </div>
-
-                        {/* Description with Glass Effect */}
-                        <div className="mb-4 backdrop-blur-md bg-white/10 rounded-2xl p-4 border border-white/20 shadow-xl">
-                          <div className="flex items-center gap-3 mb-2">
-                            <div className="w-1.5 h-6 bg-gradient-to-b from-white/80 to-white/40 rounded-full shadow-lg"></div>
-                            <h3 className="text-base font-bold text-white">Description</h3>
-                          </div>
-                          <p className="text-white/90 leading-relaxed text-sm">
-                            {selectedScript.description || "No description available for this script. Verified and tested by the Seisen Team."}
-                          </p>
-                        </div>
-
-                        {/* Features with Glass Effect */}
-                        <div className="mb-6 backdrop-blur-md bg-white/10 rounded-2xl p-4 border border-white/20 shadow-xl">
-                          <div className="flex items-center gap-3 mb-3">
-                            <div className="w-1.5 h-6 bg-gradient-to-b from-white/80 to-white/40 rounded-full shadow-lg"></div>
-                            <h3 className="text-base font-bold text-white">Features</h3>
-                          </div>
-                          {selectedScript.features && selectedScript.features.length > 0 ? (
-                            <ul className="space-y-2">
-                              {selectedScript.features.map((feature, idx) => (
-                                <li key={idx} className="flex items-start gap-2 text-white/90 text-sm group">
-                                  <div className="mt-0.5 w-4 h-4 rounded-full bg-gradient-to-br from-white/30 to-white/10 flex items-center justify-center flex-shrink-0 shadow-lg">
-                                    <Check className="w-2.5 h-2.5 text-white" />
-                                  </div>
-                                  <span className="flex-1">{feature}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          ) : (
-                            <div className="text-white/60 italic text-sm">
-                              Features list not available.
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Action Button with Gradient */}
-                        {selectedScript.status !== 'Discontinued' && (
-                          <>
-                            {selectedScript.type === 'Premium' && selectedScript.displayType !== 'Free & Premium' ? (
-                              <Button className="w-full justify-center h-10 text-sm font-bold bg-gradient-to-r from-black via-black/90 to-black text-white hover:from-black/90 hover:via-black/80 hover:to-black/90 shadow-2xl border border-white/20 backdrop-blur-sm" onClick={() => window.location.href = '/premium'}>
-                                <Crown className="w-4 h-4 mr-2" />
-                                Get Premium Access
-                              </Button>
-                            ) : (
-                              <Button 
-                                className={`w-full justify-center h-10 text-sm font-bold transition-all shadow-2xl border border-white/20 backdrop-blur-sm ${
-                                  copiedId === selectedScript.id 
-                                    ? 'bg-gradient-to-r from-emerald-600 via-emerald-500 to-emerald-600' 
-                                    : 'bg-gradient-to-r from-black via-black/90 to-black hover:from-black/90 hover:via-black/80 hover:to-black/90'
-                                } text-white`}
-                                onClick={(e) => handleCopy(e, selectedScript)}
-                              >
-                                {copiedId === selectedScript.id ? (
-                                  <>
-                                    <Check className="w-4 h-4 mr-2" />
-                                    Copied!
-                                  </>
-                                ) : (
-                                  <>
-                                    <Copy className="w-4 h-4 mr-2" />
-                                    Copy Script
-                                  </>
-                                )}
-                              </Button>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    </div>
-            </>
-        )}
-
-        {filteredScripts.length === 0 && (
-          <div className="text-center py-20 bg-[#101010] rounded-xl border border-[#1f1f1f]">
-            <Search className="w-12 h-12 text-gray-600 mx-auto mb-4" />
-            <h3 className="text-xl font-bold text-white mb-2">No scripts found</h3>
-            <p className="text-gray-500">Try adjusting your search or filters</p>
-          </div>
-        )}
+        </div>
       </div>
+
+      {/* ── Grid — only this part scrolls ── */}
+      <div className="flex-1 overflow-y-auto px-6 md:px-12 py-6">
+        <div className="max-w-7xl mx-auto">
+          {filtered.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+              {filtered.map(script => {
+                const thumb       = script.universeId ? thumbnails[script.universeId] : null;
+                const isSelected  = selected?.id === script.id;
+                const discontinued = script.status === 'Discontinued';
+                const premium     = isPremiumOnly(script);
+
+                return (
+                  <div
+                    key={script.id}
+                    data-script-card
+                    onClick={() => setSelected(isSelected ? null : script)}
+                    className="group relative rounded-xl overflow-hidden cursor-pointer transition-all duration-200"
+                    style={{
+                      aspectRatio: '3/4',
+                      backgroundColor: 'rgba(255,255,255,0.03)',
+                      border: isSelected
+                        ? '1px solid var(--accent)'
+                        : discontinued
+                        ? '1px solid rgba(239,68,68,0.3)'
+                        : '1px solid rgba(255,255,255,0.07)',
+                      opacity: selected && !isSelected ? 0.45 : 1,
+                      transform: isSelected ? 'scale(1.02)' : undefined,
+                    }}
+                  >
+                    {/* Thumbnail */}
+                    {thumb ? (
+                      <Image
+                        src={thumb}
+                        alt={script.name}
+                        fill
+                        className="object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center" style={{ backgroundColor: 'rgba(255,255,255,0.02)' }}>
+                        <Code className="w-8 h-8" style={{ color: 'rgba(255,255,255,0.1)' }} />
+                      </div>
+                    )}
+
+                    {/* Gradient */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
+
+                    {/* Top badges */}
+                    <div className="absolute top-2 left-2 right-2 flex items-center justify-between z-10">
+                      {discontinued && (
+                        <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-red-500/20 text-red-400">
+                          Dead
+                        </span>
+                      )}
+                      {premium && !discontinued && (
+                        <span className="ml-auto flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md" style={{ backgroundColor: 'rgba(var(--accent-rgb),0.2)', color: 'var(--accent)' }}>
+                          <Crown className="w-2.5 h-2.5" /> Pro
+                        </span>
+                      )}
+                      {!discontinued && !premium && <span />}
+                    </div>
+
+                    {/* Bottom info */}
+                    <div className="absolute bottom-0 left-0 right-0 p-3 z-10">
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <span
+                          className="w-1.5 h-1.5 rounded-full shrink-0"
+                          style={{ backgroundColor: discontinued ? '#ef4444' : '#22c55e' }}
+                        />
+                        <span className="text-xs font-semibold text-white leading-tight truncate">{script.name}</span>
+                      </div>
+                    </div>
+
+                    {/* Hover quick-copy */}
+                    {!discontinued && (
+                      <button
+                        onClick={e => handleCopy(e, script)}
+                        className="absolute bottom-3 right-3 z-20 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-150"
+                        style={{ backgroundColor: 'rgba(0,0,0,0.7)', border: '1px solid rgba(255,255,255,0.15)', color: 'white' }}
+                        title="Copy script"
+                      >
+                        {copiedId === script.id ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-32 gap-4">
+              <Search className="w-8 h-8" style={{ color: 'rgba(255,255,255,0.1)' }} />
+              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No scripts found</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Detail Panel (right slide-in) — portalled to body to escape stacking context ── */}
+      {mounted && createPortal(<AnimatePresence>
+        {selected && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 z-[2900]"
+              style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}
+              onClick={() => setSelected(null)}
+            />
+
+            {/* Panel */}
+            <motion.div
+              ref={panelRef}
+              initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+              className="fixed top-0 right-0 h-screen z-[3000] w-full max-w-sm flex flex-col overflow-hidden"
+              style={{ backgroundColor: 'var(--bg-secondary)', borderLeft: '1px solid rgba(255,255,255,0.07)' }}
+            >
+              {/* Thumbnail */}
+              <div className="relative w-full aspect-video shrink-0">
+                {selected.universeId && thumbnails[selected.universeId] ? (
+                  <Image
+                    src={thumbnails[selected.universeId]}
+                    alt={selected.name}
+                    fill
+                    className="object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}>
+                    <Code className="w-12 h-12" style={{ color: 'rgba(255,255,255,0.1)' }} />
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-secondary)] via-transparent to-transparent" />
+                {/* Close button — top of panel, no nav conflict */}
+                <button
+                  onClick={() => setSelected(null)}
+                  className="absolute top-3 right-3 p-1.5 rounded-lg transition-colors z-10"
+                  style={{ backgroundColor: 'rgba(0,0,0,0.55)', color: 'rgba(255,255,255,0.7)', border: '1px solid rgba(255,255,255,0.1)' }}
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="p-5 overflow-y-auto flex-1">
+                {/* Name + badges */}
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <h2 className="font-bold text-white text-xl leading-tight">{selected.name}</h2>
+                  <div className="flex flex-col items-end gap-1 shrink-0">
+                    <span
+                      className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
+                      style={selected.status === 'Discontinued'
+                        ? { backgroundColor: 'rgba(239,68,68,0.15)', color: '#f87171' }
+                        : { backgroundColor: 'rgba(34,197,94,0.15)', color: '#22c55e' }
+                      }
+                    >
+                      {selected.status}
+                    </span>
+                    <span
+                      className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
+                      style={{ backgroundColor: 'rgba(var(--accent-rgb),0.12)', color: 'var(--accent)' }}
+                    >
+                      {selected.displayType || selected.type}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Description */}
+                <p className="text-sm leading-relaxed mb-5" style={{ color: 'var(--text-muted)' }}>
+                  {selected.description || 'Verified and tested by the Seisen team before release.'}
+                </p>
+
+                {/* Features */}
+                {selected.features && selected.features.length > 0 && (
+                  <div className="mb-5">
+                    <p className="text-[10px] font-mono uppercase tracking-widest mb-3" style={{ color: 'var(--text-muted)' }}>Features</p>
+                    <ul className="space-y-2">
+                      {selected.features.map((f, i) => (
+                        <li key={i} className="flex items-start gap-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
+                          <ChevronRight className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: 'var(--accent)' }} />
+                          {f}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Action */}
+                {selected.status !== 'Discontinued' ? (
+                  isPremiumOnly(selected) ? (
+                    <Link href="/premium">
+                      <Button className="w-full justify-center">
+                        <Crown className="w-4 h-4" /> Get Premium Access
+                      </Button>
+                    </Link>
+                  ) : (
+                    <Button
+                      className="w-full justify-center"
+                      variant={copiedId === selected.id ? 'primary' : 'outline'}
+                      onClick={e => handleCopy(e, selected)}
+                    >
+                      {copiedId === selected.id
+                        ? <><Check className="w-4 h-4" /> Copied!</>
+                        : <><Copy className="w-4 h-4" /> Copy Loader Script</>
+                      }
+                    </Button>
+                  )
+                ) : (
+                  <div
+                    className="w-full py-3 rounded-lg text-center text-sm"
+                    style={{ backgroundColor: 'rgba(239,68,68,0.08)', color: '#f87171', border: '1px solid rgba(239,68,68,0.2)' }}
+                  >
+                    This script has been discontinued
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>, document.body)}
     </div>
   );
 }

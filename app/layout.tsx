@@ -5,7 +5,6 @@ import Dock from '@/components/layout/Dock';
 import Footer from '@/components/layout/Footer';
 import LoadingScreen from '@/components/layout/LoadingScreen';
 import VisitorTracker from '@/components/layout/VisitorTracker';
-import ParticleBackground from '@/components/layout/ParticleBackground';
 import CustomCursor from '@/components/ui/CustomCursor';
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
 import ThemeSelector from '@/components/ui/ThemeSelector';
@@ -50,12 +49,8 @@ export default function RootLayout({
             <TabTitleAnimation />
             <LoadingScreen />
             <VisitorTracker />
-            <ParticleBackground />
             <CustomCursor />
-            
-            {/* Background Text */}
-            <div className="page-bg-text">Seisen</div>
-            
+
             {/* Dock */}
             <Dock />
             
@@ -63,7 +58,7 @@ export default function RootLayout({
             <ThemeSelector />
             
             {/* Main Content */}
-            <main className="flex-1 pb-28 relative z-10">
+            <main className="flex-1 pt-14 relative z-10">
               {children}
             </main>
             

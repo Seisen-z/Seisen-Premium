@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { Zap, ExternalLink } from 'lucide-react';
 import { Logo } from '@/components/ui/Logo';
 import { useEffect, useState } from 'react';
 
@@ -14,8 +13,8 @@ const productLinks = [
 ];
 
 const communityLinks = [
-  { href: 'https://discord.gg/F4sAf6z8Ph', label: 'Discord Server', icon: true },
-  { href: 'https://www.youtube.com/@SeisenHub', label: 'YouTube Channel', icon: true },
+  { href: 'https://discord.gg/F4sAf6z8Ph', label: 'Discord ↗', external: true },
+  { href: 'https://www.youtube.com/@SeisenHub', label: 'YouTube ↗', external: true },
 ];
 
 const legalLinks = [
@@ -24,76 +23,44 @@ const legalLinks = [
   { href: '/legal#license', label: 'License (AGPL v3.0)' },
 ];
 
-const taglines = [
-  'Premium scripts and tools for enhanced gaming experiences.',
-  'Advanced obfuscation and script protection solutions.',
-  'Your trusted hub for Roblox scripting excellence.',
-  'Powerful tools for developers and gamers alike.',
-];
-
 export default function Footer() {
-  const [taglineIndex, setTaglineIndex] = useState(0);
-  const [stats, setStats] = useState({ totalVisits: 0, uniqueVisitors: 0 });
-  const [fade, setFade] = useState(true);
+  const [stats, setStats] = useState({ totalVisits: 0 });
 
-  // Tagline carousel
   useEffect(() => {
-    const interval = setInterval(() => {
-      setFade(false);
-      setTimeout(() => {
-        setTaglineIndex((prev) => (prev + 1) % taglines.length);
-        setFade(true);
-      }, 300);
-    }, 4000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Fetch visitor stats
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const response = await fetch('/api/visitor-stats');
-        if (response.ok) {
-          const data = await response.json();
-          setStats(data);
-        }
-      } catch (error) {
-        console.error('Failed to fetch visitor stats:', error);
-      }
-    };
-    fetchStats();
+    fetch('/api/visitor-stats')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setStats(d); })
+      .catch(() => {});
   }, []);
 
   return (
-    <footer className="bg-[#0d0d0d] border-t border-[#1f1f1f]">
-      <div className="max-w-6xl mx-auto px-6 py-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+    <footer style={{ backgroundColor: 'var(--bg-primary)' }}>
+      <div className="max-w-6xl mx-auto px-6 md:px-10 py-10">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 lg:gap-12">
+
           {/* Brand */}
-          <div className="lg:col-span-1">
-            <div className="flex items-center gap-2 mb-2">
-              <Logo className="w-5 h-5" style={{ color: 'var(--accent)' }} />
-              <span className="font-semibold text-base">Seisen</span>
-            </div>
-            <p
-              className={`text-gray-500 text-sm transition-opacity duration-300 ${
-                fade ? 'opacity-100' : 'opacity-0'
-              }`}
-            >
-              {taglines[taglineIndex]}
+          <div className="col-span-2 md:col-span-1">
+            <Link href="/" className="inline-flex items-center gap-2 mb-4">
+              <Logo className="w-4 h-4" style={{ color: 'var(--accent)' }} />
+              <span className="font-mono font-bold text-xs uppercase tracking-widest text-white">Seisen</span>
+            </Link>
+            <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>
+              Premium Roblox scripts and tools for enhanced gaming experiences.
             </p>
           </div>
 
           {/* Products */}
           <div>
-            <h4 className="font-medium text-xs uppercase tracking-wider text-gray-400 mb-2">
+            <h4 className="font-mono text-[10px] uppercase tracking-widest mb-4" style={{ color: 'var(--text-muted)' }}>
               Products
             </h4>
-            <ul className="space-y-2">
-              {productLinks.map((link) => (
+            <ul className="space-y-2.5">
+              {productLinks.map(link => (
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    className="text-gray-500 hover-accent text-sm transition-colors"
+                    className="text-xs transition-colors hover-accent"
+                    style={{ color: 'var(--text-secondary)' }}
                   >
                     {link.label}
                   </Link>
@@ -104,20 +71,20 @@ export default function Footer() {
 
           {/* Community */}
           <div>
-            <h4 className="font-medium text-xs uppercase tracking-wider text-gray-400 mb-2">
+            <h4 className="font-mono text-[10px] uppercase tracking-widest mb-4" style={{ color: 'var(--text-muted)' }}>
               Community
             </h4>
-            <ul className="space-y-2">
-              {communityLinks.map((link) => (
+            <ul className="space-y-2.5">
+              {communityLinks.map(link => (
                 <li key={link.href}>
                   <a
                     href={link.href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-gray-500 hover-accent text-sm transition-colors inline-flex items-center gap-1"
+                    className="text-xs transition-colors hover-accent"
+                    style={{ color: 'var(--text-secondary)' }}
                   >
                     {link.label}
-                    {link.icon && <ExternalLink className="w-3 h-3" />}
                   </a>
                 </li>
               ))}
@@ -126,15 +93,16 @@ export default function Footer() {
 
           {/* Legal */}
           <div>
-            <h4 className="font-medium text-xs uppercase tracking-wider text-gray-400 mb-2">
+            <h4 className="font-mono text-[10px] uppercase tracking-widest mb-4" style={{ color: 'var(--text-muted)' }}>
               Legal
             </h4>
-            <ul className="space-y-2">
-              {legalLinks.map((link) => (
+            <ul className="space-y-2.5">
+              {legalLinks.map(link => (
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    className="text-gray-500 hover-accent text-sm transition-colors"
+                    className="text-xs transition-colors hover-accent"
+                    style={{ color: 'var(--text-secondary)' }}
                   >
                     {link.label}
                   </Link>
@@ -144,13 +112,18 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Bottom Bar */}
-        <div className="mt-4 pt-3 border-t border-[#1f1f1f] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-500">
-          <p>© 2026 Seisen. All rights reserved.</p>
-          <p className="flex items-center gap-1">
-            <span>👁</span>
-            <span>{stats.totalVisits.toLocaleString()} Total Visits</span>
-          </p>
+        {/* Bottom bar */}
+        <div
+          className="mt-10 pt-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2"
+        >
+          <span className="font-mono text-[10px] uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
+            © 2026 Seisen — All rights reserved
+          </span>
+          {stats.totalVisits > 0 && (
+            <span className="font-mono text-[10px] uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
+              {stats.totalVisits.toLocaleString()} total visits
+            </span>
+          )}
         </div>
       </div>
     </footer>
