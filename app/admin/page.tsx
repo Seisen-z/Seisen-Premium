@@ -306,7 +306,7 @@ export default function AdminPage() {
   const updateFeature = (s: string, i: number, v: string) => { const f = [...(metadata[s]?.features || [])]; f[i] = v; updateMetadata(s, 'features', f); };
   const removeFeature = (s: string, i: number) => updateMetadata(s, 'features', (metadata[s]?.features || []).filter((_: any, idx: number) => idx !== i));
   const importBulk = (name: string) => {
-    const features = bulkFeatures.split('\n').map(l => l.replace(/^[\*\-]\s*/, '').trim()).filter(Boolean);
+    const features = bulkFeatures.split('\n').map(l => l.replace(/^[\*\-\>]\s*/, '').trim()).filter(Boolean);
     if (!features.length) return alert('No features found');
     updateMetadata(name, 'features', [...(metadata[name]?.features || []), ...features]);
     setBulkFeatures(''); alert(`Imported ${features.length}!`);
@@ -857,7 +857,7 @@ export default function AdminPage() {
                   </button>
                 </div>
                 <div className="bg-white/[0.02] rounded-xl border border-white/[0.06] p-4 mb-3">
-                  <label className="block text-xs font-medium text-[#888] mb-2">Bulk Import <span className="text-[#444]">(* or - per line)</span></label>
+                  <label className="block text-xs font-medium text-[#888] mb-2">Bulk Import <span className="text-[#444]">(*, -, or &gt; per line)</span></label>
                   <textarea value={bulkFeatures} onChange={(e) => setBulkFeatures(e.target.value)} rows={3} placeholder="* Auto Farm&#10;- Kill Aura"
                     className="w-full px-3 py-2 bg-white/[0.03] border border-white/[0.06] rounded-lg focus:border-white/10 text-sm text-white outline-none transition-colors placeholder:text-[#333] resize-none mb-2"
                   />
