@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { Check, HelpCircle, CreditCard, Copy, X, Loader2, AlertCircle, CheckCircle, ShoppingCart, Plus, Minus, Trash2 } from 'lucide-react';
 import PricingCard from '@/components/ui/PricingCard';
+import CommunityVoices from '@/components/sections/CommunityVoices';
 import PurchaseCounter from '@/components/ui/PurchaseCounter';
 import { Card } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
@@ -1533,6 +1534,9 @@ function PremiumContent() {
             ))}
           </div>
         </section>
+
+        {/* ── Community Voices ── */}
+        <CommunityVoices />
       </div>
 
       {/* Cart Drawer */}
