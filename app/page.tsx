@@ -12,32 +12,27 @@ import HomeFAQ from '@/components/sections/HomeFAQ';
 interface DiscordMember { id: string; username: string; avatar_url: string; }
 interface DiscordStats { memberCount: number; members: DiscordMember[]; }
 
+const DISCORD_GUILD_ID = '1333251917098520628';
+
 async function fetchDiscordStats(): Promise<DiscordStats> {
   try {
-    const inviteRes = await fetch('https://discord.com/api/v10/invites/F4sAf6z8Ph?with_counts=true', {
-      next: { revalidate: 300 },
-    });
-    if (!inviteRes.ok) return { memberCount: 0, members: [] };
-    const invite = await inviteRes.json();
-    const memberCount: number = invite.approximate_member_count ?? 0;
-    const guildId: string | undefined = invite.guild?.id;
+    const [inviteRes, widgetRes] = await Promise.all([
+      fetch('https://discord.com/api/v10/invites/F4sAf6z8Ph?with_counts=true', { next: { revalidate: 300 } }),
+      fetch(`https://discord.com/api/guilds/${DISCORD_GUILD_ID}/widget.json`, { next: { revalidate: 300 } }),
+    ]);
 
-    let members: DiscordMember[] = [];
-    if (guildId) {
-      try {
-        const widgetRes = await fetch(`https://discord.com/api/guilds/${guildId}/widget.json`, {
-          next: { revalidate: 300 },
-        });
-        if (widgetRes.ok) {
-          const widget = await widgetRes.json();
-          members = (widget.members ?? []).slice(0, 5).map((m: any) => ({
-            id: m.id,
-            username: m.username,
-            avatar_url: m.avatar_url,
-          }));
-        }
-      } catch { /* widget not enabled — fall back to initials */ }
-    }
+    const memberCount: number = inviteRes.ok
+      ? ((await inviteRes.json()).approximate_member_count ?? 0)
+      : 0;
+
+    const members: DiscordMember[] = widgetRes.ok
+      ? ((await widgetRes.json()).members ?? []).slice(0, 5).map((m: any) => ({
+          id: m.id,
+          username: m.username,
+          avatar_url: m.avatar_url,
+        }))
+      : [];
+
     return { memberCount, members };
   } catch {
     return { memberCount: 0, members: [] };
