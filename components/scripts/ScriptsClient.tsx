@@ -24,11 +24,19 @@ interface Script {
 
 interface ScriptsClientProps {
   initialScripts: Script[];
+  lastUpdated?: string | null;
 }
 
 const LOADER = `loadstring(game:HttpGet("https://api.junkie-development.de/api/v1/luascripts/public/8ac2e97282ac0718aeeb3bb3856a2821d71dc9e57553690ab508ebdb0d1569da/download"))()`;
 
-export default function ScriptsClient({ initialScripts }: ScriptsClientProps) {
+function timeAgo(dateStr: string): string {
+  const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
+  if (diff < 3600)  return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
+}
+
+export default function ScriptsClient({ initialScripts, lastUpdated }: ScriptsClientProps) {
   const [searchQuery, setSearchQuery]   = useState('');
   const [filter, setFilter]             = useState<'all' | 'free' | 'premium'>('all');
   const [copiedId, setCopiedId]         = useState<string | null>(null);
@@ -128,21 +136,30 @@ export default function ScriptsClient({ initialScripts }: ScriptsClientProps) {
             />
           </div>
 
-          {/* Filter pills */}
-          <div className="flex items-center gap-1 p-1 rounded-lg shrink-0" style={{ backgroundColor: 'rgba(255,255,255,0.04)' }}>
-            {(['all', 'free', 'premium'] as const).map(f => (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                className="px-3 py-1.5 rounded-md text-xs font-medium capitalize transition-all duration-150"
-                style={{
-                  backgroundColor: filter === f ? 'rgba(255,255,255,0.1)' : 'transparent',
-                  color: filter === f ? 'white' : 'var(--text-muted)',
-                }}
-              >
-                {f} <span className="ml-1 opacity-50">{counts[f]}</span>
-              </button>
-            ))}
+          <div className="flex items-center gap-3 shrink-0">
+            {/* Filter pills */}
+            <div className="flex items-center gap-1 p-1 rounded-lg" style={{ backgroundColor: 'rgba(255,255,255,0.04)' }}>
+              {(['all', 'free', 'premium'] as const).map(f => (
+                <button
+                  key={f}
+                  onClick={() => setFilter(f)}
+                  className="px-3 py-1.5 rounded-md text-xs font-medium capitalize transition-all duration-150"
+                  style={{
+                    backgroundColor: filter === f ? 'rgba(255,255,255,0.1)' : 'transparent',
+                    color: filter === f ? 'white' : 'var(--text-muted)',
+                  }}
+                >
+                  {f} <span className="ml-1 opacity-50">{counts[f]}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Last updated */}
+            {lastUpdated && (
+              <span className="text-xs hidden sm:block" style={{ color: 'var(--text-muted)' }}>
+                Updated {timeAgo(lastUpdated)}
+              </span>
+            )}
           </div>
         </div>
       </div>
