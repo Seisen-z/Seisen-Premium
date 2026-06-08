@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useAuth, readDiscordSession } from '@/lib/client/auth';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowRight, ShoppingBag, DollarSign, Crown, Activity } from 'lucide-react';
+import { ArrowRight, ShoppingBag, DollarSign, Crown, Activity, AlertTriangle, Clock } from 'lucide-react';
 
 export default function DashboardPage() {
   const { email, isAuthenticated, isLoading } = useAuth();
@@ -39,6 +39,11 @@ export default function DashboardPage() {
   const totalOrders  = data?.stats?.totalOrders ?? 0;
   const totalSpent   = data?.stats?.totalSpent ?? '0.00';
   const recentOrders = data?.orders?.slice(0, 5) ?? [];
+  const subscription = data?.subscription ?? null;
+  const daysRemaining = subscription?.daysRemaining ?? null;
+  const isExpired    = daysRemaining !== null && daysRemaining <= 0;
+  const isExpiringSoon = daysRemaining !== null && daysRemaining > 0 && daysRemaining <= 3;
+  const showExpiryBanner = isExpired || isExpiringSoon;
 
   const STATUS_COLORS: Record<string, string> = {
     COMPLETED: 'bg-emerald-500/10 text-[var(--accent)] border-emerald-500/20',
@@ -57,6 +62,42 @@ export default function DashboardPage() {
         </h1>
         <p className="text-sm text-[#555] mt-1">Account overview and recent activity.</p>
       </div>
+
+      {/* Expiry warning */}
+      {showExpiryBanner && (
+        <div
+          className="flex items-center justify-between gap-4 px-5 py-4 rounded-xl border"
+          style={isExpired
+            ? { backgroundColor: 'rgba(239,68,68,0.06)', borderColor: 'rgba(239,68,68,0.2)' }
+            : { backgroundColor: 'rgba(251,191,36,0.06)', borderColor: 'rgba(251,191,36,0.2)' }
+          }
+        >
+          <div className="flex items-center gap-3">
+            {isExpired
+              ? <AlertTriangle className="w-4 h-4 shrink-0 text-red-400" />
+              : <Clock className="w-4 h-4 shrink-0 text-yellow-400" />
+            }
+            <div>
+              <p className="text-sm font-semibold" style={{ color: isExpired ? '#f87171' : '#fbbf24' }}>
+                {isExpired ? 'Your subscription has expired' : `Subscription expires in ${daysRemaining} day${daysRemaining === 1 ? '' : 's'}`}
+              </p>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                {isExpired ? 'Renew now to restore access to all premium scripts.' : 'Renew before it expires to avoid any interruption.'}
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/premium"
+            className="shrink-0 px-4 py-2 rounded-lg text-xs font-bold transition-colors"
+            style={isExpired
+              ? { backgroundColor: 'rgba(239,68,68,0.15)', color: '#f87171', border: '1px solid rgba(239,68,68,0.25)' }
+              : { backgroundColor: 'rgba(251,191,36,0.12)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.25)' }
+            }
+          >
+            Renew Now →
+          </Link>
+        </div>
+      )}
 
       {/* Stats grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
