@@ -29,6 +29,12 @@ export default function CommunityVoices() {
   const prev = () => setIndex(i => (i - 1 + testimonials.length) % testimonials.length);
   const next = () => setIndex(i => (i + 1) % testimonials.length);
 
+  useEffect(() => {
+    if (testimonials.length === 0) return;
+    const id = setInterval(() => setIndex(i => (i + 1) % testimonials.length), 5000);
+    return () => clearInterval(id);
+  }, [testimonials.length]);
+
   if (loading || testimonials.length === 0) return null;
 
   const t = testimonials[index];
