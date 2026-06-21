@@ -29,11 +29,11 @@ export async function POST(req: NextRequest) {
     // Validate quantity (1–10)
     const quantity = Math.max(1, Math.min(10, parseInt(String(rawQuantity || '1'), 10) || 1));
 
-    // Pricing (Server-side validation) — Updated: Monthly €6, Lifetime €12
+    // Pricing (Server-side validation) — Updated: Monthly €6, Lifetime €10
     const pricing: Record<string, number> = {
         weekly: 3,
         monthly: 6,
-        lifetime: 12
+        lifetime: 10
     };
 
     if (!tier || !pricing[tier]) {

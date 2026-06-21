@@ -56,7 +56,7 @@ const defaultMethodStockMap = (): MethodStockMap => ({
   card:    { weekly: 0, monthly: 0, lifetime: 0 },
 });
 
-// Updated PayPal prices: Monthly €6, Lifetime €12
+// Updated PayPal prices: Monthly €6, Lifetime €10 (displays 10, collects 12 due to tax)
 const paypalPlans = [
   {
     title: 'Weekly',
@@ -80,9 +80,9 @@ const paypalPlans = [
     title: 'Lifetime',
     features: ['All premium scripts', 'No key system', 'Priority support', 'Early access', 'Exclusive updates', 'Lifetime access'],
     plan: 'lifetime',
-    price: 12,
+    price: 10,
     originalPrice: 14,
-    badge: '14% OFF',
+    badge: '28% OFF',
     badgeVariant: 'best-value' as const,
     featured: true,
   },
