@@ -1,25 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { ExternalLink, Crown, Copy, Check, Terminal, ArrowRight } from 'lucide-react';
 import { copyToClipboard } from '@/lib/utils';
 import Link from 'next/link';
 
 const LOADER = `loadstring(game:HttpGet("https://api.junkie-development.de/api/v1/luascripts/public/8ac2e97282ac0718aeeb3bb3856a2821d71dc9e57553690ab508ebdb0d1569da/download"))()`;
-const LOOTLABS_SRC = '//dcbbwymp1bhlf.cloudfront.net/?wbbcd=1370695';
+// Direct LootLabs interstitial URL — bypasses the broken include-filter config
+const LOOTLABS_URL = 'https://loot-reward.com/t?cc=eyJ0aXRsZSI6IkdldCBGcmVlIEtleSIsImRvbWFpbiI6Ii8vZGM5eHdwanByZ3V1cC5jbG91ZGZyb250Lm5ldCIsImNkIjoxMzcwNjk1LCJ0aWQiOjEzNzA2OTUsImxpbmsiOiJodHRwczovL2pua2llLmNvbS9nZXQta2V5L3NlaXNlbmh1YiJ9';
 
 export default function GetKeyPage() {
   const [copied, setCopied] = useState(false);
-
-  useEffect(() => {
-    // Remove any existing LootLabs script so it re-initializes fresh on this page
-    document.querySelectorAll(`script[src="${LOOTLABS_SRC}"]`).forEach(s => s.remove());
-    const script = document.createElement('script');
-    script.src = LOOTLABS_SRC;
-    script.setAttribute('data-cfasync', 'false');
-    document.body.appendChild(script);
-    return () => { script.remove(); };
-  }, []);
 
   const handleCopy = async () => {
     await copyToClipboard(LOADER);
@@ -79,7 +70,7 @@ export default function GetKeyPage() {
           </ol>
 
           <a
-            href="https://jnkie.com/get-key/seisenhub"
+            href={LOOTLABS_URL}
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium text-white transition-all"
             style={{ backgroundColor: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)' }}
             onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(255,255,255,0.13)'; }}
