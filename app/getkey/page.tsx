@@ -1,14 +1,25 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ExternalLink, Crown, Copy, Check, Terminal, ArrowRight } from 'lucide-react';
 import { copyToClipboard } from '@/lib/utils';
 import Link from 'next/link';
 
 const LOADER = `loadstring(game:HttpGet("https://api.junkie-development.de/api/v1/luascripts/public/8ac2e97282ac0718aeeb3bb3856a2821d71dc9e57553690ab508ebdb0d1569da/download"))()`;
+const LOOTLABS_SRC = '//dcbbwymp1bhlf.cloudfront.net/?wbbcd=1370695';
 
 export default function GetKeyPage() {
   const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    // Remove any existing LootLabs script so it re-initializes fresh on this page
+    document.querySelectorAll(`script[src="${LOOTLABS_SRC}"]`).forEach(s => s.remove());
+    const script = document.createElement('script');
+    script.src = LOOTLABS_SRC;
+    script.setAttribute('data-cfasync', 'false');
+    document.body.appendChild(script);
+    return () => { script.remove(); };
+  }, []);
 
   const handleCopy = async () => {
     await copyToClipboard(LOADER);

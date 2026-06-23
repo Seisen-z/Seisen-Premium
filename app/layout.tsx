@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import { Inter, Fira_Code } from 'next/font/google';
-import Script from 'next/script';
 import './globals.css';
 import Dock from '@/components/layout/Dock';
 import Footer from '@/components/layout/Footer';
@@ -53,14 +52,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} ${firaCode.variable}`} suppressHydrationWarning>
       <body className="min-h-screen" suppressHydrationWarning>
-        {/* LootLabs Monetization Script */}
-        <Script
-          src="https://dcbbwymp1bhlf.cloudfront.net/?wbbcd=1370695"
-          strategy="afterInteractive"
-          data-cfasync="false"
-        />
-
-        <ThemeProvider>
+<ThemeProvider>
           <div className="min-h-screen flex flex-col">
             <TabTitleAnimation />
             <LoadingScreen />
