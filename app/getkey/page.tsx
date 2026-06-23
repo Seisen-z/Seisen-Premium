@@ -69,8 +69,6 @@ export default function GetKeyPage() {
 
           <a
             href="https://jnkie.com/get-key/seisenhub"
-            target="_blank"
-            rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium text-white transition-all"
             style={{ backgroundColor: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)' }}
             onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(255,255,255,0.13)'; }}
