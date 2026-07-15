@@ -13,6 +13,7 @@
     "@types/nodemailer": "^7.0.5",
     "@types/prismjs": "^1.26.5",
     "axios": "^1.13.2",
+    "bcryptjs": "^3.0.3",
     "clsx": "^2.1.1",
     "cors": "^2.8.5",
     "framer-motion": "^12.30.1",
@@ -28,12 +29,12 @@
     "react-dom": "19.2.3",
     "react-simple-code-editor": "^0.14.1",
     "resend": "^6.7.0",
-    "stripe": "^22.1.1",
     "tailwind-merge": "^3.4.0",
     "wasmoon": "^1.16.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.18",
+    "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

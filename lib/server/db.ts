@@ -1,4 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import bcrypt from 'bcryptjs';
 
 // Initialize Supabase Client
 const supabaseUrl = process.env.SUPABASE_URL || 'https://placeholder.supabase.co';
@@ -196,11 +197,12 @@ export class TicketDatabase {
     else console.log(`Saved ${keys.length} keys`);
   }
   
-  async updatePaymentKeys(transactionId: string, keys: string[]) {
+  async updatePaymentKeys(transactionId: string, keys: string[], status: string = 'completed') {
     await this.client
       .from('payments')
-      .update({ 
+      .update({
         generated_keys: JSON.stringify(keys),
+        payment_status: status,
         updated_at: new Date().toISOString()
       })
       .eq('transaction_id', transactionId);
@@ -320,7 +322,7 @@ export class TicketDatabase {
     return this.premiumTiers.includes(normalized) ? normalized : null;
   }
 
-  private readonly paymentMethods = ['robux', 'paypal', 'maya', 'card', 'paddle'];
+  private readonly paymentMethods = ['robux', 'paypal', 'card'];
 
   private normalizeMethod(method: string) {
     const m = (method || '').toLowerCase();
@@ -336,7 +338,7 @@ export class TicketDatabase {
     const result: Record<string, Record<string, number>> = {};
 
     for (const tier of this.premiumTiers) {
-      result[tier] = { robux: 0, paypal: 0, gcash: 0, card: 0, stripe: 0 };
+      result[tier] = { robux: 0, paypal: 0, gcash: 0, card: 0 };
     }
 
     if (error) {
@@ -361,6 +363,9 @@ export class TicketDatabase {
     }
     if (missing.length > 0) {
       await this.client.from('premium_stock').insert(missing);
+      for (const row of missing) {
+        if (result[row.tier]) result[row.tier][row.payment_method] = row.stock;
+      }
     }
 
     return result;
@@ -453,11 +458,25 @@ export class TicketDatabase {
     try {
         const { data, error } = await this.client
             .from('admin_credentials')
-            .select('password')
+            .select('id, password')
             .single();
 
-        if (!error && data) {
-            return previewPassword === data.password;
+        if (!error && data?.password) {
+            const stored: string = data.password;
+            const isHashed = /^\$2[aby]\$/.test(stored);
+
+            if (isHashed) {
+                return await bcrypt.compare(previewPassword, stored);
+            }
+
+            // Legacy plaintext row — validate against it, then transparently
+            // upgrade it to a hash so it's never compared in plaintext again.
+            if (previewPassword === stored) {
+                const hashed = await bcrypt.hash(previewPassword, 12);
+                await this.client.from('admin_credentials').update({ password: hashed }).eq('id', data.id);
+                return true;
+            }
+            return false;
         }
     } catch (e: any) {
         console.error('⚠️ Admin Auth Exception:', e.message);

@@ -2,9 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { PayPalSDK } from '@/lib/server/paypal';
 import { VatCalculator } from '@/lib/server/vat';
 import { TicketDatabase } from '@/lib/server/db';
+import { rateLimit, rateLimitResponse, getClientIp } from '@/lib/server/rate-limit';
 
 export async function POST(req: NextRequest) {
   try {
+        const limitResult = rateLimit(`paypal:create-order:${getClientIp(req)}`, 8, 60_000);
+        if (!limitResult.allowed) return rateLimitResponse(limitResult);
+
         // Require Discord auth before starting PayPal checkout.
         const rawSession = req.cookies.get('discord_session')?.value;
         if (!rawSession) {

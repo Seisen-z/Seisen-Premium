@@ -871,10 +871,6 @@ function PremiumContent() {
               setQuantities(q => ({ ...q, [intent.plan]: intent.qty || 1 }));
               setPendingPlan({ plan: intent.plan, amount: intent.price, price: intent.price, quantity: intent.qty || 1 });
               setShowTosModal(true);
-            } else if (intent.method === 'paddle') {
-              setQuantities(q => ({ ...q, [intent.plan]: intent.qty || 1 }));
-              setPendingPlan({ plan: intent.plan, amount: intent.price, price: intent.price, quantity: intent.qty || 1 });
-              setShowTosModal(true);
             }
           }, 400);
         } catch { /* ignore bad intent */ }
@@ -1193,62 +1189,6 @@ function PremiumContent() {
     });
   };
 
-  const confirmMayaCheckout = async (checkoutId: string) => {
-    setIsProcessing(true);
-    try {
-      const response = await fetch('/api/maya/confirm-checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ checkoutId }),
-      });
-      const data = await response.json();
-
-      if (data.success && data.keys && data.keys.length > 0) {
-        clearCart();
-        setCart([]);
-        setStatusModal({
-          isOpen: true,
-          type: 'success',
-          title: 'Purchase Successful!',
-          message: `${data.keys.length > 1 ? `${data.keys.length} keys have` : 'Your key has'} been generated. Redirecting you to the receipt...`,
-        });
-        localStorage.setItem('client_email', data.payerEmail || '');
-        localStorage.setItem('client_auth', 'true');
-        setTimeout(() => {
-          const params = new URLSearchParams({
-            orderId: data.transactionId || 'MAYA',
-            tier: data.tier,
-            amount: String(data.amount),
-            currency: String(data.currency),
-            key: JSON.stringify(data.keys),
-            email: data.payerEmail || '',
-            payerId: 'Maya',
-            method: 'maya',
-            date: new Date().toISOString(),
-          });
-          router.push(`/success?${params.toString()}`);
-        }, 1000);
-      } else {
-        setStatusModal({
-          isOpen: true,
-          type: 'error',
-          title: 'Activation Failed',
-          message: data.error || data.junkieError || 'No key returned from server.',
-        });
-        setIsProcessing(false);
-      }
-    } catch (error: any) {
-      setStatusModal({
-        isOpen: true,
-        type: 'error',
-        title: 'System Error',
-        message: 'An unexpected error occurred while confirming your payment.',
-        details: error.message,
-      });
-      setIsProcessing(false);
-    }
-  };
-
 
 
   const proceedWithPayment = async () => {
@@ -1428,7 +1368,6 @@ function PremiumContent() {
 
               const qty = quantities[plan.plan] || 1;
               const isPayPal = paymentMethod === 'paypal';
-              const isPaddle  = false;
               const cartIncludes = cart.some(c => c.plan === plan.plan);
               const justAdded = addedFeedback === plan.plan;
 
