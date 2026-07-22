@@ -798,6 +798,19 @@ function PremiumContent() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('paypal');
   const [showTosModal, setShowTosModal] = useState(false);
   const [tosAccepted, setTosAccepted] = useState(false);
+  const [noRefundAccepted, setNoRefundAccepted] = useState(false);
+  const [tosTimer, setTosTimer] = useState(0);
+
+  useEffect(() => {
+    if (!showTosModal || !tosAccepted || !noRefundAccepted) {
+      setTosTimer(5);
+      return;
+    }
+    const interval = setInterval(() => {
+      setTosTimer((t) => (t > 0 ? t - 1 : 0));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [showTosModal, tosAccepted, noRefundAccepted]);
   const [pendingPlan, setPendingPlan] = useState<{ plan: string; amount: number; price: number; quantity: number } | null>(null);
 
   const [showRobuxModal, setShowRobuxModal] = useState(false);
@@ -1567,9 +1580,12 @@ function PremiumContent() {
               Before purchasing premium access, you must read and agree to our Terms of Service.
             </p>
 
-            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 mb-4">
-              <p className="text-red-400 text-sm">
-                <strong>⚠️ Important:</strong> All sales are final. No refunds will be issued.
+            <div className="bg-red-500/15 border-2 border-red-500/50 rounded-lg p-4 mb-4">
+              <p className="text-red-400 text-base font-bold flex items-center gap-2 mb-1">
+                <span className="text-xl">⚠️</span> NO REFUND POLICY
+              </p>
+              <p className="text-red-300 text-sm leading-snug">
+                All sales are <strong>final</strong>. Once a key is generated, we cannot and will not issue a refund for any reason — including accidental purchases, change of mind, or not liking the product.
               </p>
             </div>
 
@@ -1580,6 +1596,18 @@ function PremiumContent() {
                 <p><strong>Total:</strong> <span className="accent-text font-semibold">€{(pendingPlan.price * pendingPlan.quantity).toFixed(2)}</span></p>
               </div>
             )}
+
+            <label className="flex items-start gap-3 cursor-pointer mb-3 p-3 rounded-lg bg-red-500/5 border border-red-500/20 hover:bg-red-500/10 transition-colors">
+              <input
+                type="checkbox"
+                checked={noRefundAccepted}
+                onChange={(e) => setNoRefundAccepted(e.target.checked)}
+                className="mt-1 w-4 h-4 accent-red-500"
+              />
+              <span className="text-red-300 text-sm font-medium">
+                I understand and accept that <strong>all sales are final</strong> and <strong>no refunds</strong> will be issued under any circumstance.
+              </span>
+            </label>
 
             <label className="flex items-start gap-3 cursor-pointer mb-6">
               <input
@@ -1600,17 +1628,17 @@ function PremiumContent() {
               <Button
                 variant="secondary"
                 className="flex-1"
-                onClick={() => { setShowTosModal(false); setTosAccepted(false); }}
+                onClick={() => { setShowTosModal(false); setTosAccepted(false); setNoRefundAccepted(false); }}
               >
                 Cancel
               </Button>
               <Button
                 className="flex-1"
-                disabled={!tosAccepted}
+                disabled={!tosAccepted || !noRefundAccepted || tosTimer > 0}
                 onClick={proceedWithPayment}
               >
                 <Check className="w-4 h-4" />
-                Accept & Continue
+                {tosTimer > 0 ? `Accept & Continue (${tosTimer}s)` : 'Accept & Continue'}
               </Button>
             </div>
           </Card>

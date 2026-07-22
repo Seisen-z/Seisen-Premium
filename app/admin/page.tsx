@@ -5,7 +5,7 @@ import {
   Shield, CreditCard, Settings, LogOut, Search, Copy, Check,
   Loader2, AlertCircle, MessageSquare, Eye, FileCode, Plus,
   Save, Trash2, X, TrendingUp, Users, DollarSign, Zap,
-  ChevronRight, ChevronLeft, MoreHorizontal, Package
+  ChevronRight, ChevronLeft, MoreHorizontal, Package, ShieldCheck
 } from 'lucide-react';
 import { getApiUrl, copyToClipboard } from '@/lib/utils';
 import Link from 'next/link';
@@ -570,6 +570,11 @@ export default function AdminPage() {
                               <Link href={`/success?orderId=${p.transaction_id}&tier=${p.tier}&amount=${p.amount}&currency=${p.currency}&key=${key}&email=${p.payer_email || ''}&payerId=${p.payer_email || ''}&date=${p.created_at}&method=${p.currency === 'ROBUX' ? 'Robux' : 'PayPal'}&admin=1`} target="_blank">
                                 <button className="p-2 rounded-lg hover:bg-white/[0.06] text-[#555] hover:text-white transition-colors">
                                   <Eye className="w-4 h-4" />
+                                </button>
+                              </Link>
+                              <Link href={`/admin/evidence/${p.transaction_id}`} target="_blank" title="Generate chargeback evidence">
+                                <button className="p-2 rounded-lg hover:bg-white/[0.06] text-[#555] hover:text-white transition-colors">
+                                  <ShieldCheck className="w-4 h-4" />
                                 </button>
                               </Link>
                               <button onClick={() => deletePayment(p.transaction_id)} className="p-2 rounded-lg hover:bg-red-500/10 text-[#555] hover:text-red-400 transition-colors">

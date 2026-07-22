@@ -39,6 +39,9 @@ output_fresh.js
 # env files (can opt-in for committing if needed)
 .env*
 
+# exported customer/payment data — never commit
+/scripts/backup/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
