@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { TicketDatabase } from '@/lib/server/db';
+import { createAdminSession } from '@/lib/server/adminSession';
 
 export async function POST(req: NextRequest) {
     try {
@@ -12,7 +13,7 @@ export async function POST(req: NextRequest) {
         const isValid = await db.validateAdminPassword(password);
 
         if (isValid) {
-            const token = Buffer.from(password).toString('base64');
+            const token = createAdminSession();
             return NextResponse.json({ success: true, token });
         }
 

@@ -1,20 +1,14 @@
-import { db, TicketDatabase } from '@/lib/server/db';
+import { db } from '@/lib/server/db';
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
+import { verifyAdminSession } from '@/lib/server/adminSession';
 
 async function isAdmin(req: NextRequest) {
   const authHeader = req.headers.get('Authorization');
   if (!authHeader) return false;
 
   const token = authHeader.replace('Bearer ', '');
-
-  try {
-    const decoded = Buffer.from(token, 'base64').toString('ascii');
-    const database = new TicketDatabase();
-    return await database.validateAdminPassword(decoded);
-  } catch {
-    return false;
-  }
+  return verifyAdminSession(token);
 }
 
 export async function GET() {

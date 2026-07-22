@@ -45,6 +45,12 @@ export default function DashboardPage() {
   const isExpiringSoon = daysRemaining !== null && daysRemaining > 0 && daysRemaining <= 3;
   const showExpiryBanner = isExpired || isExpiringSoon;
 
+  const tierLabel = subscription?.tier
+    ? subscription.tier.charAt(0).toUpperCase() + subscription.tier.slice(1)
+    : 'No Plan';
+  const statusLabel = !subscription ? 'No Plan' : isExpired ? 'Expired' : 'Active';
+  const statusIsGood = !!subscription && !isExpired;
+
   const STATUS_COLORS: Record<string, string> = {
     COMPLETED: 'bg-emerald-500/10 text-[var(--accent)] border-emerald-500/20',
     paid:       'bg-emerald-500/10 text-[var(--accent)] border-emerald-500/20',
@@ -103,8 +109,8 @@ export default function DashboardPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatBlock label="Total Orders"  value={String(totalOrders)} icon={ShoppingBag} />
         <StatBlock label="Total Spent"   value={`$${totalSpent}`}    icon={DollarSign} accent />
-        <StatBlock label="Account Type"  value="Premium"             icon={Crown} />
-        <StatBlock label="Status"        value="Active"              icon={Activity} green />
+        <StatBlock label="Account Type"  value={tierLabel}           icon={Crown} />
+        <StatBlock label="Status"        value={statusLabel}         icon={Activity} green={statusIsGood} red={!statusIsGood && !!subscription} />
       </div>
 
       {/* Recent orders */}
@@ -169,18 +175,20 @@ export default function DashboardPage() {
 }
 
 function StatBlock({
-  label, value, icon: Icon, accent, green,
+  label, value, icon: Icon, accent, green, red,
 }: {
   label: string;
   value: string;
   icon?: any;
   accent?: boolean;
   green?: boolean;
+  red?: boolean;
 }) {
+  const color = accent ? 'text-[var(--accent)]' : green ? 'text-emerald-400' : red ? 'text-red-400' : 'text-white';
   return (
     <div className="bg-[#0e0e0e] rounded-xl border border-[#1a1a1a] px-5 py-5">
       <p className="text-xs text-[#555] mb-2">{label}</p>
-      <p className={`text-2xl font-bold ${accent ? 'text-[var(--accent)]' : green ? 'text-emerald-400' : 'text-white'}`}>
+      <p className={`text-2xl font-bold ${color}`}>
         {value}
       </p>
       {Icon && <Icon className="w-3.5 h-3.5 text-[#2a2a2a] mt-2" />}

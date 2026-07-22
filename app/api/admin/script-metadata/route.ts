@@ -1,6 +1,13 @@
 import { supabase } from '@/lib/server/db';
 import { NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
+import { verifyAdminSession } from '@/lib/server/adminSession';
+
+function isAdmin(request: Request) {
+  const authHeader = request.headers.get('Authorization');
+  if (!authHeader) return false;
+  return verifyAdminSession(authHeader.replace('Bearer ', ''));
+}
 
 export async function GET() {
   try {
@@ -20,6 +27,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  if (!isAdmin(request)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
   try {
     const body = await request.json();
     
@@ -50,6 +60,9 @@ export async function POST(request: Request) {
 }
 
 export async function PUT(request: Request) {
+  if (!isAdmin(request)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
   try {
     const body = await request.json();
     
@@ -82,6 +95,9 @@ export async function PUT(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+  if (!isAdmin(request)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');

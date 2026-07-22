@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 
 type TabType = 'terms' | 'privacy' | 'refund';
 
@@ -52,17 +53,21 @@ export default function LegalPage() {
             <button
               key={tab.id}
               onClick={() => selectTab(tab.id)}
-              className="relative pb-4 whitespace-nowrap text-sm font-medium transition-colors"
+              className="relative pb-4 whitespace-nowrap text-sm font-medium transition-colors duration-200"
               style={{ color: active ? 'white' : 'var(--text-muted)' }}
+              onMouseEnter={(e) => { if (!active) (e.currentTarget as HTMLElement).style.color = '#ccc'; }}
+              onMouseLeave={(e) => { if (!active) (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'; }}
             >
               <span className="font-mono text-[10px] mr-2" style={{ color: 'rgba(255,255,255,0.2)' }}>
                 {String(i + 1).padStart(2, '0')}
               </span>
               {tab.label}
               {active && (
-                <span
+                <motion.span
+                  layoutId="legal-tab-underline"
                   className="absolute left-0 right-0 -bottom-px h-px"
                   style={{ backgroundColor: 'var(--accent)' }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 32 }}
                 />
               )}
             </button>
@@ -71,7 +76,7 @@ export default function LegalPage() {
       </div>
 
       {/* ── Content ── */}
-      <div className="animate-fade-in">
+      <div key={activeTab} className="animate-fade-in">
         {activeTab === 'terms' && <TermsOfService />}
         {activeTab === 'privacy' && <PrivacyPolicy />}
         {activeTab === 'refund' && <RefundPolicy />}

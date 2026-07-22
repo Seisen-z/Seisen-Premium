@@ -28,8 +28,8 @@ const Card = forwardRef<HTMLDivElement, CardProps>(
 
     const hoverMap: Record<string, string> = {
       default:  '',
-      hover:    'hover:bg-white/[0.04] hover:border-white/10',
-      featured: 'hover:border-[rgba(var(--accent-rgb),0.5)]',
+      hover:    'hover:bg-white/[0.04] hover:border-white/10 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/20',
+      featured: 'hover:border-[rgba(var(--accent-rgb),0.5)] hover:-translate-y-1 hover:shadow-xl hover:shadow-black/20',
     };
 
     return (

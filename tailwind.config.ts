@@ -34,12 +34,16 @@ const config: Config = {
         'marquee-reverse': {
            '0%': { transform: 'translateX(-50%)' },
            '100%': { transform: 'translateX(0)' },
-        }
+        },
+        shimmer: {
+          '100%': { transform: 'translateX(200%)' },
+        },
       },
       animation: {
         'fade-in': 'fade-in 0.5s ease-out forwards',
         marquee: 'marquee 40s linear infinite',
         'marquee-reverse': 'marquee-reverse 40s linear infinite',
+        shimmer: 'shimmer 1.6s ease-in-out infinite',
       },
     },
   },

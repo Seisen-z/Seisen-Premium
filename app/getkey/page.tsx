@@ -22,7 +22,7 @@ export default function GetKeyPage() {
     <div className="min-h-screen px-6 md:px-14 pt-16 pb-28 max-w-6xl mx-auto">
 
       {/* ── Big header ── */}
-      <div className="mb-16">
+      <div className="mb-16 animate-fade-in">
         <h1
           className="font-bold text-white leading-none mb-4"
           style={{ fontSize: 'clamp(3rem, 8vw, 6rem)', letterSpacing: '-0.04em' }}
@@ -35,7 +35,10 @@ export default function GetKeyPage() {
       </div>
 
       {/* ── Split layout ── */}
-      <div className="flex flex-col lg:flex-row gap-0" style={{ border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', overflow: 'hidden' }}>
+      <div
+        className="flex flex-col lg:flex-row gap-0 animate-fade-in"
+        style={{ border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', overflow: 'hidden', animationDelay: '0.08s', animationFillMode: 'backwards' }}
+      >
 
         {/* ── Left: Free Key ── */}
         <div className="flex-1 p-8 lg:p-10" style={{ backgroundColor: 'rgba(255,255,255,0.01)' }}>
@@ -71,13 +74,18 @@ export default function GetKeyPage() {
 
           <a
             href={LOOTLABS_URL}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium text-white transition-all"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium text-white transition-all hover:-translate-y-0.5 active:translate-y-0"
             style={{ backgroundColor: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)' }}
             onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(255,255,255,0.13)'; }}
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(255,255,255,0.08)'; }}
           >
             Get Free Key <ExternalLink className="w-3.5 h-3.5 opacity-60" />
           </a>
+          <p className="text-[11px] mt-2.5" style={{ color: 'var(--text-muted)', opacity: 0.6 }}>
+            Opens in a new tab — come back here once you've got your key.
+          </p>
 
           <div className="flex items-center gap-4 mt-8 pt-8" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
             <span className="text-[10px] uppercase tracking-widest font-mono" style={{ color: 'var(--text-muted)' }}>Via</span>
@@ -122,7 +130,7 @@ export default function GetKeyPage() {
 
           <Link
             href="/premium"
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all hover:-translate-y-0.5 active:translate-y-0"
             style={{ backgroundColor: 'var(--accent)', color: '#000' }}
             onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--accent-hover)'; }}
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--accent)'; }}
@@ -133,7 +141,7 @@ export default function GetKeyPage() {
       </div>
 
       {/* ── Script Loader ── */}
-      <div className="mt-16">
+      <div className="mt-16 animate-fade-in" style={{ animationDelay: '0.16s', animationFillMode: 'backwards' }}>
         <div className="flex items-center gap-3 mb-4">
           <Terminal className="w-3.5 h-3.5" style={{ color: 'var(--text-muted)' }} />
           <span className="font-mono text-xs uppercase tracking-[0.15em]" style={{ color: 'var(--text-muted)' }}>Script Loader</span>

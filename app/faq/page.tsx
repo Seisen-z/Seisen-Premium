@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, Minus } from 'lucide-react';
+import { Plus } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
 
 const faqItems = [
   {
@@ -160,18 +161,31 @@ export default function FAQPage() {
                           {item.q}
                         </span>
                       </div>
-                      <span className="shrink-0 mt-0.5" style={{ color: open ? 'var(--accent)' : 'var(--text-muted)' }}>
-                        {open ? <Minus className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+                      <span
+                        className="shrink-0 mt-0.5 transition-transform duration-200"
+                        style={{ color: open ? 'var(--accent)' : 'var(--text-muted)', transform: open ? 'rotate(135deg)' : 'rotate(0deg)' }}
+                      >
+                        <Plus className="w-3.5 h-3.5" />
                       </span>
                     </button>
 
-                    {open && (
-                      <div className="pl-10 pb-5">
-                        <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-                          {item.a}
-                        </p>
-                      </div>
-                    )}
+                    <AnimatePresence initial={false}>
+                      {open && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.2, ease: 'easeOut' }}
+                          className="overflow-hidden"
+                        >
+                          <div className="pl-10 pb-5">
+                            <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>
+                              {item.a}
+                            </p>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 );
               })}

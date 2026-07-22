@@ -124,16 +124,22 @@ export default function Dock() {
                 <Link
                   key={href}
                   href={href}
-                  className="px-4 py-1.5 rounded-full text-sm transition-all duration-150"
+                  className="relative px-4 py-1.5 rounded-full text-sm transition-colors duration-150"
                   style={{
-                    backgroundColor: active ? '#ffffff' : 'transparent',
                     color: active ? '#000000' : 'rgba(255,255,255,0.45)',
                     fontWeight: active ? 600 : 400,
                   }}
                   onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.8)'; }}
                   onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.45)'; }}
                 >
-                  {label}
+                  {active && (
+                    <motion.span
+                      layoutId="nav-active-pill"
+                      className="absolute inset-0 rounded-full bg-white"
+                      transition={{ type: 'spring', stiffness: 400, damping: 32 }}
+                    />
+                  )}
+                  <span className="relative z-10">{label}</span>
                 </Link>
               );
             })}

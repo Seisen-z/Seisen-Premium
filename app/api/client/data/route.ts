@@ -47,11 +47,15 @@ export async function GET(req: NextRequest) {
       };
     }
 
+    const accountStatus = subscription
+      ? (subscription.daysRemaining === null || subscription.daysRemaining > 0 ? 'Active' : 'Expired')
+      : 'No active plan';
+
     return NextResponse.json({
         success: true,
         data: {
             orders: payments.slice(0, 5),
-            stats: { totalOrders, totalSpent, activePlan, accountStatus: 'Active' },
+            stats: { totalOrders, totalSpent, activePlan, accountStatus },
             subscription,
         }
     });

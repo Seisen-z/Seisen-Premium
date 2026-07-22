@@ -8,6 +8,7 @@ import Testimonials from '@/components/sections/Testimonials';
 import PartnerLogos from '@/components/sections/PartnerLogos';
 import ScriptShowcase from '@/components/ScriptShowcase';
 import HomeFAQ from '@/components/sections/HomeFAQ';
+import Reveal from '@/components/ui/Reveal';
 
 interface DiscordMember { id: string; username: string; avatar_url: string; }
 interface DiscordStats { memberCount: number; members: DiscordMember[]; }
@@ -68,7 +69,7 @@ export default async function HomePage() {
           href="https://discord.gg/F4sAf6z8Ph"
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-2.5 mb-10 px-3 py-1.5 rounded-full transition-all hover:brightness-110"
+          className="inline-flex items-center gap-2.5 mb-10 px-3 py-1.5 rounded-full transition-all hover:brightness-110 animate-fade-in"
           style={{ backgroundColor: 'rgba(var(--accent-rgb),0.08)', border: '1px solid rgba(var(--accent-rgb),0.2)' }}
         >
           <span className="relative flex h-1.5 w-1.5">
@@ -80,28 +81,28 @@ export default async function HomePage() {
 
         {/* Headline */}
         <h1
-          className="font-bold text-white leading-none mb-5"
-          style={{ fontSize: 'clamp(3.5rem, 10vw, 8rem)', letterSpacing: '-0.04em' }}
+          className="font-bold text-white leading-none mb-5 animate-fade-in"
+          style={{ fontSize: 'clamp(3.5rem, 10vw, 8rem)', letterSpacing: '-0.04em', animationDelay: '0.05s', animationFillMode: 'backwards' }}
         >
           Seisen
         </h1>
 
         {/* Tagline */}
-        <p className="text-base md:text-lg max-w-xl mb-3 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+        <p className="text-base md:text-lg max-w-xl mb-3 leading-relaxed animate-fade-in" style={{ color: 'var(--text-secondary)', animationDelay: '0.1s', animationFillMode: 'backwards' }}>
           Premium Roblox scripts for enhanced gaming.
         </p>
-        <p className="text-sm mb-10" style={{ color: 'var(--text-muted)' }}>
+        <p className="text-sm mb-10 animate-fade-in" style={{ color: 'var(--text-muted)', animationDelay: '0.15s', animationFillMode: 'backwards' }}>
           Free access available — no sign-up required.
         </p>
 
         {/* CTAs */}
-        <div className="flex flex-wrap items-center gap-3 mb-16">
+        <div className="flex flex-wrap items-center gap-3 mb-16 animate-fade-in" style={{ animationDelay: '0.2s', animationFillMode: 'backwards' }}>
           <Link href="/scripts"><Button size="lg"><Play className="w-4 h-4" /> Browse Scripts</Button></Link>
           <Link href="/premium"><Button variant="outline" size="lg"><Crown className="w-4 h-4" /> Go Premium</Button></Link>
         </div>
 
         {/* Stat chips */}
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap gap-3 animate-fade-in" style={{ animationDelay: '0.25s', animationFillMode: 'backwards' }}>
           {[
             { val: scripts.length, label: 'Total Scripts' },
             { val: freeCount,      label: 'Free Scripts',    accent: false },
@@ -140,6 +141,7 @@ export default async function HomePage() {
       </div>
 
       {/* ── SCRIPT SHOWCASE ───────────────────────────────────── */}
+      <Reveal>
       <section id="scripts" className="px-6 md:px-14 py-24 max-w-6xl mx-auto">
         <div className="flex items-end justify-between mb-4">
           <div>
@@ -168,10 +170,11 @@ export default async function HomePage() {
           </Link>
         </div>
       </section>
+      </Reveal>
 
       {/* ── WHY SEISEN ────────────────────────────────────────── */}
       <section className="px-6 md:px-14 py-24 max-w-6xl mx-auto">
-        <p className="section-label mb-12">Why Seisen</p>
+        <Reveal><p className="section-label mb-12">Why Seisen</p></Reveal>
         <div className="grid md:grid-cols-3 gap-8">
           {[
             {
@@ -190,25 +193,27 @@ export default async function HomePage() {
               body: 'Free key delivered instantly. Premium unlocks everything with no waiting — just copy, paste, and play.',
             },
           ].map((item, i) => (
-            <div
-              key={i}
-              className="p-6 rounded-2xl group hover-lift"
-              style={{ backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}
-            >
+            <Reveal key={i} delay={i * 0.08}>
               <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center mb-5"
-                style={{ backgroundColor: 'rgba(var(--accent-rgb),0.1)', color: 'var(--accent)' }}
+                className="p-6 rounded-2xl group hover-lift h-full"
+                style={{ backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}
               >
-                {item.icon}
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center mb-5"
+                  style={{ backgroundColor: 'rgba(var(--accent-rgb),0.1)', color: 'var(--accent)' }}
+                >
+                  {item.icon}
+                </div>
+                <h3 className="font-semibold text-white text-base mb-2">{item.title}</h3>
+                <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>{item.body}</p>
               </div>
-              <h3 className="font-semibold text-white text-base mb-2">{item.title}</h3>
-              <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>{item.body}</p>
-            </div>
+            </Reveal>
           ))}
         </div>
       </section>
 
       {/* ── VIDEOS ────────────────────────────────────────────── */}
+      <Reveal>
       <section className="py-24">
         <div className="px-6 md:px-14 max-w-6xl mx-auto mb-10 flex items-end justify-between">
           <div>
@@ -227,15 +232,19 @@ export default async function HomePage() {
         </div>
         <YoutubeCarousel videos={videos} />
       </section>
+      </Reveal>
 
       {/* ── SOCIAL PROOF ──────────────────────────────────────── */}
+      <Reveal>
       <div className="py-8">
         <PartnerLogos />
         <Testimonials />
       </div>
+      </Reveal>
 
       {/* ── COMMUNITY STATS ───────────────────────────────────── */}
       <section className="px-6 md:px-14 py-16 max-w-6xl mx-auto">
+        <Reveal>
         <div className="grid md:grid-cols-2 gap-4">
           <div className="p-8 rounded-2xl" style={{ backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
             <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: 'var(--text-muted)' }}>Community</p>
@@ -275,10 +284,13 @@ export default async function HomePage() {
             <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Trusted loadstrings running across Roblox every single day — free and premium.</p>
           </div>
         </div>
+        </Reveal>
       </section>
 
       {/* ── FAQ ───────────────────────────────────────────────── */}
-      <HomeFAQ />
+      <Reveal>
+        <HomeFAQ />
+      </Reveal>
 
     </div>
   );

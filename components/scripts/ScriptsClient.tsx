@@ -78,6 +78,15 @@ export default function ScriptsClient({ initialScripts, lastUpdated }: ScriptsCl
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
+  // Close panel on Escape
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSelected(null);
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, []);
+
   const handleCopy = async (e: React.MouseEvent, script: Script) => {
     e.stopPropagation();
     const ok = await copyToClipboard(LOADER);
@@ -88,7 +97,10 @@ export default function ScriptsClient({ initialScripts, lastUpdated }: ScriptsCl
   };
 
   const filtered = initialScripts.filter(s => {
-    const matchSearch = s.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const q = searchQuery.toLowerCase();
+    const matchSearch =
+      s.name.toLowerCase().includes(q) ||
+      (s.description?.toLowerCase().includes(q) ?? false);
     const matchFilter =
       filter === 'all' ||
       (filter === 'free'    && (s.type === 'Free'    || s.displayType === 'Free & Premium')) ||
@@ -131,9 +143,19 @@ export default function ScriptsClient({ initialScripts, lastUpdated }: ScriptsCl
               placeholder="Search scripts…"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 rounded-lg text-sm bg-transparent text-white placeholder:text-[var(--text-muted)] focus:outline-none transition-colors"
+              className="w-full pl-9 pr-9 py-2 rounded-lg text-sm bg-transparent text-white placeholder:text-[var(--text-muted)] focus:outline-none transition-colors"
               style={{ backgroundColor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
             />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-md transition-colors hover:bg-white/10"
+                style={{ color: 'var(--text-muted)' }}
+                aria-label="Clear search"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
 
           <div className="flex items-center gap-3 shrink-0">
@@ -143,13 +165,18 @@ export default function ScriptsClient({ initialScripts, lastUpdated }: ScriptsCl
                 <button
                   key={f}
                   onClick={() => setFilter(f)}
-                  className="px-3 py-1.5 rounded-md text-xs font-medium capitalize transition-all duration-150"
-                  style={{
-                    backgroundColor: filter === f ? 'rgba(255,255,255,0.1)' : 'transparent',
-                    color: filter === f ? 'white' : 'var(--text-muted)',
-                  }}
+                  className="relative px-3 py-1.5 rounded-md text-xs font-medium capitalize transition-colors duration-150"
+                  style={{ color: filter === f ? 'white' : 'var(--text-muted)' }}
                 >
-                  {f} <span className="ml-1 opacity-50">{counts[f]}</span>
+                  {filter === f && (
+                    <motion.span
+                      layoutId="scripts-filter-pill"
+                      className="absolute inset-0 rounded-md"
+                      style={{ backgroundColor: 'rgba(255,255,255,0.1)' }}
+                      transition={{ type: 'spring', stiffness: 400, damping: 32 }}
+                    />
+                  )}
+                  <span className="relative z-10">{f} <span className="ml-1 opacity-50">{counts[f]}</span></span>
                 </button>
               ))}
             </div>
@@ -169,18 +196,34 @@ export default function ScriptsClient({ initialScripts, lastUpdated }: ScriptsCl
         <div className="max-w-7xl mx-auto">
           {filtered.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+              <AnimatePresence mode="popLayout">
               {filtered.map(script => {
                 const thumb       = script.universeId ? thumbnails[script.universeId] : null;
+                const thumbLoading = !!script.universeId && !thumb;
                 const isSelected  = selected?.id === script.id;
                 const discontinued = script.status === 'Discontinued';
                 const premium     = isPremiumOnly(script);
 
                 return (
-                  <div
+                  <motion.div
                     key={script.id}
+                    layout
+                    initial={{ opacity: 0, scale: 0.94 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.94 }}
+                    transition={{ duration: 0.2, ease: 'easeOut' }}
                     data-script-card
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`View details for ${script.name}`}
                     onClick={() => setSelected(isSelected ? null : script)}
-                    className="group relative rounded-xl overflow-hidden cursor-pointer transition-all duration-200"
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setSelected(isSelected ? null : script);
+                      }
+                    }}
+                    className="group relative rounded-xl overflow-hidden cursor-pointer transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
                     style={{
                       aspectRatio: '3/4',
                       backgroundColor: 'rgba(255,255,255,0.03)',
@@ -202,8 +245,13 @@ export default function ScriptsClient({ initialScripts, lastUpdated }: ScriptsCl
                         className="object-cover transition-transform duration-500 group-hover:scale-105"
                       />
                     ) : (
-                      <div className="absolute inset-0 flex items-center justify-center" style={{ backgroundColor: 'rgba(255,255,255,0.02)' }}>
-                        <Code className="w-8 h-8" style={{ color: 'rgba(255,255,255,0.1)' }} />
+                      <div className="absolute inset-0 overflow-hidden" style={{ backgroundColor: 'rgba(255,255,255,0.02)' }}>
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <Code className="w-8 h-8" style={{ color: 'rgba(255,255,255,0.1)' }} />
+                        </div>
+                        {thumbLoading && (
+                          <div className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/[0.04] to-transparent" />
+                        )}
                       </div>
                     )}
 
@@ -247,14 +295,25 @@ export default function ScriptsClient({ initialScripts, lastUpdated }: ScriptsCl
                         {copiedId === script.id ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
                       </button>
                     )}
-                  </div>
+                  </motion.div>
                 );
               })}
+              </AnimatePresence>
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-32 gap-4">
               <Search className="w-8 h-8" style={{ color: 'rgba(255,255,255,0.1)' }} />
-              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No scripts found</p>
+              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+                {searchQuery ? `No scripts match "${searchQuery}"` : 'No scripts found'}
+              </p>
+              {(searchQuery || filter !== 'all') && (
+                <button
+                  onClick={() => { setSearchQuery(''); setFilter('all'); }}
+                  className="text-xs font-medium accent-text hover:underline"
+                >
+                  Clear search & filters
+                </button>
+              )}
             </div>
           )}
         </div>

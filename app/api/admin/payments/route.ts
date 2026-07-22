@@ -1,19 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { TicketDatabase } from '@/lib/server/db';
+import { verifyAdminSession } from '@/lib/server/adminSession';
 
 async function isAdmin(req: NextRequest) {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) return false;
-    
+
     const token = authHeader.replace('Bearer ', '');
-    
-    try {
-        const decoded = Buffer.from(token, 'base64').toString('ascii');
-        const db = new TicketDatabase();
-        return await db.validateAdminPassword(decoded);
-    } catch {
-        return false;
-    }
+    return verifyAdminSession(token);
 }
 
 export async function GET(req: NextRequest) {

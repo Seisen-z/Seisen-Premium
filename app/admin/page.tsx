@@ -5,10 +5,13 @@ import {
   Shield, CreditCard, Settings, LogOut, Search, Copy, Check,
   Loader2, AlertCircle, MessageSquare, Eye, FileCode, Plus,
   Save, Trash2, X, TrendingUp, Users, DollarSign, Zap,
-  ChevronRight, ChevronLeft, MoreHorizontal, Package, ShieldCheck
+  ChevronRight, ChevronLeft, MoreHorizontal, Package, ShieldCheck,
+  LayoutDashboard
 } from 'lucide-react';
 import { getApiUrl, copyToClipboard } from '@/lib/utils';
 import Link from 'next/link';
+import InsightsOverview from '@/components/admin/InsightsOverview';
+import { motion } from 'framer-motion';
 
 interface Payment {
   transaction_id: string;
@@ -99,7 +102,7 @@ export default function AdminPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const [activeTab, setActiveTab] = useState<'payments' | 'tickets' | 'scripts' | 'settings'>('payments');
+  const [activeTab, setActiveTab] = useState<'overview' | 'payments' | 'tickets' | 'scripts' | 'settings'>('overview');
   const [payments, setPayments] = useState<Payment[]>([]);
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [stats, setStats] = useState<Stats>({ totalPurchases: 0, paypalPurchases: 0, robloxPurchases: 0, paypalRevenue: 0, robloxRevenue: 0 });
@@ -260,15 +263,25 @@ export default function AdminPage() {
   const deletePayment = async (id: string) => {
     if (!confirm('Delete this payment?')) return;
     const token = localStorage.getItem('adminToken');
-    await fetch('/api/admin/payments', { method: 'DELETE', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ transactionId: id }) });
-    setPayments(prev => prev.filter(p => p.transaction_id !== id));
+    try {
+      const res = await fetch('/api/admin/payments', { method: 'DELETE', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ transactionId: id }) });
+      if (!res.ok) throw new Error('Failed to delete payment');
+      setPayments(prev => prev.filter(p => p.transaction_id !== id));
+    } catch {
+      alert('Failed to delete payment — please try again.');
+    }
   };
 
   const deleteTicket = async (num: string) => {
     if (!confirm('Delete this ticket?')) return;
     const token = localStorage.getItem('adminToken');
-    await fetch('/api/admin/tickets', { method: 'DELETE', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ ticketNumber: num }) });
-    setTickets(prev => prev.filter(t => t.ticket_number !== num));
+    try {
+      const res = await fetch('/api/admin/tickets', { method: 'DELETE', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ ticketNumber: num }) });
+      if (!res.ok) throw new Error('Failed to delete ticket');
+      setTickets(prev => prev.filter(t => t.ticket_number !== num));
+    } catch {
+      alert('Failed to delete ticket — please try again.');
+    }
   };
 
   const handleComposeSubmit = async (e: React.FormEvent) => {
@@ -287,7 +300,14 @@ export default function AdminPage() {
     try {
       setSaving(name);
       const data = metadata[name]; if (!data) return;
-      const saved = await (await fetch('/api/admin/script-metadata', { method: data.id ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })).json();
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch('/api/admin/script-metadata', {
+        method: data.id ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error('Failed to save');
+      const saved = await res.json();
       setMetadata(prev => ({ ...prev, [name]: saved })); alert('Saved!');
     } catch { alert('Failed'); }
     finally { setSaving(null); }
@@ -296,8 +316,17 @@ export default function AdminPage() {
   const deleteMetadata = async (name: string) => {
     if (!confirm(`Delete metadata for ${name}?`)) return;
     const data = metadata[name]; if (!data?.id) return;
-    await fetch(`/api/admin/script-metadata?id=${data.id}`, { method: 'DELETE' });
-    setMetadata(prev => { const n = { ...prev }; delete n[name]; return n; });
+    const token = localStorage.getItem('adminToken');
+    try {
+      const res = await fetch(`/api/admin/script-metadata?id=${data.id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error('Failed to delete');
+      setMetadata(prev => { const n = { ...prev }; delete n[name]; return n; });
+    } catch {
+      alert('Failed to delete metadata — please try again.');
+    }
   };
 
   const updateMetadata = (name: string, field: string, value: any) =>
@@ -380,6 +409,7 @@ export default function AdminPage() {
   }
 
   const navItems = [
+    { id: 'overview', label: 'Overview',  icon: LayoutDashboard, count: undefined },
     { id: 'payments', label: 'Payments',  icon: CreditCard,  count: payments.length },
     { id: 'tickets',  label: 'Tickets',   icon: MessageSquare, count: tickets.filter(t => t.status === 'open').length || undefined },
     { id: 'scripts',  label: 'Scripts',   icon: FileCode,    count: undefined },
@@ -413,16 +443,21 @@ export default function AdminPage() {
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id as typeof activeTab)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                  active
-                    ? 'bg-white/[0.08] text-white shadow-sm'
-                    : 'text-[#555] hover:text-[#999] hover:bg-white/[0.04]'
+                className={`relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                  active ? 'text-white' : 'text-[#555] hover:text-[#999] hover:bg-white/[0.04]'
                 }`}
               >
-                <Icon className={`w-4 h-4 ${active ? 'text-[var(--accent)]' : ''}`} />
-                <span className="flex-1 text-left">{item.label}</span>
+                {active && (
+                  <motion.span
+                    layoutId="admin-nav-pill"
+                    className="absolute inset-0 rounded-xl bg-white/[0.08] shadow-sm"
+                    transition={{ type: 'spring', stiffness: 400, damping: 32 }}
+                  />
+                )}
+                <Icon className={`relative z-10 w-4 h-4 ${active ? 'text-[var(--accent)]' : ''}`} />
+                <span className="relative z-10 flex-1 text-left">{item.label}</span>
                 {item.count !== undefined && item.count > 0 && (
-                  <span className={`text-xs px-1.5 py-0.5 rounded-md font-medium ${active ? 'bg-[var(--accent)]/20 text-[var(--accent)]' : 'bg-white/[0.06] text-[#666]'}`}>
+                  <span className={`relative z-10 text-xs px-1.5 py-0.5 rounded-md font-medium ${active ? 'bg-[var(--accent)]/20 text-[var(--accent)]' : 'bg-white/[0.06] text-[#666]'}`}>
                     {item.count}
                   </span>
                 )}
@@ -450,6 +485,7 @@ export default function AdminPage() {
           <div>
             <h1 className="text-lg font-bold text-white capitalize">{activeTab}</h1>
             <p className="text-xs text-[#555] mt-0.5">
+              {activeTab === 'overview' && 'Revenue, orders, and trends at a glance'}
               {activeTab === 'payments' && `${payments.length} total transactions`}
               {activeTab === 'tickets'  && `${tickets.length} total tickets`}
               {activeTab === 'scripts'  && `${scripts.length} scripts`}
@@ -475,7 +511,10 @@ export default function AdminPage() {
           )}
         </div>
 
-        <div className="p-8 space-y-6">
+        <div key={activeTab} className="p-8 space-y-6 animate-fade-in">
+
+          {/* ── Overview ──────────────────────────────────────────────── */}
+          {activeTab === 'overview' && <InsightsOverview payments={payments} />}
 
           {/* ── Payments ──────────────────────────────────────────────── */}
           {activeTab === 'payments' && (
