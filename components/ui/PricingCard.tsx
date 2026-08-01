@@ -1,14 +1,14 @@
 import { Check } from 'lucide-react';
-import { Card } from './Card';
-import Button from './Button';
 
 interface PricingCardProps {
   title: string;
-  badge: string;
+  description?: string;
+  badge?: string;
   price: string | number;
   originalPrice?: string | number;
   currency?: string;
   period?: string;
+  billingNote?: string;
   features: string[];
   featured?: boolean;
   featuredLabel?: string;
@@ -17,6 +17,8 @@ interface PricingCardProps {
   onButtonClick?: () => void;
   badgeVariant?: 'default' | 'best-value';
   priceIcon?: React.ReactNode;
+  cardIcon?: React.ReactNode;
+  cardColor?: string;
   stockStatusText?: string;
   stockStatusVariant?: 'in-stock' | 'low-stock' | 'out-of-stock';
   isOutOfStock?: boolean;
@@ -25,10 +27,12 @@ interface PricingCardProps {
 
 export default function PricingCard({
   title,
+  description,
   badge,
   price,
   currency = '€',
   period,
+  billingNote,
   features,
   featured = false,
   featuredLabel = 'Most Popular',
@@ -37,101 +41,162 @@ export default function PricingCard({
   onButtonClick,
   badgeVariant = 'default',
   priceIcon,
+  cardIcon,
+  cardColor = '#4ade80',
   originalPrice,
   stockStatusText,
   stockStatusVariant = 'in-stock',
   isOutOfStock = false,
   className = '',
 }: PricingCardProps) {
-  const stockStatusStyles =
-    stockStatusVariant === 'out-of-stock'
-      ? 'bg-red-500/15 text-red-300 border-red-500/30'
-      : stockStatusVariant === 'low-stock'
-        ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
-        : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30';
+  const stockBg     = stockStatusVariant === 'out-of-stock' ? 'rgba(239,68,68,0.08)' : stockStatusVariant === 'low-stock' ? 'rgba(245,158,11,0.08)' : 'rgba(74,222,128,0.08)';
+  const stockColor  = stockStatusVariant === 'out-of-stock' ? '#f87171' : stockStatusVariant === 'low-stock' ? '#fbbf24' : '#4ade80';
+  const stockBorder = stockStatusVariant === 'out-of-stock' ? 'rgba(239,68,68,0.2)' : stockStatusVariant === 'low-stock' ? 'rgba(245,158,11,0.2)' : 'rgba(74,222,128,0.2)';
+
+  const r = parseInt(cardColor.slice(1, 3), 16);
+  const g = parseInt(cardColor.slice(3, 5), 16);
+  const b = parseInt(cardColor.slice(5, 7), 16);
 
   return (
-    <Card
-      variant={featured ? 'featured' : 'hover'}
-      className={`relative p-6 flex flex-col h-full ${className}`}
+    <div
+      className={`relative flex flex-col h-full rounded-2xl overflow-hidden ${className}`}
+      style={featured ? {
+        background: `linear-gradient(160deg, rgba(${r},${g},${b},0.07) 0%, #090909 60%)`,
+        border: `1.5px solid rgba(${r},${g},${b},0.4)`,
+        boxShadow: `0 0 50px rgba(${r},${g},${b},0.12), 0 0 0 1px rgba(${r},${g},${b},0.08) inset`,
+      } : {
+        background: '#0f0f0f',
+        border: '1px solid rgba(255,255,255,0.07)',
+      }}
     >
-      {/* Featured Badge */}
+      {/* Most Popular badge */}
       {featured && (
-        <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-xs font-medium flex items-center gap-1.5" style={{ background: 'linear-gradient(to right, var(--accent), var(--accent-hover))', color: 'var(--text-primary)' }}>
-          <span style={{ color: '#fbbf24' }}>★</span>
-          {featuredLabel}
+        <div className="flex justify-center pt-3">
+          <span
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold"
+            style={{ backgroundColor: `rgba(${r},${g},${b},0.15)`, color: cardColor, border: `1px solid rgba(${r},${g},${b},0.3)` }}
+          >
+            <svg className="w-3 h-3" viewBox="0 0 12 12" fill="currentColor">
+              <path d="M6 0l1.5 4.5H12L8.25 7.25 9.75 12 6 9.25 2.25 12l1.5-4.75L0 4.5h4.5z" />
+            </svg>
+            {featuredLabel}
+          </span>
         </div>
       )}
 
-      {/* Header */}
-      <div className="text-center mb-6">
-        <h3 className="text-xl font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>{title}</h3>
-        <span
-          className="inline-block px-3 py-1 rounded-full text-xs font-medium"
-          style={badgeVariant === 'best-value'
-            ? { backgroundColor: 'rgba(234, 179, 8, 0.2)', color: '#facc15', border: '1px solid rgba(234, 179, 8, 0.3)' }
-            : { backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-muted)', border: '1px solid var(--border)' }
-          }
-        >
-          {badge}
-        </span>
-      </div>
-
-      {/* Price */}
-      <div className="text-center mb-6">
-        <div className="flex items-center justify-center gap-3">
-           {originalPrice && (
-            <div className="relative font-medium text-xl flex items-center gap-1" style={{ color: 'var(--text-muted)' }}>
-               {priceIcon ? (
-                  <span className="opacity-70 grayscale flex items-center">{priceIcon}</span> 
-                ) : (
-                  <span>{currency}</span>
-                )}
-               <span>{originalPrice}</span>
-               {/* Red Strikethrough Line */}
-               <div className="absolute top-1/2 left-0 w-full h-[2px] bg-red-500 -rotate-3 transform origin-center"></div>
+      <div className={`flex flex-col flex-1 p-6 ${featured ? 'pt-4' : 'pt-6'}`}>
+        {/* Card icon + plan name */}
+        <div className="flex items-start gap-3 mb-4">
+          {cardIcon && (
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{ backgroundColor: `rgba(${r},${g},${b},0.15)`, border: `1px solid rgba(${r},${g},${b},0.25)` }}
+            >
+              <span style={{ color: cardColor }}>{cardIcon}</span>
             </div>
-           )}
-
-          <div className="flex items-center gap-1">
-            {priceIcon ? (
-              <span className="flex items-center">{priceIcon}</span>
-            ) : (
-              <span className="text-2xl font-medium" style={{ color: 'var(--text-muted)' }}>{currency}</span>
+          )}
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <h3 className="text-lg font-bold text-white">{title}</h3>
+              {badge && (
+                <span
+                  className="text-[10px] font-mono uppercase tracking-wide px-2 py-0.5 rounded-full"
+                  style={
+                    badgeVariant === 'best-value'
+                      ? { backgroundColor: 'rgba(234,179,8,0.15)', color: '#facc15', border: '1px solid rgba(234,179,8,0.25)' }
+                      : { backgroundColor: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.4)' }
+                  }
+                >
+                  {badge}
+                </span>
+              )}
+            </div>
+            {description && (
+              <p className="text-xs mt-0.5" style={{ color: `rgba(${r},${g},${b},0.75)` }}>{description}</p>
             )}
-            <span className="text-5xl font-bold" style={{ color: 'var(--text-primary)' }}>{price}</span>
           </div>
         </div>
-        {period && <span className="text-sm block mt-1" style={{ color: 'var(--text-muted)' }}>{period}</span>}
-      </div>
 
-      {/* Features */}
-      <ul className="space-y-3 mb-8 flex-1">
-        {features.map((feature, index) => (
-          <li key={index} className="flex items-center gap-3 text-sm" style={{ color: 'var(--text-muted)' }}>
-            <Check className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--accent)' }} />
-            {feature}
-          </li>
-        ))}
-      </ul>
-
-      {stockStatusText && (
-        <div className={`mb-4 text-xs font-medium border rounded-lg px-3 py-2 text-center ${stockStatusStyles}`}>
-          {stockStatusText}
+        {/* Price */}
+        <div className="mb-5">
+          <div className="flex items-end gap-2">
+            {originalPrice && (
+              <div className="relative text-base font-medium mb-1 flex items-center gap-0.5" style={{ color: 'rgba(255,255,255,0.25)' }}>
+                {priceIcon ? <span className="opacity-50 grayscale">{priceIcon}</span> : <span>{currency}</span>}
+                <span>{originalPrice}</span>
+                <div className="absolute inset-y-[45%] left-0 w-full h-px bg-red-500/60 -rotate-6" />
+              </div>
+            )}
+            <div className="flex items-start gap-0.5">
+              {priceIcon ? (
+                <span className="mt-1.5">{priceIcon}</span>
+              ) : (
+                <span className="text-xl font-medium mt-1.5" style={{ color: 'rgba(255,255,255,0.5)' }}>{currency}</span>
+              )}
+              <span className="font-black text-white" style={{ fontSize: '3.25rem', letterSpacing: '-0.04em', lineHeight: 1 }}>{price}</span>
+              {period && (
+                <span className="text-sm mt-auto mb-1.5 ml-0.5" style={{ color: 'rgba(255,255,255,0.35)' }}>{period}</span>
+              )}
+            </div>
+          </div>
+          {billingNote && (
+            <p className="text-xs mt-1" style={{ color: 'rgba(255,255,255,0.25)' }}>{billingNote}</p>
+          )}
         </div>
-      )}
 
-      {/* Button */}
-      <Button
-        variant={featured ? 'primary' : 'secondary'}
-        size="lg"
-        className="w-full"
-        onClick={onButtonClick}
-        disabled={isOutOfStock}
-      >
-        {buttonIcon}
-        {buttonText}
-      </Button>
-    </Card>
+        {/* Divider */}
+        <div className="h-px mb-5" style={{ backgroundColor: 'rgba(255,255,255,0.06)' }} />
+
+        {/* Features */}
+        <ul className="space-y-3 mb-6 flex-1">
+          {features.map((feature, i) => (
+            <li key={i} className="flex items-center gap-2.5">
+              <div
+                className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
+                style={{ backgroundColor: `rgba(${r},${g},${b},0.18)` }}
+              >
+                <Check className="w-3 h-3" style={{ color: cardColor }} />
+              </div>
+              <span className="text-sm" style={{ color: 'rgba(255,255,255,0.65)' }}>{feature}</span>
+            </li>
+          ))}
+        </ul>
+
+        {/* Stock */}
+        {stockStatusText && (
+          <div
+            className="mb-4 text-xs font-medium rounded-lg px-3 py-2 text-center"
+            style={{ backgroundColor: stockBg, color: stockColor, border: `1px solid ${stockBorder}` }}
+          >
+            {stockStatusText}
+          </div>
+        )}
+
+        {/* CTA */}
+        {featured ? (
+          <button
+            onClick={onButtonClick}
+            disabled={isOutOfStock}
+            className="w-full py-3.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{ backgroundColor: cardColor, color: '#000', boxShadow: `0 0 24px rgba(${r},${g},${b},0.3)` }}
+            onMouseEnter={e => { if (!isOutOfStock) (e.currentTarget as HTMLElement).style.filter = 'brightness(0.88)'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.filter = 'none'; }}
+          >
+            {buttonIcon}{buttonText}
+          </button>
+        ) : (
+          <button
+            onClick={onButtonClick}
+            disabled={isOutOfStock}
+            className="w-full py-3.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{ backgroundColor: `rgba(${r},${g},${b},0.1)`, color: cardColor, border: `1px solid rgba(${r},${g},${b},0.25)` }}
+            onMouseEnter={e => { if (!isOutOfStock) { (e.currentTarget as HTMLElement).style.backgroundColor = `rgba(${r},${g},${b},0.18)`; } }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = `rgba(${r},${g},${b},0.1)`; }}
+          >
+            {buttonIcon}{buttonText}
+          </button>
+        )}
+      </div>
+    </div>
   );
 }

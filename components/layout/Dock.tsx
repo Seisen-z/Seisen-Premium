@@ -147,7 +147,7 @@ export default function Dock() {
         </div>
 
         {/* ── Right: Social + Client (desktop) ── */}
-        <div className="hidden md:flex items-center gap-3 ml-auto shrink-0">
+        <div className="hidden md:flex items-center gap-3 ml-auto shrink-0" suppressHydrationWarning>
           {/* Discord */}
           <a
             href="https://discord.gg/F4sAf6z8Ph"
@@ -163,7 +163,7 @@ export default function Dock() {
           </a>
 
           {/* Divider */}
-          <div className="w-px h-4" style={{ backgroundColor: 'rgba(255,255,255,0.1)' }} />
+          <div className="w-px h-4" style={{ backgroundColor: 'rgba(255,255,255,0.1)' }} suppressHydrationWarning />
 
           {/* Client area */}
           <Link
@@ -197,14 +197,14 @@ export default function Dock() {
       </nav>
 
       {/* ── Left Social Bar (desktop) ───────────────────────── */}
-      <div className="hidden md:flex fixed left-5 top-1/2 -translate-y-1/2 z-[1500] flex-col items-center gap-4">
+      <div className="hidden md:flex fixed left-5 top-1/2 -translate-y-1/2 z-[1500] flex-col items-center gap-4" suppressHydrationWarning>
         <span
           className="font-mono text-[9px] uppercase tracking-[0.25em] select-none"
           style={{ color: 'rgba(255,255,255,0.2)', writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
         >
           Community
         </span>
-        <div className="w-px h-8" style={{ backgroundColor: 'rgba(255,255,255,0.1)' }} />
+        <div className="w-px h-8" style={{ backgroundColor: 'rgba(255,255,255,0.1)' }} suppressHydrationWarning />
         {socialLinks.map(link => <SocialLink key={link.label} {...link} />)}
       </div>
 

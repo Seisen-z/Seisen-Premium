@@ -35,11 +35,11 @@ export default function Footer() {
 
   return (
     <footer style={{ backgroundColor: 'var(--bg-primary)' }}>
-      <div className="max-w-6xl mx-auto px-6 md:px-10 py-10">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 lg:gap-12">
+      <div className="max-w-6xl mx-auto px-6 md:px-10 py-10" suppressHydrationWarning>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 lg:gap-12" suppressHydrationWarning>
 
           {/* Brand */}
-          <div className="col-span-2 md:col-span-1">
+          <div className="col-span-2 md:col-span-1" suppressHydrationWarning>
             <Link href="/" className="inline-flex items-center gap-2 mb-4">
               <Logo className="w-4 h-4" style={{ color: 'var(--accent)' }} />
               <span className="font-mono font-bold text-xs uppercase tracking-widest text-white">Seisen</span>
@@ -50,7 +50,7 @@ export default function Footer() {
           </div>
 
           {/* Products */}
-          <div>
+          <div suppressHydrationWarning>
             <h4 className="font-mono text-[10px] uppercase tracking-widest mb-4" style={{ color: 'var(--text-muted)' }}>
               Products
             </h4>
@@ -70,7 +70,7 @@ export default function Footer() {
           </div>
 
           {/* Community */}
-          <div>
+          <div suppressHydrationWarning>
             <h4 className="font-mono text-[10px] uppercase tracking-widest mb-4" style={{ color: 'var(--text-muted)' }}>
               Community
             </h4>
@@ -92,7 +92,7 @@ export default function Footer() {
           </div>
 
           {/* Legal */}
-          <div>
+          <div suppressHydrationWarning>
             <h4 className="font-mono text-[10px] uppercase tracking-widest mb-4" style={{ color: 'var(--text-muted)' }}>
               Legal
             </h4>
@@ -115,6 +115,7 @@ export default function Footer() {
         {/* Bottom bar */}
         <div
           className="mt-10 pt-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2"
+          suppressHydrationWarning
         >
           <span className="font-mono text-[10px] uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
             © 2026 Seisen — All rights reserved

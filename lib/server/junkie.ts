@@ -6,6 +6,7 @@ interface JunkieConfig {
   webhookUrlMonthly?: string;
   webhookUrlLifetime?: string;
   hmacSecret?: string;
+  hmacHeader?: string;
   provider?: string;
   defaultService?: string;
 }
@@ -21,6 +22,7 @@ export interface JunkieResponse {
 export class JunkieKeySystem {
   private webhookUrls: Record<string, string | undefined>;
   private hmacSecret?: string;
+  private hmacHeader: string;
   private provider: string;
   private defaultService: string;
 
@@ -31,6 +33,7 @@ export class JunkieKeySystem {
       lifetime: config.webhookUrlLifetime || config.webhookUrl
     };
     this.hmacSecret = config.hmacSecret ? config.hmacSecret.trim() : undefined;
+    this.hmacHeader = config.hmacHeader || 'X-Webhook-Signature';
     this.provider = config.provider || 'seisenhub';
     this.defaultService = config.defaultService || 'Premium Key';
   }
@@ -143,7 +146,7 @@ export class JunkieKeySystem {
       const headers: Record<string, string> = {};
 
       if (this.hmacSecret) {
-        headers['X-Webhook-Signature'] = this.generateHMAC(payload) ?? '';
+        headers[this.hmacHeader] = this.generateHMAC(payload) ?? '';
       }
 
       const webhookUrl = this.webhookUrls[tier] || this.webhookUrls.weekly;
