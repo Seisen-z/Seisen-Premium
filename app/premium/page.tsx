@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, Suspense } from 'react';
-import { Clock, Zap, Infinity, Key, Shield, Unlock, Monitor, Globe, Loader2 } from 'lucide-react';
+import { Clock, Zap, Infinity, Key, Shield, Unlock, Monitor, Globe, Ban, RefreshCw } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import PremiumSkeleton from '@/components/ui/PremiumSkeleton';
 import PricingCard from '@/components/ui/PricingCard';
@@ -253,24 +253,20 @@ function PremiumContent() {
 
         {/* ── Hero ── */}
         <section>
-          <div className="flex flex-wrap items-end justify-between gap-4 mb-3">
-            <h1
-              className="font-black leading-none"
-              style={{ fontSize: 'clamp(2.8rem, 7vw, 5rem)', letterSpacing: '-0.04em', color: '#fff' }}
-            >
-              Stop wasting time{' '}
-              <span style={{ color: 'var(--accent)' }}>on key systems.</span>
-            </h1>
-            <PurchaseCounter />
-          </div>
-          <p className="text-sm mb-5" style={{ color: 'var(--text-muted)' }}>
+          <h1
+            className="font-black leading-tight mb-2"
+            style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.75rem)', letterSpacing: '-0.03em', color: '#fff' }}
+          >
+            Stop wasting time{' '}
+            <span style={{ color: 'var(--accent)' }}>on key systems.</span>
+          </h1>
+          <p className="text-sm mb-5" style={{ color: 'var(--text-muted)', maxWidth: '38rem' }}>
             One purchase. Every script. No keys, no waiting — just instant access.
           </p>
 
           {/* ── Social proof strip ── */}
-          <div className="flex flex-wrap items-center gap-4">
-            {/* Live buyers badge */}
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium" style={{ backgroundColor: 'rgba(74,222,128,0.08)', border: '1px solid rgba(74,222,128,0.2)', color: '#4ade80' }}>
+          <div className="flex flex-wrap items-center gap-4 mb-3">
+            <div className="flex items-center gap-2 text-xs font-medium" style={{ color: '#4ade80' }}>
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ backgroundColor: '#4ade80' }} />
                 <span className="relative inline-flex h-2 w-2 rounded-full" style={{ backgroundColor: '#4ade80' }} />
@@ -278,11 +274,10 @@ function PremiumContent() {
               247 users active right now
             </div>
 
-            {/* Star rating */}
-            <div className="flex items-center gap-1.5 text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>
+            <div className="flex items-center gap-1.5 text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
               <div className="flex gap-0.5">
                 {[...Array(5)].map((_, i) => (
-                  <svg key={i} className="w-3.5 h-3.5" viewBox="0 0 12 12" fill="#facc15">
+                  <svg key={i} className="w-3 h-3" viewBox="0 0 12 12" fill="#facc15">
                     <path d="M6 0l1.5 4.5H12L8.25 7.25 9.75 12 6 9.25 2.25 12l1.5-4.75L0 4.5h4.5z" />
                   </svg>
                 ))}
@@ -290,14 +285,11 @@ function PremiumContent() {
               <span>4.9 / 5 from 300+ members</span>
             </div>
 
-            {/* Guarantee */}
-            <div className="flex items-center gap-1.5 text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>
-              <svg className="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-              </svg>
-              Instant key delivery · Discord verified
-            </div>
+            <span className="text-xs" style={{ color: 'rgba(255,255,255,0.25)' }}>
+              Instant delivery · Discord verified
+            </span>
           </div>
+          <PurchaseCounter />
         </section>
 
         {/* ── Mega Key ── (shown first to tempt large-scale farmers) */}
@@ -327,15 +319,15 @@ function PremiumContent() {
           {/* Value proposition strip */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
             {[
-              { icon: '🚫', title: 'No Key System',      desc: 'Skip the wait — scripts run instantly' },
-              { icon: '⚡', title: 'Instant Delivery',   desc: 'Your key is ready the moment you pay' },
-              { icon: '🔄', title: 'Always Updated',     desc: 'New scripts added regularly, free' },
-              { icon: '🛡️', title: 'Priority Support',   desc: 'Jump the queue in Discord tickets' },
+              { Icon: Ban,       title: 'No Key System',    desc: 'Scripts run instantly, no key needed' },
+              { Icon: Zap,       title: 'Instant Delivery', desc: 'Your key is ready the moment you pay' },
+              { Icon: RefreshCw, title: 'Always Updated',   desc: 'New scripts added regularly, free' },
+              { Icon: Shield,    title: 'Priority Support', desc: 'Jump the queue in Discord tickets' },
             ].map(v => (
               <div key={v.title} className="rounded-xl p-4" style={{ backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                <span className="text-xl block mb-2">{v.icon}</span>
+                <v.Icon className="w-4 h-4 mb-3" style={{ color: 'rgba(255,255,255,0.3)' }} />
                 <p className="text-white text-xs font-semibold mb-1">{v.title}</p>
-                <p className="text-[11px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.35)' }}>{v.desc}</p>
+                <p className="text-[11px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.3)' }}>{v.desc}</p>
               </div>
             ))}
           </div>
@@ -368,17 +360,12 @@ function PremiumContent() {
           </div>
 
           {/* Trust badges */}
-          <div className="flex flex-wrap items-center justify-center gap-6 mt-8">
-            {[
-              { label: 'Instant Delivery', icon: '⚡' },
-              { label: 'No Key System',    icon: '🔓' },
-              { label: 'All Scripts',      icon: '📜' },
-              { label: 'Priority Support', icon: '🛡️' },
-            ].map(b => (
-              <div key={b.label} className="flex items-center gap-1.5 text-xs" style={{ color: 'rgba(255,255,255,0.3)' }}>
-                <span>{b.icon}</span>
-                <span>{b.label}</span>
-              </div>
+          <div className="flex flex-wrap items-center gap-5 mt-8">
+            {['Instant Delivery', 'No Key System', 'All Scripts Included', 'Priority Support'].map((label, i) => (
+              <span key={label} className="flex items-center gap-1.5 text-xs" style={{ color: 'rgba(255,255,255,0.25)' }}>
+                {i > 0 && <span className="text-[8px]" style={{ color: 'rgba(255,255,255,0.1)' }}>·</span>}
+                {label}
+              </span>
             ))}
           </div>
         </section>
