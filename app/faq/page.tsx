@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Plus } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
+import Reveal from '@/components/ui/Reveal';
 
 const faqItems = [
   {
@@ -90,6 +91,7 @@ export default function FAQPage() {
     <div className="min-h-screen px-6 md:px-14 pt-16 pb-28 max-w-6xl mx-auto">
 
       {/* ── Header ── */}
+      <Reveal>
       <div className="mb-20">
         <h1
           className="font-bold text-white leading-none mb-5"
@@ -114,11 +116,13 @@ export default function FAQPage() {
           </a>
         </div>
       </div>
+      </Reveal>
 
       {/* ── Categories ── */}
       <div className="space-y-16">
         {faqItems.map((cat, ci) => (
-          <div key={cat.category}>
+          <Reveal key={cat.category} delay={ci * 0.05}>
+          <div>
 
             {/* Category label row */}
             <div className="flex items-center gap-4 mb-6">
@@ -191,10 +195,12 @@ export default function FAQPage() {
               })}
             </div>
           </div>
+          </Reveal>
         ))}
       </div>
 
       {/* ── Footer line ── */}
+      <Reveal>
       <div className="mt-20 pt-8 flex items-center justify-between flex-wrap gap-4" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
         <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Still stuck?</p>
         <a
@@ -212,6 +218,7 @@ export default function FAQPage() {
           Join Discord
         </a>
       </div>
+      </Reveal>
     </div>
   );
 }

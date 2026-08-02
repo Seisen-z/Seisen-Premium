@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import Reveal from '@/components/ui/Reveal';
 
 type TabType = 'terms' | 'privacy' | 'refund';
 
@@ -30,6 +31,7 @@ export default function LegalPage() {
     <div className="min-h-screen px-6 md:px-14 pt-16 pb-28 max-w-6xl mx-auto">
 
       {/* ── Header ── */}
+      <Reveal>
       <div className="mb-14">
         <h1
           className="font-bold text-white leading-none mb-5"
@@ -41,8 +43,10 @@ export default function LegalPage() {
           Terms of service, privacy policy, and refund policy — last updated January 18, 2026
         </p>
       </div>
+      </Reveal>
 
       {/* ── Tabs ── */}
+      <Reveal delay={0.06}>
       <div
         className="flex items-center flex-wrap gap-x-8 gap-y-3 mb-14"
         style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}
@@ -74,6 +78,7 @@ export default function LegalPage() {
           );
         })}
       </div>
+      </Reveal>
 
       {/* ── Content ── */}
       <div key={activeTab} className="animate-fade-in">
@@ -83,6 +88,7 @@ export default function LegalPage() {
       </div>
 
       {/* ── Footer line ── */}
+      <Reveal>
       <div
         className="mt-20 pt-8 flex items-center justify-between flex-wrap gap-4"
         style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
@@ -105,6 +111,7 @@ export default function LegalPage() {
           Join Discord
         </a>
       </div>
+      </Reveal>
     </div>
   );
 }
