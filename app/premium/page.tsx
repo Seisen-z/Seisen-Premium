@@ -1,74 +1,56 @@
 'use client';
 
 import { useState, Suspense } from 'react';
-import { Clock, Zap, Infinity, Key, Shield, Unlock, Monitor, Globe, Ban, RefreshCw } from 'lucide-react';
+import { Clock, Zap, Infinity, Key, Shield, Unlock, Monitor, Globe, ArrowRight, Check } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import PremiumSkeleton from '@/components/ui/PremiumSkeleton';
 import PricingCard from '@/components/ui/PricingCard';
 import CommunityVoices from '@/components/sections/CommunityVoices';
-import PurchaseCounter from '@/components/ui/PurchaseCounter';
+import Reveal from '@/components/ui/Reveal';
 
-// ─── Plan data (display prices = PayPal/EUR) ──────────────────────────────────
-// Order: weekly (left) | lifetime (center, featured) | monthly (right)
 const plans = [
   {
     plan: 'weekly',
     title: 'Weekly',
-    badge: '7 Days',
     price: 3,
     currency: '€',
     period: '/week',
     billingNote: 'Billed once per week',
-    description: 'Try it risk-free for a week.',
+    featured: false,
     cardColor: '#60a5fa',
     features: ['All premium scripts', 'No key system', 'Priority support', 'Early access'],
   },
   {
     plan: 'lifetime',
     title: 'Lifetime',
-    badge: '28% OFF',
-    badgeVariant: 'best-value' as const,
     price: 10,
     originalPrice: 14,
     currency: '€',
     period: '',
     billingNote: 'One-time payment',
-    description: 'Pay once. Access forever.',
-    cardColor: '#4ade80',
     featured: true,
-    features: [
-      'All premium scripts',
-      'No key system',
-      'Priority support',
-      'Early access',
-      'Exclusive updates',
-      'Lifetime access',
-    ],
+    badge: '28% OFF',
+    badgeVariant: 'best-value' as const,
+    cardColor: '#4ade80',
+    features: ['All premium scripts', 'No key system', 'Priority support', 'Early access', 'Exclusive updates', 'Lifetime access'],
   },
   {
     plan: 'monthly',
     title: 'Monthly',
-    badge: '30 Days',
     price: 6,
     currency: '€',
     period: '/month',
     billingNote: 'Billed once per month',
-    description: 'Best for regular script users.',
+    featured: false,
     cardColor: '#a78bfa',
-    features: [
-      'All premium scripts',
-      'No key system',
-      'Priority support',
-      'Early access',
-      'Exclusive updates',
-    ],
+    features: ['All premium scripts', 'No key system', 'Priority support', 'Early access', 'Exclusive updates'],
   },
 ];
 
 const faqs = [
   {
     question: 'How do I get premium?',
-    answer: "Choose your plan, complete the payment, and your key is delivered instantly.",
+    answer: 'Choose your plan, complete the payment, and your key is delivered instantly.',
   },
   {
     question: "What's included?",
@@ -84,14 +66,14 @@ const faqs = [
   },
 ];
 
-// ─── Mega Key Section ─────────────────────────────────────────────────────────
+// ─── Mega Key ────────────────────────────────────────────────────────────────
 function MegaKeySection() {
   const router = useRouter();
   const [selected, setSelected] = useState<'mega_1month' | 'mega_2month'>('mega_2month');
 
   const options = [
-    { key: 'mega_2month' as const, label: '2 Months', price: 70, currency: '$', badge: 'Best Value', perMonth: '$35/mo' },
-    { key: 'mega_1month' as const, label: '1 Month',  price: 40, currency: '$', badge: null,         perMonth: '$40/mo' },
+    { key: 'mega_2month' as const, label: '2 Months', price: 70, perMonth: '$35/mo', badge: 'Best Value' },
+    { key: 'mega_1month' as const, label: '1 Month',  price: 40, perMonth: '$40/mo', badge: null },
   ];
 
   const selectedOption = options.find(o => o.key === selected)!;
@@ -106,126 +88,87 @@ function MegaKeySection() {
   ];
 
   return (
-    <div
-      className="rounded-2xl overflow-hidden relative"
-      style={{
-        background: 'linear-gradient(135deg, rgba(16,28,16,0.95) 0%, rgba(10,20,10,0.98) 100%)',
-        border: '1px solid rgba(74,222,128,0.25)',
-        boxShadow: '0 0 60px rgba(74,222,128,0.06)',
-      }}
-    >
-      <div className="h-px w-full" style={{ background: 'linear-gradient(90deg, transparent 0%, rgba(74,222,128,0.6) 50%, transparent 100%)' }} />
+    <div className="grid md:grid-cols-5 gap-12 items-start">
+      {/* Left: description + features */}
+      <div className="md:col-span-3">
+        <p className="font-mono text-[10px] uppercase tracking-[0.2em] mb-4" style={{ color: 'var(--accent)' }}>
+          Mega Key
+        </p>
+        <h2 className="font-bold text-white mb-3" style={{ fontSize: 'clamp(1.3rem, 2.5vw, 1.75rem)', letterSpacing: '-0.02em' }}>
+          100 Tabs. One Key.
+        </h2>
+        <p className="text-sm mb-6 leading-relaxed" style={{ color: 'var(--text-muted)', maxWidth: '32rem' }}>
+          Built for large-scale account farming. One key covers up to 100 simultaneous tabs — no hardware binding, no device restrictions.
+        </p>
+        <ul className="space-y-2.5 mb-6">
+          {features.map(f => {
+            const Icon = f.icon;
+            return (
+              <li key={f.text} className="flex items-center gap-3 text-sm" style={{ color: 'rgba(255,255,255,0.55)' }}>
+                <Icon className="w-3.5 h-3.5 shrink-0" style={{ color: 'rgba(255,255,255,0.25)' }} />
+                {f.text}
+              </li>
+            );
+          })}
+        </ul>
+        <p className="text-xs leading-relaxed" style={{ color: 'rgba(255,255,255,0.2)' }}>
+          Instead of 10 keys at €10 each (€100 total), one Mega Key covers the same workload at a fraction of the cost.
+        </p>
+      </div>
 
-      <div className="px-6 py-8 md:px-10 md:py-10">
-        <div className="flex flex-wrap items-start gap-3 mb-6">
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <span
-                className="text-[10px] font-mono uppercase tracking-[0.2em] px-2 py-0.5 rounded"
-                style={{ backgroundColor: 'rgba(74,222,128,0.12)', color: '#4ade80', border: '1px solid rgba(74,222,128,0.25)' }}
-              >
-                Big Account Farmer Offer
-              </span>
-            </div>
-            <h2 className="text-white font-bold" style={{ fontSize: 'clamp(1.4rem, 3vw, 2rem)', letterSpacing: '-0.03em' }}>
-              Mega Key — 100 Tabs. One Key.
-            </h2>
-            <p className="text-sm mt-1.5" style={{ color: 'rgba(255,255,255,0.45)' }}>
-              Built for large-scale account farming. No restrictions, no limits.
-            </p>
-          </div>
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-8 items-start">
-          {/* Features */}
-          <div className="space-y-2.5">
-            {features.map((f, i) => {
-              const Icon = f.icon;
-              return (
-                <div key={i} className="flex items-center gap-3">
-                  <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.18)' }}>
-                    <Icon className="w-3.5 h-3.5" style={{ color: '#4ade80' }} />
-                  </div>
-                  <span className="text-sm" style={{ color: 'rgba(255,255,255,0.65)' }}>{f.text}</span>
-                </div>
-              );
-            })}
-
-            <div className="mt-4 rounded-xl p-4" style={{ backgroundColor: 'rgba(74,222,128,0.06)', border: '1px solid rgba(74,222,128,0.15)' }}>
-              <p className="text-xs font-mono uppercase tracking-widest mb-1" style={{ color: 'rgba(74,222,128,0.6)' }}>Why Mega Key?</p>
-              <p className="text-sm leading-relaxed" style={{ color: 'rgba(255,255,255,0.55)' }}>
-                Instead of buying 10 individual keys at €10 each (€100), get one Mega Key that covers up to 100 tabs — with zero hardware binding.
-              </p>
-            </div>
-          </div>
-
-          {/* Plan selector + CTA */}
-          <div className="space-y-3">
-            {options.map(opt => (
-              <button
-                key={opt.key}
-                onClick={() => setSelected(opt.key)}
-                className="w-full rounded-xl p-4 text-left transition-all duration-150"
-                style={{
-                  backgroundColor: selected === opt.key ? 'rgba(74,222,128,0.10)' : 'rgba(255,255,255,0.03)',
-                  border: selected === opt.key ? '1.5px solid rgba(74,222,128,0.45)' : '1px solid rgba(255,255,255,0.08)',
-                }}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all"
-                      style={{
-                        borderColor: selected === opt.key ? '#4ade80' : 'rgba(255,255,255,0.2)',
-                        backgroundColor: selected === opt.key ? '#4ade80' : 'transparent',
-                      }}
-                    >
-                      {selected === opt.key && <div className="w-1.5 h-1.5 rounded-full bg-black" />}
-                    </div>
-                    <div>
-                      <p className="text-white font-semibold text-sm">{opt.label}</p>
-                      <p className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>{opt.perMonth}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-white font-bold text-xl">{opt.currency}{opt.price}</p>
-                    {opt.badge && (
-                      <span className="text-[10px] font-mono uppercase tracking-wide px-1.5 py-0.5 rounded" style={{ backgroundColor: 'rgba(74,222,128,0.15)', color: '#4ade80' }}>
-                        {opt.badge}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </button>
-            ))}
-
+      {/* Right: plan selector + CTA */}
+      <div className="md:col-span-2">
+        <div
+          className="rounded-lg overflow-hidden mb-3"
+          style={{ border: '1px solid rgba(255,255,255,0.08)' }}
+        >
+          {options.map((opt, i) => (
             <button
-              onClick={() => router.push(`/checkout?plan=${selected}`)}
-              className="w-full py-3.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2.5 transition-all duration-150"
-              style={{ backgroundColor: '#4ade80', color: '#000', boxShadow: '0 0 24px rgba(74,222,128,0.25)' }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = '#22c55e'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = '#4ade80'; }}
+              key={opt.key}
+              onClick={() => setSelected(opt.key)}
+              className="w-full flex items-center justify-between px-5 py-4 text-left transition-colors"
+              style={{
+                borderTop: i > 0 ? '1px solid rgba(255,255,255,0.06)' : 'none',
+                borderLeft: selected === opt.key ? '2px solid var(--accent)' : '2px solid transparent',
+                backgroundColor: selected === opt.key ? 'rgba(74,222,128,0.05)' : 'rgba(255,255,255,0.01)',
+              }}
             >
-              <img src="/images/paypal.png" alt="PayPal" className="w-4 h-4 object-contain" />
-              Get Mega Key — ${selectedOption.price}
+              <div>
+                <p className="text-sm font-medium text-white">{opt.label}</p>
+                <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.3)' }}>{opt.perMonth}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-lg font-bold text-white">${opt.price}</p>
+                {opt.badge && (
+                  <p className="text-[10px] font-mono" style={{ color: 'var(--accent)' }}>{opt.badge}</p>
+                )}
+              </div>
             </button>
-
-            <a
-              href="https://discord.gg/F4sAf6z8Ph"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center gap-1.5 text-xs transition-colors"
-              style={{ color: 'rgba(255,255,255,0.25)' }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(88,101,242,0.7)'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.25)'; }}
-            >
-              <svg viewBox="0 0 24 24" fill="currentColor" className="w-3 h-3">
-                <path d="M20.317 4.492c-1.53-.69-3.17-1.2-4.885-1.49a.075.075 0 0 0-.079.036c-.21.369-.444.85-.608 1.23a18.566 18.566 0 0 0-5.487 0 12.36 12.36 0 0 0-.617-1.23A.077.077 0 0 0 8.562 3c-1.714.29-3.354.8-4.885 1.491a.07.07 0 0 0-.032.027C.533 9.093-.32 13.555.099 17.961a.08.08 0 0 0 .031.055 20.03 20.03 0 0 0 5.993 2.98.078.078 0 0 0 .084-.026c.462-.62.874-1.275 1.226-1.963.021-.04.001-.088-.041-.104a13.201 13.201 0 0 1-1.872-.878.075.075 0 0 1-.008-.125c.126-.093.252-.19.372-.287a.075.075 0 0 1 .078-.01c3.927 1.764 8.18 1.764 12.061 0a.075.075 0 0 1 .079.009c.12.098.245.195.372.288a.075.075 0 0 1-.006.125c-.598.344-1.22.635-1.873.877a.075.075 0 0 0-.041.105c.36.687.772 1.341 1.225 1.962a.077.077 0 0 0 .084.028 19.963 19.963 0 0 0 6.002-2.981.076.076 0 0 0 .032-.054c.5-5.094-.838-9.52-3.549-13.442a.06.06 0 0 0-.031-.028z" />
-              </svg>
-              Or contact us on Discord instead
-            </a>
-          </div>
+          ))}
         </div>
+
+        <button
+          onClick={() => router.push(`/checkout?plan=${selected}`)}
+          className="w-full py-3 rounded-lg font-semibold text-sm flex items-center justify-center gap-2 transition-colors"
+          style={{ backgroundColor: 'var(--accent)', color: '#000' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = '#22c55e'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--accent)'; }}
+        >
+          Get Mega Key — ${selectedOption.price}
+          <ArrowRight className="w-4 h-4" />
+        </button>
+
+        <a
+          href="https://discord.gg/F4sAf6z8Ph"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block text-center text-xs mt-3 transition-colors"
+          style={{ color: 'rgba(255,255,255,0.2)' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(88,101,242,0.6)'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.2)'; }}
+        >
+          Or contact us on Discord
+        </a>
       </div>
     </div>
   );
@@ -248,142 +191,68 @@ function PremiumContent() {
   };
 
   return (
-    <div className="min-h-screen px-6 md:px-14 pt-20 pb-20 max-w-6xl mx-auto">
-      <div className="space-y-14">
+    <div className="min-h-screen px-6 md:px-14 pt-20 pb-24 max-w-6xl mx-auto">
+      <div className="space-y-16">
 
-        {/* ── Hero ── */}
-        <section>
-          <h1
-            className="font-black leading-tight mb-2"
-            style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.75rem)', letterSpacing: '-0.03em', color: '#fff' }}
-          >
-            Stop wasting time{' '}
-            <span style={{ color: 'var(--accent)' }}>on key systems.</span>
-          </h1>
-          <p className="text-sm mb-5" style={{ color: 'var(--text-muted)', maxWidth: '38rem' }}>
-            One purchase. Every script. No keys, no waiting — just instant access.
-          </p>
-
-          {/* ── Social proof strip ── */}
-          <div className="flex flex-wrap items-center gap-4 mb-3">
-            <div className="flex items-center gap-2 text-xs font-medium" style={{ color: '#4ade80' }}>
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ backgroundColor: '#4ade80' }} />
-                <span className="relative inline-flex h-2 w-2 rounded-full" style={{ backgroundColor: '#4ade80' }} />
-              </span>
-              247 users active right now
-            </div>
-
-            <div className="flex items-center gap-1.5 text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
-              <div className="flex gap-0.5">
-                {[...Array(5)].map((_, i) => (
-                  <svg key={i} className="w-3 h-3" viewBox="0 0 12 12" fill="#facc15">
-                    <path d="M6 0l1.5 4.5H12L8.25 7.25 9.75 12 6 9.25 2.25 12l1.5-4.75L0 4.5h4.5z" />
-                  </svg>
-                ))}
-              </div>
-              <span>4.9 / 5 from 300+ members</span>
-            </div>
-
-            <span className="text-xs" style={{ color: 'rgba(255,255,255,0.25)' }}>
-              Instant delivery · Discord verified
-            </span>
-          </div>
-          <PurchaseCounter />
+        {/* ── Mega Key ── */}
+        <section className="pb-12" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          <Reveal><MegaKeySection /></Reveal>
         </section>
 
-        {/* ── Mega Key ── (shown first to tempt large-scale farmers) */}
+        {/* ── Pricing ── */}
         <section>
-          <div className="flex items-center justify-between flex-wrap gap-3 mb-5">
-            <p className="font-mono text-[10px] uppercase tracking-[0.2em]" style={{ color: 'var(--text-muted)' }}>
-              Featured offer
+          <Reveal>
+            <p className="font-mono text-[10px] uppercase tracking-[0.2em] mb-6" style={{ color: 'var(--text-muted)' }}>
+              Subscriptions
             </p>
-            {/* Urgency tag */}
-            <span className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wide px-2.5 py-1 rounded-full" style={{ backgroundColor: 'rgba(245,158,11,0.1)', color: '#fbbf24', border: '1px solid rgba(245,158,11,0.2)' }}>
-              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-              </svg>
-              Limited slots available
-            </span>
-          </div>
-          <MegaKeySection />
-        </section>
+          </Reveal>
 
-        {/* ── Pricing Cards ── */}
-        {/* Layout: Weekly (left) | Lifetime (center/elevated) | Monthly (right) */}
-        <section>
-          <p className="font-mono text-[10px] uppercase tracking-[0.2em] mb-6" style={{ color: 'var(--text-muted)' }}>
-            Or choose a subscription
-          </p>
-
-          {/* Value proposition strip */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
-            {[
-              { Icon: Ban,       title: 'No Key System',    desc: 'Scripts run instantly, no key needed' },
-              { Icon: Zap,       title: 'Instant Delivery', desc: 'Your key is ready the moment you pay' },
-              { Icon: RefreshCw, title: 'Always Updated',   desc: 'New scripts added regularly, free' },
-              { Icon: Shield,    title: 'Priority Support', desc: 'Jump the queue in Discord tickets' },
-            ].map(v => (
-              <div key={v.title} className="rounded-xl p-4" style={{ backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                <v.Icon className="w-4 h-4 mb-3" style={{ color: 'rgba(255,255,255,0.3)' }} />
-                <p className="text-white text-xs font-semibold mb-1">{v.title}</p>
-                <p className="text-[11px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.3)' }}>{v.desc}</p>
-              </div>
-            ))}
-          </div>
+          {/* Weekly (left) | Lifetime (center, elevated) | Monthly (right) */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
             {plans.map((plan, i) => {
               const isCenter = i === 1; // lifetime
-
               return (
-                <div key={plan.plan} className={isCenter ? 'relative' : 'md:mt-8'}>
+                <Reveal key={plan.plan} delay={i * 0.08} className={isCenter ? '' : 'md:mt-8'}>
                   <PricingCard
                     title={plan.title}
-                    description={plan.description}
+                    description={plan.billingNote}
                     badge={plan.badge}
                     badgeVariant={(plan as any).badgeVariant}
                     price={plan.price}
-                    originalPrice={(plan as any).originalPrice}
+                    originalPrice={plan.originalPrice}
                     currency={plan.currency}
                     period={plan.period}
-                    billingNote={plan.billingNote}
-                    cardColor={plan.cardColor}
+                    cardColor={(plan as any).cardColor}
                     cardIcon={cardIcons[plan.plan]}
                     features={plan.features}
-                    featured={(plan as any).featured}
+                    featured={plan.featured}
                     buttonText={buttonLabels[plan.plan]}
                     onButtonClick={() => router.push(`/checkout?plan=${plan.plan}`)}
                   />
-                </div>
+                </Reveal>
               );
             })}
-          </div>
-
-          {/* Trust badges */}
-          <div className="flex flex-wrap items-center gap-5 mt-8">
-            {['Instant Delivery', 'No Key System', 'All Scripts Included', 'Priority Support'].map((label, i) => (
-              <span key={label} className="flex items-center gap-1.5 text-xs" style={{ color: 'rgba(255,255,255,0.25)' }}>
-                {i > 0 && <span className="text-[8px]" style={{ color: 'rgba(255,255,255,0.1)' }}>·</span>}
-                {label}
-              </span>
-            ))}
           </div>
         </section>
 
         {/* ── FAQ ── */}
-        <section>
-          <p className="font-mono text-[10px] uppercase tracking-[0.2em] mb-8" style={{ color: 'var(--text-muted)' }}>FAQ</p>
-          <div className="divide-y" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', borderColor: 'rgba(255,255,255,0.06)' }}>
-            {faqs.map((faq, index) => (
-              <div key={index} className="flex gap-8 py-6">
-                <span className="font-mono text-xs pt-0.5 w-6 shrink-0" style={{ color: 'rgba(255,255,255,0.2)' }}>
-                  {String(index + 1).padStart(2, '0')}
-                </span>
-                <div className="flex-1 flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-12">
-                  <h3 className="font-medium text-white text-sm sm:w-48 shrink-0">{faq.question}</h3>
-                  <p className="text-sm leading-relaxed flex-1" style={{ color: 'var(--text-muted)' }}>{faq.answer}</p>
+        <section style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '3rem' }}>
+          <Reveal>
+            <p className="font-mono text-[10px] uppercase tracking-[0.2em] mb-8" style={{ color: 'var(--text-muted)' }}>FAQ</p>
+          </Reveal>
+          <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+            {faqs.map((faq, i) => (
+              <Reveal key={i} delay={i * 0.06}>
+                <div className="flex gap-8 py-6" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                  <span className="font-mono text-xs pt-0.5 w-6 shrink-0" style={{ color: 'rgba(255,255,255,0.2)' }}>
+                    {String(i + 1).padStart(2, '0')}
+                  </span>
+                  <div className="flex-1 flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-12">
+                    <h3 className="font-medium text-white text-sm sm:w-48 shrink-0">{faq.question}</h3>
+                    <p className="text-sm leading-relaxed flex-1" style={{ color: 'var(--text-muted)' }}>{faq.answer}</p>
+                  </div>
                 </div>
-              </div>
+              </Reveal>
             ))}
           </div>
         </section>
