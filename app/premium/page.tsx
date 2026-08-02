@@ -253,26 +253,67 @@ function PremiumContent() {
 
         {/* ── Hero ── */}
         <section>
-          <div className="flex flex-wrap items-end justify-between gap-4 mb-2">
+          <div className="flex flex-wrap items-end justify-between gap-4 mb-3">
             <h1
               className="font-black leading-none"
               style={{ fontSize: 'clamp(2.8rem, 7vw, 5rem)', letterSpacing: '-0.04em', color: '#fff' }}
             >
-              Pick the plan{' '}
-              <span style={{ color: 'var(--accent)' }}>that fits you.</span>
+              Stop wasting time{' '}
+              <span style={{ color: 'var(--accent)' }}>on key systems.</span>
             </h1>
             <PurchaseCounter />
           </div>
-          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-            No key system. Every script. Instant delivery.
+          <p className="text-sm mb-5" style={{ color: 'var(--text-muted)' }}>
+            One purchase. Every script. No keys, no waiting — just instant access.
           </p>
+
+          {/* ── Social proof strip ── */}
+          <div className="flex flex-wrap items-center gap-4">
+            {/* Live buyers badge */}
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium" style={{ backgroundColor: 'rgba(74,222,128,0.08)', border: '1px solid rgba(74,222,128,0.2)', color: '#4ade80' }}>
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ backgroundColor: '#4ade80' }} />
+                <span className="relative inline-flex h-2 w-2 rounded-full" style={{ backgroundColor: '#4ade80' }} />
+              </span>
+              247 users active right now
+            </div>
+
+            {/* Star rating */}
+            <div className="flex items-center gap-1.5 text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>
+              <div className="flex gap-0.5">
+                {[...Array(5)].map((_, i) => (
+                  <svg key={i} className="w-3.5 h-3.5" viewBox="0 0 12 12" fill="#facc15">
+                    <path d="M6 0l1.5 4.5H12L8.25 7.25 9.75 12 6 9.25 2.25 12l1.5-4.75L0 4.5h4.5z" />
+                  </svg>
+                ))}
+              </div>
+              <span>4.9 / 5 from 300+ members</span>
+            </div>
+
+            {/* Guarantee */}
+            <div className="flex items-center gap-1.5 text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>
+              <svg className="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              </svg>
+              Instant key delivery · Discord verified
+            </div>
+          </div>
         </section>
 
         {/* ── Mega Key ── (shown first to tempt large-scale farmers) */}
         <section>
-          <p className="font-mono text-[10px] uppercase tracking-[0.2em] mb-5" style={{ color: 'var(--text-muted)' }}>
-            Featured offer
-          </p>
+          <div className="flex items-center justify-between flex-wrap gap-3 mb-5">
+            <p className="font-mono text-[10px] uppercase tracking-[0.2em]" style={{ color: 'var(--text-muted)' }}>
+              Featured offer
+            </p>
+            {/* Urgency tag */}
+            <span className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wide px-2.5 py-1 rounded-full" style={{ backgroundColor: 'rgba(245,158,11,0.1)', color: '#fbbf24', border: '1px solid rgba(245,158,11,0.2)' }}>
+              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+              </svg>
+              Limited slots available
+            </span>
+          </div>
           <MegaKeySection />
         </section>
 
@@ -282,6 +323,22 @@ function PremiumContent() {
           <p className="font-mono text-[10px] uppercase tracking-[0.2em] mb-6" style={{ color: 'var(--text-muted)' }}>
             Or choose a subscription
           </p>
+
+          {/* Value proposition strip */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
+            {[
+              { icon: '🚫', title: 'No Key System',      desc: 'Skip the wait — scripts run instantly' },
+              { icon: '⚡', title: 'Instant Delivery',   desc: 'Your key is ready the moment you pay' },
+              { icon: '🔄', title: 'Always Updated',     desc: 'New scripts added regularly, free' },
+              { icon: '🛡️', title: 'Priority Support',   desc: 'Jump the queue in Discord tickets' },
+            ].map(v => (
+              <div key={v.title} className="rounded-xl p-4" style={{ backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                <span className="text-xl block mb-2">{v.icon}</span>
+                <p className="text-white text-xs font-semibold mb-1">{v.title}</p>
+                <p className="text-[11px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.35)' }}>{v.desc}</p>
+              </div>
+            ))}
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
             {plans.map((plan, i) => {
               const isCenter = i === 1; // lifetime
