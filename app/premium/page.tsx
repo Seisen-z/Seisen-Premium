@@ -268,9 +268,20 @@ function PremiumContent() {
           </p>
         </section>
 
+        {/* ── Mega Key ── (shown first to tempt large-scale farmers) */}
+        <section>
+          <p className="font-mono text-[10px] uppercase tracking-[0.2em] mb-5" style={{ color: 'var(--text-muted)' }}>
+            Featured offer
+          </p>
+          <MegaKeySection />
+        </section>
+
         {/* ── Pricing Cards ── */}
         {/* Layout: Weekly (left) | Lifetime (center/elevated) | Monthly (right) */}
         <section>
+          <p className="font-mono text-[10px] uppercase tracking-[0.2em] mb-6" style={{ color: 'var(--text-muted)' }}>
+            Or choose a subscription
+          </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
             {plans.map((plan, i) => {
               const isCenter = i === 1; // lifetime
@@ -313,14 +324,6 @@ function PremiumContent() {
               </div>
             ))}
           </div>
-        </section>
-
-        {/* ── Mega Key ── */}
-        <section>
-          <p className="font-mono text-[10px] uppercase tracking-[0.2em] mb-5" style={{ color: 'var(--text-muted)' }}>
-            For large-scale farming
-          </p>
-          <MegaKeySection />
         </section>
 
         {/* ── FAQ ── */}
