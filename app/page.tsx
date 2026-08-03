@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Crown, ArrowRight, Play, Zap, Shield, RefreshCw } from 'lucide-react';
+import { Crown, ArrowRight, Zap, Shield, RefreshCw, CheckCircle2, Users } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { fetchScripts } from '@/lib/scripts';
 import { fetchVideos } from '@/lib/videos';
@@ -7,11 +7,25 @@ import YoutubeCarousel from '@/components/YoutubeCarousel';
 import Testimonials from '@/components/sections/Testimonials';
 import PartnerLogos from '@/components/sections/PartnerLogos';
 import ScriptShowcase from '@/components/ScriptShowcase';
+import FeaturedScriptCard from '@/components/FeaturedScriptCard';
+import MiniScriptGrid from '@/components/MiniScriptGrid';
 import HomeFAQ from '@/components/sections/HomeFAQ';
 import Reveal from '@/components/ui/Reveal';
 
+// ── Brand tokens (cream/warm — homepage only) ──────────────────
+const C = {
+  accent:     '#c9a97a',
+  accentSoft: '#d4b896',
+  accentDim:  '#9a7d58',
+  accentBg:   'rgba(201,169,122,0.1)',
+  accentBdr:  'rgba(201,169,122,0.22)',
+  accentBdr2: 'rgba(201,169,122,0.35)',
+  creamBg:    '#e8ddd0',
+  creamBg2:   '#ddd0c4',
+} as const;
+
 interface DiscordMember { id: string; username: string; avatar_url: string; }
-interface DiscordStats { memberCount: number; members: DiscordMember[]; }
+interface DiscordStats  { memberCount: number; members: DiscordMember[]; }
 
 const DISCORD_GUILD_ID = '1333251917098520628';
 
@@ -19,25 +33,14 @@ async function fetchDiscordStats(): Promise<DiscordStats> {
   try {
     const [inviteRes, widgetRes] = await Promise.all([
       fetch('https://discord.com/api/v10/invites/F4sAf6z8Ph?with_counts=true', { next: { revalidate: 300 } }),
-      fetch(`https://discord.com/api/guilds/${DISCORD_GUILD_ID}/widget.json`, { next: { revalidate: 300 } }),
+      fetch(`https://discord.com/api/guilds/${DISCORD_GUILD_ID}/widget.json`,   { next: { revalidate: 300 } }),
     ]);
-
-    const memberCount: number = inviteRes.ok
-      ? ((await inviteRes.json()).approximate_member_count ?? 0)
-      : 0;
-
+    const memberCount = inviteRes.ok ? ((await inviteRes.json()).approximate_member_count ?? 0) : 0;
     const members: DiscordMember[] = widgetRes.ok
-      ? ((await widgetRes.json()).members ?? []).slice(0, 5).map((m: any) => ({
-          id: m.id,
-          username: m.username,
-          avatar_url: m.avatar_url,
-        }))
+      ? ((await widgetRes.json()).members ?? []).slice(0, 5).map((m: any) => ({ id: m.id, username: m.username, avatar_url: m.avatar_url }))
       : [];
-
     return { memberCount, members };
-  } catch {
-    return { memberCount: 0, members: [] };
-  }
+  } catch { return { memberCount: 0, members: [] }; }
 }
 
 export default async function HomePage() {
@@ -52,242 +55,718 @@ export default async function HomePage() {
   return (
     <div className="min-h-screen">
 
-      {/* ── HERO ──────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden px-6 md:px-14 pt-20 pb-28 max-w-6xl mx-auto">
-        {/* Radial glow behind headline */}
+      {/* ══════════════════════════════════════════════════════════
+          HERO  —  dark left │ cream right split
+      ══════════════════════════════════════════════════════════ */}
+      <section
+        className="relative overflow-hidden"
+        style={{ minHeight: 'calc(100vh - 56px)' }}
+      >
+        {/* ── Split background ── */}
+        <div className="absolute inset-0 pointer-events-none flex">
+          {/* Dark left */}
+          <div className="flex-1 h-full" style={{ backgroundColor: '#080808' }} />
+          {/* Cream right (desktop only) */}
+          <div
+            className="hidden md:block h-full"
+            style={{
+              width: '44%',
+              backgroundColor: C.creamBg,
+              backgroundImage: [
+                'radial-gradient(ellipse 80% 60% at 70% 40%, rgba(201,169,122,0.18) 0%, transparent 65%)',
+                `repeating-linear-gradient(
+                  -45deg,
+                  transparent,
+                  transparent 22px,
+                  rgba(0,0,0,0.028) 22px,
+                  rgba(0,0,0,0.028) 23px
+                )`,
+              ].join(','),
+            }}
+          />
+        </div>
+
+        {/* Dark-left accent glow */}
         <div
-          className="absolute pointer-events-none"
+          className="absolute pointer-events-none hidden md:block"
           style={{
-            top: '-10%', left: '-5%',
-            width: '70%', height: '80%',
-            background: 'radial-gradient(ellipse, rgba(var(--accent-rgb), 0.07) 0%, transparent 65%)',
+            top: '0', left: '0', width: '56%', height: '100%',
+            background: 'radial-gradient(ellipse 70% 60% at 20% 40%, rgba(201,169,122,0.07) 0%, transparent 65%)',
           }}
         />
 
-        {/* Status */}
-        <a
-          href="https://discord.gg/F4sAf6z8Ph"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-2.5 mb-10 px-3 py-1.5 rounded-full transition-all hover:brightness-110 animate-fade-in"
-          style={{ backgroundColor: 'rgba(var(--accent-rgb),0.08)', border: '1px solid rgba(var(--accent-rgb),0.2)' }}
-        >
-          <span className="relative flex h-1.5 w-1.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-500" />
-          </span>
-          <span className="text-xs font-medium" style={{ color: 'var(--accent)' }}>All systems operational</span>
-        </a>
+        {/* Vertical divider line (desktop) */}
+        <div
+          className="absolute hidden md:block pointer-events-none"
+          style={{
+            top: 0, bottom: 0,
+            left: '56%',
+            width: '1px',
+            background: 'linear-gradient(to bottom, transparent, rgba(0,0,0,0.15) 20%, rgba(0,0,0,0.15) 80%, transparent)',
+          }}
+        />
 
-        {/* Headline */}
-        <h1
-          className="font-bold text-white leading-none mb-5 animate-fade-in"
-          style={{ fontSize: 'clamp(3.5rem, 10vw, 8rem)', letterSpacing: '-0.04em', animationDelay: '0.05s', animationFillMode: 'backwards' }}
-        >
-          Seisen
-        </h1>
+        {/* ── Content ── */}
+        <div className="relative z-10 flex items-center min-h-[calc(100vh-56px)] px-6 md:pl-24 md:pr-0 lg:pl-28">
+          <div className="w-full grid md:grid-cols-[56fr_44fr] items-center">
 
-        {/* Tagline */}
-        <p className="text-base md:text-lg max-w-xl mb-3 leading-relaxed animate-fade-in" style={{ color: 'var(--text-secondary)', animationDelay: '0.1s', animationFillMode: 'backwards' }}>
-          Premium Roblox scripts for enhanced gaming.
-        </p>
-        <p className="text-sm mb-10 animate-fade-in" style={{ color: 'var(--text-muted)', animationDelay: '0.15s', animationFillMode: 'backwards' }}>
-          Free access available — no sign-up required.
-        </p>
-
-        {/* CTAs */}
-        <div className="flex flex-wrap items-center gap-3 mb-16 animate-fade-in" style={{ animationDelay: '0.2s', animationFillMode: 'backwards' }}>
-          <Link href="/scripts"><Button size="lg"><Play className="w-4 h-4" /> Browse Scripts</Button></Link>
-          <Link href="/premium"><Button variant="outline" size="lg"><Crown className="w-4 h-4" /> Go Premium</Button></Link>
-        </div>
-
-        {/* Stat chips */}
-        <div className="flex flex-wrap gap-3 animate-fade-in" style={{ animationDelay: '0.25s', animationFillMode: 'backwards' }}>
-          {[
-            { val: scripts.length, label: 'Total Scripts' },
-            { val: freeCount,      label: 'Free Scripts',    accent: false },
-            { val: premiumCount,   label: 'Premium',         accent: true },
-            { val: workingCount,   label: 'Working Now',     green: true },
-          ].map(stat => (
-            <div
-              key={stat.label}
-              className="flex items-center gap-2.5 px-4 py-2 rounded-xl"
-              style={{ backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
-            >
-              <span
-                className="font-bold text-lg leading-none"
-                style={{ color: stat.green ? '#22c55e' : stat.accent ? 'var(--accent)' : 'white' }}
+            {/* Left — copy (dark bg) */}
+            <div className="py-20 pr-10 lg:pr-16">
+              {/* Status pill */}
+              <a
+                href="https://discord.gg/F4sAf6z8Ph"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2.5 mb-8 px-3.5 py-1.5 rounded-full transition-all hover:brightness-110 animate-fade-in"
+                style={{ backgroundColor: C.accentBg, border: `1px solid ${C.accentBdr}` }}
               >
-                {stat.val}
-              </span>
-              <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{stat.label}</span>
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ backgroundColor: C.accentSoft }} />
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5" style={{ backgroundColor: C.accent }} />
+                </span>
+                <span className="text-xs font-medium" style={{ color: C.accent }}>All systems operational</span>
+              </a>
+
+              {/* Headline */}
+              <h1
+                className="font-bold text-white leading-[1.04] mb-6 animate-fade-in"
+                style={{
+                  fontSize: 'clamp(3rem, 5.5vw, 5rem)',
+                  letterSpacing: '-0.04em',
+                  animationDelay: '0.05s',
+                  animationFillMode: 'backwards',
+                }}
+              >
+                The Script Hub<br />
+                <span
+                  style={{
+                    background: `linear-gradient(120deg, ${C.accent} 0%, ${C.accentSoft} 60%, #e8d5b5 100%)`,
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    backgroundClip: 'text',
+                  }}
+                >
+                  Roblox Players
+                </span><br />
+                Actually Trust.
+              </h1>
+
+              <p
+                className="text-lg max-w-[420px] mb-9 animate-fade-in"
+                style={{
+                  color: 'rgba(255,255,255,0.5)',
+                  lineHeight: 1.7,
+                  animationDelay: '0.1s',
+                  animationFillMode: 'backwards',
+                }}
+              >
+                Premium-grade scripts, verified by the Seisen team.{' '}
+                <span style={{ color: 'rgba(255,255,255,0.7)' }}>Free access included — no sign-up, no wait.</span>
+              </p>
+
+              {/* CTAs */}
+              <div
+                className="flex flex-wrap items-center gap-3 mb-10 animate-fade-in"
+                style={{ animationDelay: '0.14s', animationFillMode: 'backwards' }}
+              >
+                <Link href="/scripts">
+                  <button
+                    className="inline-flex items-center gap-2 font-semibold rounded-lg transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.97] select-none text-sm px-6 py-2.5"
+                    style={{ backgroundColor: C.accent, color: '#1a1008', border: `1px solid ${C.accent}` }}
+                  >
+                    Browse Scripts <ArrowRight className="w-4 h-4" />
+                  </button>
+                </Link>
+                <Link href="/premium">
+                  <button
+                    className="inline-flex items-center gap-2 font-semibold rounded-lg transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.97] select-none text-sm px-5 py-2.5"
+                    style={{
+                      backgroundColor: 'transparent',
+                      color: 'rgba(255,255,255,0.65)',
+                      border: '1px solid rgba(255,255,255,0.14)',
+                    }}
+                  >
+                    <Crown className="w-4 h-4" /> Go Premium
+                  </button>
+                </Link>
+              </div>
+
+              {/* Social proof */}
+              <div
+                className="flex items-center gap-3 animate-fade-in"
+                style={{ animationDelay: '0.18s', animationFillMode: 'backwards' }}
+              >
+                <div className="flex -space-x-2.5">
+                  {(discord.members.length > 0 ? discord.members : []).map((m) => (
+                    <img
+                      key={m.id}
+                      src={m.avatar_url}
+                      alt={m.username}
+                      className="w-8 h-8 rounded-full border-2 object-cover"
+                      style={{ borderColor: '#080808' }}
+                    />
+                  ))}
+                  {discord.members.length === 0 && ['#9a7d58','#6b5a42','#b89a74','#7c6248','#a08060'].map((c, i) => (
+                    <div
+                      key={i}
+                      className="w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-bold"
+                      style={{ background: c, borderColor: '#080808', color: '#fff' }}
+                    >
+                      {['S','R','A','J','K'][i]}
+                    </div>
+                  ))}
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-white leading-tight">
+                    {discord.memberCount > 0 ? `${discord.memberCount.toLocaleString()}+ members` : '2,000+ active users'}
+                  </p>
+                  <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.3)' }}>active on Discord</p>
+                </div>
+              </div>
             </div>
-          ))}
+
+            {/* Right — product card (cream bg) */}
+            <div
+              className="relative flex items-center justify-center py-16 px-8 md:px-10 lg:px-14"
+              style={{ minHeight: 'calc(100vh - 56px)' }}
+            >
+              {/* Warm glow behind card */}
+              <div
+                className="absolute pointer-events-none"
+                style={{
+                  inset: '10%',
+                  background: `radial-gradient(ellipse, rgba(201,169,122,0.3) 0%, transparent 70%)`,
+                  filter: 'blur(32px)',
+                }}
+              />
+
+              {/* Floating badge — top */}
+              <div
+                className="absolute top-[18%] right-8 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold shadow-md"
+                style={{
+                  backgroundColor: '#1c1c1c',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  color: 'rgba(255,255,255,0.8)',
+                }}
+              >
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+                </span>
+                {workingCount} scripts working
+              </div>
+
+              {/* Code card */}
+              <div
+                className="relative w-full max-w-sm animate-fade-in"
+                style={{
+                  animationDelay: '0.12s',
+                  animationFillMode: 'backwards',
+                  boxShadow: '0 40px 100px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.06)',
+                  borderRadius: '16px',
+                  overflow: 'hidden',
+                }}
+              >
+                {/* Chrome bar */}
+                <div
+                  className="flex items-center gap-1.5 px-4 py-3.5"
+                  style={{
+                    backgroundColor: '#161616',
+                    borderBottom: '1px solid rgba(255,255,255,0.07)',
+                  }}
+                >
+                  <span className="w-3 h-3 rounded-full" style={{ backgroundColor: 'rgba(239,68,68,0.55)' }} />
+                  <span className="w-3 h-3 rounded-full" style={{ backgroundColor: 'rgba(234,179,8,0.55)' }} />
+                  <span className="w-3 h-3 rounded-full" style={{ backgroundColor: 'rgba(34,197,94,0.55)' }} />
+                  <span className="ml-auto font-mono text-xs" style={{ color: 'rgba(255,255,255,0.28)' }}>seisen_loader.lua</span>
+                </div>
+
+                {/* Code body */}
+                <div
+                  className="p-6 font-mono text-sm leading-7"
+                  style={{ backgroundColor: '#0e0e0e' }}
+                >
+                  <p style={{ color: 'rgba(255,255,255,0.22)' }}>{`-- Seisen Script Hub v2`}</p>
+                  <p style={{ color: 'rgba(255,255,255,0.22)' }}>{`-- Free & Premium access`}</p>
+                  <p>&nbsp;</p>
+                  <p>
+                    <span style={{ color: '#c678dd' }}>loadstring</span>
+                    <span style={{ color: 'rgba(255,255,255,0.55)' }}>(</span>
+                  </p>
+                  <p className="pl-5">
+                    <span style={{ color: '#56b6c2' }}>game</span>
+                    <span style={{ color: 'rgba(255,255,255,0.4)' }}>:</span>
+                    <span style={{ color: '#61afef' }}>HttpGet</span>
+                    <span style={{ color: 'rgba(255,255,255,0.4)' }}>(</span>
+                  </p>
+                  <p className="pl-10">
+                    <span style={{ color: '#e8d5b5' }}>&quot;https://seisen.vercel.app/api/load&quot;</span>
+                  </p>
+                  <p className="pl-5"><span style={{ color: 'rgba(255,255,255,0.4)' }}>)</span></p>
+                  <p className="mb-4"><span style={{ color: 'rgba(255,255,255,0.4)' }}>)()</span></p>
+                  <div className="flex items-center gap-2">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                    </span>
+                    <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.75rem' }}>
+                      Loaded — <span style={{ color: C.accentSoft }}>{premiumCount} premium scripts</span> unlocked
+                    </span>
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div
+                  className="flex items-center justify-between px-5 py-3.5"
+                  style={{
+                    backgroundColor: '#111111',
+                    borderTop: '1px solid rgba(255,255,255,0.06)',
+                  }}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs font-semibold text-white">{scripts.length} scripts</span>
+                    <span className="w-0.5 h-0.5 rounded-full" style={{ backgroundColor: 'rgba(255,255,255,0.25)' }} />
+                    <span className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>{freeCount} free</span>
+                  </div>
+                  <span className="text-xs font-semibold" style={{ color: C.accent }}>{premiumCount} premium</span>
+                </div>
+              </div>
+
+              {/* Floating badge — bottom */}
+              <div
+                className="absolute bottom-[18%] left-8 z-20 flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs shadow-md"
+                style={{
+                  backgroundColor: '#1c1c1c',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                }}
+              >
+                <Users className="w-3.5 h-3.5" style={{ color: C.accent }} />
+                <span className="font-bold text-white">500K+</span>
+                <span style={{ color: 'rgba(255,255,255,0.4)' }}>executions</span>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* ── MARQUEE STRIP ─────────────────────────────────────── */}
-      <div
-        className="py-4 overflow-hidden relative"
-      >
-        <div className="flex animate-marquee gap-0 whitespace-nowrap">
-          {Array(4).fill(['Premium Scripts', 'Free Access', 'Roblox', 'Updated Daily', 'Verified', 'Trusted', 'Script Hub', 'No Sign-up']).flat().map((item, i) => (
-            <span key={i} className="inline-flex items-center gap-4 px-6 text-xs font-medium uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
-              {item}
-              <span style={{ color: 'var(--accent)', opacity: 0.5 }}>·</span>
-            </span>
-          ))}
+      {/* ══════════════════════════════════════════════════════════
+          METRICS BAND
+      ══════════════════════════════════════════════════════════ */}
+      <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        <div className="px-6 md:pl-24 md:pr-14 lg:pl-28 lg:pr-20 py-14 max-w-screen-xl mx-auto">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-10">
+            {[
+              { val: String(scripts.length), label: 'Total Scripts',   sub: 'in the hub' },
+              { val: String(freeCount),      label: 'Free Scripts',    sub: 'zero sign-up' },
+              { val: String(premiumCount),   label: 'Premium Scripts', sub: 'exclusive access', warm: true },
+              { val: String(workingCount),   label: 'Working Now',     sub: 'verified today',   em: true },
+            ].map((s) => (
+              <div key={s.label}>
+                <p
+                  className="font-bold leading-none mb-2"
+                  style={{
+                    fontSize: 'clamp(2.5rem, 5vw, 3.75rem)',
+                    letterSpacing: '-0.04em',
+                    color: s.em ? '#6ee7b7' : s.warm ? C.accent : 'white',
+                  }}
+                >
+                  {s.val}
+                </p>
+                <p className="text-sm font-semibold text-white mb-1">{s.label}</p>
+                <p className="text-xs" style={{ color: 'rgba(255,255,255,0.3)' }}>{s.sub}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* ── SCRIPT SHOWCASE ───────────────────────────────────── */}
+      {/* ══════════════════════════════════════════════════════════
+          SCRIPT SHOWCASE  —  left copy │ right featured
+      ══════════════════════════════════════════════════════════ */}
       <Reveal>
-      <section id="scripts" className="px-6 md:px-14 py-24 max-w-6xl mx-auto">
-        <div className="flex items-end justify-between mb-4">
-          <div>
-            <p className="section-label mb-2">Script Hub</p>
-            <h2 className="font-bold text-white" style={{ fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', letterSpacing: '-0.02em' }}>
-              All Scripts
-            </h2>
+        <section id="scripts" className="px-6 md:pl-24 md:pr-14 lg:pl-28 lg:pr-20 py-28 max-w-screen-xl mx-auto">
+          <div className="grid md:grid-cols-[45fr_55fr] gap-12 xl:gap-20 items-start">
+
+            {/* Left — copy + stats */}
+            <div className="md:sticky md:top-24">
+              <p className="section-label mb-3" style={{ color: C.accent, opacity: 1 }}>Script Hub</p>
+              <h2
+                className="font-bold text-white mb-5"
+                style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.75rem)', letterSpacing: '-0.03em', lineHeight: 1.1 }}
+              >
+                {scripts.length} scripts.<br />One hub.
+              </h2>
+              <p className="text-base mb-8 leading-relaxed" style={{ color: 'rgba(255,255,255,0.45)', lineHeight: 1.7 }}>
+                Free and premium Roblox scripts, all verified and updated by the Seisen team. Copy the loader in one click — no installs, no sign-up.
+              </p>
+
+              {/* Stat grid */}
+              <div className="grid grid-cols-2 gap-3 mb-8">
+                {[
+                  { val: freeCount,    label: 'Free Scripts',    sub: 'no key needed' },
+                  { val: premiumCount, label: 'Premium',         sub: 'exclusive access', warm: true },
+                  { val: workingCount, label: 'Working Now',     sub: 'verified today' },
+                  { val: scripts.length, label: 'Total Scripts', sub: 'in the hub' },
+                ].map((s) => (
+                  <div
+                    key={s.label}
+                    className="p-4 rounded-xl"
+                    style={{ backgroundColor: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.07)' }}
+                  >
+                    <p
+                      className="font-bold text-2xl leading-none mb-1"
+                      style={{ letterSpacing: '-0.03em', color: s.warm ? C.accent : 'white' }}
+                    >
+                      {s.val}
+                    </p>
+                    <p className="text-xs font-semibold text-white mb-0.5">{s.label}</p>
+                    <p className="text-xs" style={{ color: 'rgba(255,255,255,0.3)' }}>{s.sub}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex flex-col gap-3">
+                <Link href="/scripts">
+                  <button
+                    className="w-full inline-flex items-center justify-center gap-2 font-semibold rounded-lg transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.97] text-sm px-6 py-2.5"
+                    style={{ backgroundColor: C.accent, color: '#1a1008' }}
+                  >
+                    Open Script Hub <ArrowRight className="w-4 h-4" />
+                  </button>
+                </Link>
+                <Link href="/getkey">
+                  <button
+                    className="w-full inline-flex items-center justify-center gap-2 font-semibold rounded-lg transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.97] text-sm px-6 py-2.5"
+                    style={{ backgroundColor: 'transparent', color: 'rgba(255,255,255,0.5)', border: '1px solid rgba(255,255,255,0.1)' }}
+                  >
+                    Get Free Key
+                  </button>
+                </Link>
+              </div>
+            </div>
+
+            {/* Right — featured script + grid */}
+            <div className="flex flex-col gap-4">
+              {/* Featured: Anime Expedition */}
+              {(() => {
+                const featured = scripts.find(s =>
+                  s.name.toLowerCase().includes('anime expedition')
+                ) ?? scripts[0];
+                return featured ? <FeaturedScriptCard script={featured} /> : null;
+              })()}
+
+              {/* Remaining scripts mini-grid */}
+              <MiniScriptGrid
+                scripts={scripts
+                  .filter(s => !s.name.toLowerCase().includes('anime expedition'))
+                  .slice(0, 8)
+                }
+              />
+            </div>
           </div>
-          <Link
-            href="/scripts"
-            className="hidden md:flex items-center gap-1.5 text-sm font-medium transition-colors hover:text-white"
-            style={{ color: 'var(--text-muted)' }}
-          >
-            Open Script Hub <ArrowRight className="w-4 h-4" />
-          </Link>
-        </div>
-        <p className="text-sm mb-10" style={{ color: 'var(--text-muted)' }}>
-          Click any script to copy the loader — or visit the full hub for details and features.
-        </p>
-
-        <ScriptShowcase scripts={scripts} />
-
-        <div className="mt-8 text-center md:hidden">
-          <Link href="/scripts">
-            <Button variant="outline">View All in Script Hub</Button>
-          </Link>
-        </div>
-      </section>
+        </section>
       </Reveal>
 
-      {/* ── WHY SEISEN ────────────────────────────────────────── */}
-      <section className="px-6 md:px-14 py-24 max-w-6xl mx-auto">
-        <Reveal><p className="section-label mb-12">Why Seisen</p></Reveal>
-        <div className="grid md:grid-cols-3 gap-8">
-          {[
-            {
-              icon: <Shield className="w-5 h-5" />,
-              title: 'Verified & Tested',
-              body: 'Every script is verified by the Seisen team before release. No untested, broken, or dangerous code.',
-            },
-            {
-              icon: <RefreshCw className="w-5 h-5" />,
-              title: 'Regular Updates',
-              body: 'Scripts get patched and updated as Roblox games change. We keep them working so you don\'t have to.',
-            },
-            {
-              icon: <Zap className="w-5 h-5" />,
-              title: 'Instant Access',
-              body: 'Free key delivered instantly. Premium unlocks everything with no waiting — just copy, paste, and play.',
-            },
-          ].map((item, i) => (
-            <Reveal key={i} delay={i * 0.08}>
-              <div
-                className="p-6 rounded-2xl group hover-lift h-full"
-                style={{ backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}
-              >
-                <div
-                  className="w-10 h-10 rounded-xl flex items-center justify-center mb-5"
-                  style={{ backgroundColor: 'rgba(var(--accent-rgb),0.1)', color: 'var(--accent)' }}
-                >
-                  {item.icon}
+      {/* ══════════════════════════════════════════════════════════
+          WHY SEISEN
+      ══════════════════════════════════════════════════════════ */}
+      <section className="px-6 md:pl-24 md:pr-14 lg:pl-28 lg:pr-20 py-28">
+
+        {/* Section label + headline — left only */}
+        <Reveal>
+          <div className="mb-20 max-w-2xl">
+            <p className="section-label mb-4" style={{ color: C.accent, opacity: 1 }}>Why Seisen</p>
+            <h2
+              className="font-bold text-white mb-5"
+              style={{ fontSize: 'clamp(2.25rem, 5vw, 4rem)', letterSpacing: '-0.04em', lineHeight: 1.02 }}
+            >
+              The script hub that<br />takes quality seriously.
+            </h2>
+            <p className="text-base" style={{ color: 'rgba(255,255,255,0.38)', lineHeight: 1.75 }}>
+              Most hubs ship and forget. We review, update, and verify everything before it reaches your executor.
+            </p>
+          </div>
+        </Reveal>
+
+        {/* ── Feature 01: Verified ── */}
+        <Reveal delay={0}>
+          <div
+            className="grid md:grid-cols-[1fr_1.6fr] gap-0 mb-px overflow-hidden rounded-2xl"
+            style={{ border: '1px solid rgba(255,255,255,0.07)' }}
+          >
+            {/* Left — copy */}
+            <div className="p-10 flex flex-col justify-between" style={{ backgroundColor: 'rgba(255,255,255,0.02)' }}>
+              <div>
+                <div className="flex items-center gap-3 mb-6">
+                  <span className="font-mono text-xs font-bold" style={{ color: 'rgba(255,255,255,0.18)' }}>01</span>
+                  <div className="h-px flex-1" style={{ backgroundColor: 'rgba(255,255,255,0.07)' }} />
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(201,169,122,0.12)', color: C.accent }}>
+                    <Shield className="w-3.5 h-3.5" />
+                  </div>
                 </div>
-                <h3 className="font-semibold text-white text-base mb-2">{item.title}</h3>
-                <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>{item.body}</p>
+                <h3 className="font-bold text-white mb-3" style={{ fontSize: '1.35rem', letterSpacing: '-0.02em' }}>Verified & Tested</h3>
+                <p className="text-sm leading-relaxed" style={{ color: 'rgba(255,255,255,0.4)', lineHeight: 1.75 }}>
+                  Every script is reviewed by the Seisen team before release. No untested, broken, or dangerous code ever ships to users.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2 mt-8">
+                {['Malware-free', 'Team reviewed', 'Tested per update', 'Status tracked live'].map(t => (
+                  <span key={t} className="text-xs px-2.5 py-1 rounded-full" style={{ backgroundColor: 'rgba(201,169,122,0.08)', color: C.accentSoft, border: `1px solid rgba(201,169,122,0.18)` }}>
+                    {t}
+                  </span>
+                ))}
+              </div>
+            </div>
+            {/* Right — live status panel */}
+            <div className="p-6 flex flex-col gap-2" style={{ backgroundColor: '#080808', borderLeft: '1px solid rgba(255,255,255,0.06)' }}>
+              <p className="font-mono text-xs mb-3" style={{ color: 'rgba(255,255,255,0.18)' }}>{'// live script status · ' + workingCount + ' verified'}</p>
+              {scripts.filter(s => s.status === 'Working').slice(0, 7).map((s, i) => (
+                <div key={s.id} className="flex items-center justify-between py-2.5 px-3 rounded-lg" style={{ backgroundColor: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <span className="text-sm font-medium truncate" style={{ color: 'rgba(255,255,255,0.7)', maxWidth: '75%' }}>{s.name}</span>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    <span className="text-xs" style={{ color: 'rgba(255,255,255,0.3)' }}>Working</span>
+                  </div>
+                </div>
+              ))}
+              <p className="font-mono text-[10px] mt-2" style={{ color: 'rgba(255,255,255,0.14)' }}>{scripts.length - workingCount} discontinued · hidden from hub</p>
+            </div>
+          </div>
+        </Reveal>
+
+        {/* ── Feature 02 + 03 side by side ── */}
+        <div className="grid md:grid-cols-2 gap-4 mt-4">
+
+          {/* Instant Access */}
+          <Reveal delay={0.05}>
+            <div className="rounded-2xl overflow-hidden flex flex-col h-full" style={{ border: '1px solid rgba(255,255,255,0.07)', backgroundColor: 'rgba(255,255,255,0.02)' }}>
+              <div className="p-10 flex-1">
+                <div className="flex items-center gap-3 mb-6">
+                  <span className="font-mono text-xs font-bold" style={{ color: 'rgba(255,255,255,0.18)' }}>02</span>
+                  <div className="h-px flex-1" style={{ backgroundColor: 'rgba(255,255,255,0.07)' }} />
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(201,169,122,0.12)', color: C.accent }}>
+                    <Zap className="w-3.5 h-3.5" />
+                  </div>
+                </div>
+                <h3 className="font-bold text-white mb-3" style={{ fontSize: '1.35rem', letterSpacing: '-0.02em' }}>Instant Access</h3>
+                <p className="text-sm leading-relaxed" style={{ color: 'rgba(255,255,255,0.4)', lineHeight: 1.75 }}>
+                  Free key delivered instantly. Premium unlocks everything with no waiting — just copy, paste, and play.
+                </p>
+              </div>
+              {/* Code block */}
+              <div className="m-4 rounded-xl p-5 font-mono text-xs" style={{ backgroundColor: '#080808', border: '1px solid rgba(255,255,255,0.07)' }}>
+                <p className="mb-1.5" style={{ color: 'rgba(255,255,255,0.2)' }}>{`-- one line. that's it.`}</p>
+                <p style={{ color: '#e8d5b5' }}>{'loadstring(game:HttpGet('}</p>
+                <p className="pl-4" style={{ color: C.accentSoft }}>{'"https://seisen.vercel.app"'}</p>
+                <p className="mb-3" style={{ color: '#e8d5b5' }}>{'))()'}</p>
+                <div className="flex items-center gap-1.5 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                  <span className="relative flex h-1.5 w-1.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+                  </span>
+                  <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px' }}>ready to execute</span>
+                </div>
+              </div>
+            </div>
+          </Reveal>
+
+          {/* Regular Updates + Community stacked */}
+          <div className="flex flex-col gap-4">
+            <Reveal delay={0.09}>
+              <div className="rounded-2xl p-10 flex-1" style={{ border: '1px solid rgba(255,255,255,0.07)', backgroundColor: 'rgba(255,255,255,0.02)' }}>
+                <div className="flex items-center gap-3 mb-6">
+                  <span className="font-mono text-xs font-bold" style={{ color: 'rgba(255,255,255,0.18)' }}>03</span>
+                  <div className="h-px flex-1" style={{ backgroundColor: 'rgba(255,255,255,0.07)' }} />
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(201,169,122,0.12)', color: C.accent }}>
+                    <RefreshCw className="w-3.5 h-3.5" />
+                  </div>
+                </div>
+                <h3 className="font-bold text-white mb-3" style={{ fontSize: '1.35rem', letterSpacing: '-0.02em' }}>Regular Updates</h3>
+                <p className="text-sm leading-relaxed mb-6" style={{ color: 'rgba(255,255,255,0.4)', lineHeight: 1.75 }}>
+                  Scripts get patched as Roblox games change. We keep them working so you never have to chase patches.
+                </p>
+                {/* Inline changelog */}
+                <div className="flex flex-col gap-3">
+                  {[
+                    { label: 'Patch applied',  name: scripts[0]?.name ?? 'Anime Expedition', time: '2h ago',  hot: true },
+                    { label: 'Fix deployed',   name: scripts[1]?.name ?? 'Blox Fruits',      time: '1d ago'  },
+                    { label: 'Status updated', name: scripts[2]?.name ?? 'Dragon Blox',      time: '2d ago'  },
+                  ].map((entry, i, arr) => (
+                    <div key={i} className="flex items-start gap-3">
+                      <div className="flex flex-col items-center shrink-0 pt-0.5">
+                        <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: entry.hot ? C.accent : 'rgba(255,255,255,0.2)', flexShrink: 0 }} />
+                        {i < arr.length - 1 && <div className="w-px mt-1" style={{ backgroundColor: 'rgba(255,255,255,0.07)', height: '18px' }} />}
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold text-white leading-none mb-0.5">{entry.label}</p>
+                        <p className="text-xs" style={{ color: 'rgba(255,255,255,0.3)' }}>{entry.name} · {entry.time}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </Reveal>
-          ))}
-        </div>
-      </section>
 
-      {/* ── VIDEOS ────────────────────────────────────────────── */}
-      <Reveal>
-      <section className="py-24">
-        <div className="px-6 md:px-14 max-w-6xl mx-auto mb-10 flex items-end justify-between">
-          <div>
-            <p className="section-label mb-2">Media</p>
-            <h2 className="font-bold text-white text-2xl" style={{ letterSpacing: '-0.02em' }}>Scripts in Action</h2>
-            <p className="text-sm mt-2" style={{ color: 'var(--text-muted)' }}>Watch before you use — see exactly what each script does.</p>
-          </div>
-          <a
-            href="https://www.youtube.com/@SeisenHub"
-            target="_blank"
-            rel="noreferrer"
-            className="hidden md:flex items-center gap-1.5 text-sm font-medium text-red-400 hover:text-red-300 transition-colors"
-          >
-            YouTube <ArrowRight className="w-4 h-4" />
-          </a>
-        </div>
-        <YoutubeCarousel videos={videos} />
-      </section>
-      </Reveal>
-
-      {/* ── SOCIAL PROOF ──────────────────────────────────────── */}
-      <Reveal>
-      <div className="py-8">
-        <PartnerLogos />
-        <Testimonials />
-      </div>
-      </Reveal>
-
-      {/* ── COMMUNITY STATS ───────────────────────────────────── */}
-      <section className="px-6 md:px-14 py-16 max-w-6xl mx-auto">
-        <Reveal>
-        <div className="grid md:grid-cols-2 gap-4">
-          <div className="p-8 rounded-2xl" style={{ backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
-            <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: 'var(--text-muted)' }}>Community</p>
-            <h3 className="font-bold text-white text-2xl leading-tight mb-3">Join the fastest growing Roblox script hub.</h3>
-            <p className="text-sm mb-6" style={{ color: 'var(--text-muted)' }}>Thousands of players using Seisen every day across every major game.</p>
-            <div className="flex items-center gap-3">
-              <div className="flex -space-x-2">
-                {discord.members.length > 0
-                  ? discord.members.map((m) => (
-                      <img
-                        key={m.id}
-                        src={m.avatar_url}
-                        alt={m.username}
-                        title={m.username}
-                        className="w-8 h-8 rounded-full border-2 border-[#080808] object-cover"
-                      />
-                    ))
-                  : ['#10b981','#6366f1','#f59e0b','#ec4899','#3b82f6'].map((c, i) => (
-                      <div key={i} className="w-8 h-8 rounded-full border-2 border-[#080808] flex items-center justify-center text-xs font-bold text-white" style={{ background: c }}>
+            {/* Community */}
+            <Reveal delay={0.13}>
+              <div
+                className="rounded-2xl p-8"
+                style={{ background: `linear-gradient(135deg, rgba(201,169,122,0.12) 0%, rgba(201,169,122,0.03) 100%)`, border: `1px solid rgba(201,169,122,0.2)` }}
+              >
+                <div className="flex items-center justify-between mb-5">
+                  <div className="flex -space-x-2">
+                    {(discord.members.length > 0 ? discord.members.slice(0, 5) : []).map(m => (
+                      <img key={m.id} src={m.avatar_url} alt={m.username} className="w-7 h-7 rounded-full border-2 object-cover" style={{ borderColor: '#080808' }} />
+                    ))}
+                    {discord.members.length === 0 && ['#9a7d58','#6b5a42','#b89a74','#7c6248','#a08060'].map((c, i) => (
+                      <div key={i} className="w-7 h-7 rounded-full border-2 flex items-center justify-center text-xs font-bold text-white" style={{ background: c, borderColor: '#080808' }}>
                         {['S','R','A','J','K'][i]}
                       </div>
-                    ))
-                }
+                    ))}
+                  </div>
+                  <a href="https://discord.gg/F4sAf6z8Ph" target="_blank" rel="noopener noreferrer" className="text-xs font-medium flex items-center gap-1 hover:opacity-70 transition-opacity" style={{ color: C.accent }}>
+                    Join Discord <ArrowRight className="w-3 h-3" />
+                  </a>
+                </div>
+                <div className="flex items-end gap-8">
+                  <div>
+                    <p className="font-bold text-white leading-none mb-1" style={{ fontSize: '2rem', letterSpacing: '-0.04em' }}>
+                      {discord.memberCount > 0 ? `${discord.memberCount.toLocaleString()}+` : '2,000+'}
+                    </p>
+                    <p className="text-xs text-white font-semibold mb-0.5">Discord Members</p>
+                    <p className="text-xs" style={{ color: 'rgba(255,255,255,0.3)' }}>active community</p>
+                  </div>
+                  <div>
+                    <p className="font-bold text-white leading-none mb-1" style={{ fontSize: '2rem', letterSpacing: '-0.04em' }}>500K+</p>
+                    <p className="text-xs text-white font-semibold mb-0.5">Executions</p>
+                    <p className="text-xs" style={{ color: 'rgba(255,255,255,0.3)' }}>scripts run daily</p>
+                  </div>
+                </div>
               </div>
-              <div>
-                <p className="text-sm font-bold text-white">
-                  {discord.memberCount > 0 ? `${discord.memberCount.toLocaleString()}+ members` : '2,000+ active users'}
-                </p>
-                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Discord server</p>
+            </Reveal>
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════
+          VIDEOS
+      ══════════════════════════════════════════════════════════ */}
+      <Reveal>
+        <section className="py-24">
+          <div className="px-6 md:pl-24 md:pr-14 lg:pl-28 lg:pr-20 max-w-screen-xl mx-auto mb-10 flex items-end justify-between">
+            <div>
+              <p className="section-label mb-2" style={{ color: C.accent, opacity: 1 }}>Media</p>
+              <h2 className="font-bold text-white text-2xl" style={{ letterSpacing: '-0.02em' }}>Scripts in Action</h2>
+              <p className="text-sm mt-2" style={{ color: 'rgba(255,255,255,0.35)' }}>Watch before you use — see exactly what each script does.</p>
+            </div>
+            <a
+              href="https://www.youtube.com/@SeisenHub"
+              target="_blank"
+              rel="noreferrer"
+              className="hidden md:flex items-center gap-1.5 text-sm font-medium text-red-400 hover:text-red-300 transition-colors"
+            >
+              YouTube <ArrowRight className="w-4 h-4" />
+            </a>
+          </div>
+          <YoutubeCarousel videos={videos} />
+        </section>
+      </Reveal>
+
+      {/* ══════════════════════════════════════════════════════════
+          SOCIAL PROOF
+      ══════════════════════════════════════════════════════════ */}
+      <Reveal>
+        <div className="py-8">
+          <PartnerLogos />
+          <Testimonials />
+        </div>
+      </Reveal>
+
+      {/* ══════════════════════════════════════════════════════════
+          PREMIUM CTA
+      ══════════════════════════════════════════════════════════ */}
+      <Reveal>
+        <section className="px-6 md:pl-24 md:pr-14 lg:pl-28 lg:pr-20 py-24 max-w-screen-xl mx-auto">
+          <div
+            className="relative rounded-3xl overflow-hidden px-10 md:px-20 py-20 text-center"
+            style={{
+              background: `linear-gradient(160deg, rgba(201,169,122,0.13) 0%, rgba(201,169,122,0.03) 50%, rgba(201,169,122,0.09) 100%)`,
+              border: `1px solid rgba(201,169,122,0.2)`,
+            }}
+          >
+            {/* Diagonal stripe texture */}
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                backgroundImage: `repeating-linear-gradient(
+                  -45deg,
+                  transparent,
+                  transparent 24px,
+                  rgba(201,169,122,0.025) 24px,
+                  rgba(201,169,122,0.025) 25px
+                )`,
+              }}
+            />
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                background: `radial-gradient(ellipse 60% 60% at 50% 100%, rgba(201,169,122,0.1) 0%, transparent 70%)`,
+              }}
+            />
+
+            <div className="relative z-10">
+              <div
+                className="inline-flex items-center gap-2 mb-6 px-3.5 py-1.5 rounded-full text-xs font-semibold"
+                style={{ backgroundColor: 'rgba(201,169,122,0.12)', color: C.accent, border: `1px solid rgba(201,169,122,0.28)` }}
+              >
+                <Crown className="w-3.5 h-3.5" /> Premium Access
+              </div>
+
+              <h2
+                className="font-bold text-white mb-5"
+                style={{ fontSize: 'clamp(2rem, 5vw, 3.25rem)', letterSpacing: '-0.035em' }}
+              >
+                Ready to unlock everything?
+              </h2>
+              <p className="text-base mb-10 max-w-lg mx-auto" style={{ color: 'rgba(255,255,255,0.45)', lineHeight: 1.7 }}>
+                Instant access to all {premiumCount} premium scripts, priority support, and exclusive features — with the Mega Key or a subscription.
+              </p>
+
+              <div className="flex flex-wrap items-center justify-center gap-3 mb-10">
+                <Link href="/premium">
+                  <button
+                    className="inline-flex items-center gap-2 font-semibold rounded-lg transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.97] select-none text-sm px-7 py-2.5"
+                    style={{ backgroundColor: C.accent, color: '#1a1008', border: `1px solid ${C.accent}` }}
+                  >
+                    <Crown className="w-4 h-4" /> Go Premium
+                  </button>
+                </Link>
+                <Link href="/scripts">
+                  <button
+                    className="inline-flex items-center gap-2 font-semibold rounded-lg transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.97] select-none text-sm px-6 py-2.5"
+                    style={{ backgroundColor: 'transparent', color: 'rgba(255,255,255,0.55)', border: '1px solid rgba(255,255,255,0.12)' }}
+                  >
+                    Browse Free Scripts
+                  </button>
+                </Link>
+              </div>
+
+              <div className="flex items-center justify-center flex-wrap gap-6">
+                {['Instant delivery', `${premiumCount} premium scripts`, 'Priority support', 'No lock-in'].map((item) => (
+                  <div key={item} className="flex items-center gap-2 text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                    <CheckCircle2 className="w-3.5 h-3.5 shrink-0" style={{ color: C.accent }} />
+                    {item}
+                  </div>
+                ))}
               </div>
             </div>
           </div>
-          <div className="p-8 rounded-2xl" style={{ backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
-            <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: 'var(--text-muted)' }}>Reach</p>
-            <p className="font-bold text-white leading-none mb-2" style={{ fontSize: 'clamp(2.5rem, 6vw, 4rem)', letterSpacing: '-0.03em' }}>500K+</p>
-            <p className="text-base font-semibold text-white mb-3">Scripts executed</p>
-            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Trusted loadstrings running across Roblox every single day — free and premium.</p>
-          </div>
-        </div>
-        </Reveal>
-      </section>
+        </section>
+      </Reveal>
 
-      {/* ── FAQ ───────────────────────────────────────────────── */}
+      {/* ══════════════════════════════════════════════════════════
+          FAQ
+      ══════════════════════════════════════════════════════════ */}
       <Reveal>
         <HomeFAQ />
       </Reveal>

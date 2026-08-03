@@ -25,11 +25,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const savedThemeId = localStorage.getItem('seisen-theme');
     if (savedThemeId) {
-      const theme = getThemeById(savedThemeId);
-      if (theme) {
-        setCurrentTheme(theme);
-        applyTheme(theme);
-      }
+      const theme = getThemeById(savedThemeId) ?? themes[0];
+      setCurrentTheme(theme);
+      applyTheme(theme);
     } else {
       applyTheme(currentTheme);
     }

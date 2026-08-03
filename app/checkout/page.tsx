@@ -44,18 +44,20 @@ const PLAN_CONFIG: Record<string, PlanConfig> = {
     title: 'Weekly',
     description: 'Try it risk-free for a week.',
     badge: '7 Days',
-    cardColor: '#60a5fa',
+    cardColor: '#b89060',
     features: ['All premium scripts', 'No key system', 'Priority support', 'Early access'],
-    methods: ['paypal'],
+    methods: ['paypal', 'maya', 'gcash'],
     prices: {
-      paypal: { amount: 3, currency: '€', label: '€3', period: '/week', billingNote: 'Billed once per week' },
+      paypal: { amount: 3,   currency: '€', label: '€3',   period: '/week', billingNote: 'Billed once per week' },
+      maya:   { amount: 180, currency: '₱', label: '₱180', period: '/week', billingNote: 'Billed once per week · QR payment via Discord ticket' },
+      gcash:  { amount: 180, currency: '₱', label: '₱180', period: '/week', billingNote: 'Billed once per week · QR payment via Discord ticket' },
     },
   },
   monthly: {
     title: 'Monthly',
     description: 'Best for regular script users.',
     badge: '30 Days',
-    cardColor: '#a78bfa',
+    cardColor: '#a08060',
     features: ['All premium scripts', 'No key system', 'Priority support', 'Early access', 'Exclusive updates'],
     methods: ['paypal', 'maya', 'gcash'],
     prices: {
@@ -68,7 +70,7 @@ const PLAN_CONFIG: Record<string, PlanConfig> = {
     title: 'Lifetime',
     description: 'Pay once. Access forever.',
     badge: '28% OFF',
-    cardColor: '#4ade80',
+    cardColor: '#c9a97a',
     features: ['All premium scripts', 'No key system', 'Priority support', 'Early access', 'Exclusive updates', 'Lifetime access'],
     methods: ['paypal', 'maya', 'gcash'],
     prices: {
@@ -80,7 +82,7 @@ const PLAN_CONFIG: Record<string, PlanConfig> = {
   mega_1month: {
     title: 'Mega Key — 1 Month',
     description: 'For large-scale account farming.',
-    cardColor: '#4ade80',
+    cardColor: '#c9a97a',
     isMega: true,
     features: ['1 key — up to 100 tabs', 'No Hardware ID check', 'Any executor, anywhere', 'Equivalent to 10 normal keys', 'Hardware ID bypass built-in', 'Zero device binding restrictions'],
     methods: ['paypal'],
@@ -92,7 +94,7 @@ const PLAN_CONFIG: Record<string, PlanConfig> = {
     title: 'Mega Key — 2 Months',
     description: 'Best value for large-scale farming.',
     badge: 'Best Value',
-    cardColor: '#4ade80',
+    cardColor: '#c9a97a',
     isMega: true,
     features: ['1 key — up to 100 tabs', 'No Hardware ID check', 'Any executor, anywhere', 'Equivalent to 10 normal keys', 'Hardware ID bypass built-in', 'Zero device binding restrictions'],
     methods: ['paypal'],
@@ -141,10 +143,14 @@ function CheckoutContent() {
   const searchParams = useSearchParams();
   const router       = useRouter();
 
-  const planKey = searchParams.get('plan') ?? '';
-  const plan    = PLAN_CONFIG[planKey];
+  const planKey       = searchParams.get('plan') ?? '';
+  const plan          = PLAN_CONFIG[planKey];
+  const methodParam   = (searchParams.get('method') ?? 'paypal') as PaymentMethod;
 
-  const [paymentMethod, setPaymentMethod]     = useState<PaymentMethod>('paypal');
+  const [paymentMethod, setPaymentMethod]     = useState<PaymentMethod>(
+    plan?.methods.includes(methodParam) ? methodParam : 'paypal'
+  );
+  const [methodStocks, setMethodStocks]       = useState<Record<string, Record<string, number>>>({});
   const [discordSession, setDiscordSession]   = useState<DiscordSession | null>(null);
   const [tosAccepted, setTosAccepted]         = useState(false);
   const [noRefundAccepted, setNoRefundAccepted] = useState(false);
@@ -161,6 +167,14 @@ function CheckoutContent() {
 
   // Load discord session
   useEffect(() => { setDiscordSession(readDiscordSession()); }, []);
+
+  // Load stock
+  useEffect(() => {
+    fetch('/api/premium-stock')
+      .then(r => r.json())
+      .then(d => { if (d.methodStocks) setMethodStocks(d.methodStocks); })
+      .catch(() => {});
+  }, []);
 
   // Handle discord_error return
   useEffect(() => {
@@ -201,8 +215,17 @@ function CheckoutContent() {
   const r            = parseInt(plan.cardColor.slice(1, 3), 16);
   const g            = parseInt(plan.cardColor.slice(3, 5), 16);
   const b            = parseInt(plan.cardColor.slice(5, 7), 16);
-  const canPay       = !!discordSession && tosAccepted && noRefundAccepted && tosTimer === 0 && !isProcessing;
   const returnUrl    = `/checkout?plan=${planKey}`;
+
+  // Stock for current plan + payment method
+  const currentStock = methodStocks[planKey]?.[paymentMethod] ?? null;
+  const isOutOfStock = currentStock === 0;
+  const canPay       = !!discordSession && tosAccepted && noRefundAccepted && tosTimer === 0 && !isProcessing && !isOutOfStock;
+  const stockDisplay = currentStock === null ? null
+    : currentStock === 0  ? { text: 'Out of stock',               color: '#f87171', bg: 'rgba(239,68,68,0.1)',    border: 'rgba(239,68,68,0.2)' }
+    : currentStock <= 3   ? { text: `${currentStock} slots left`, color: '#fbbf24', bg: 'rgba(245,158,11,0.1)',  border: 'rgba(245,158,11,0.2)' }
+    : currentStock <= 10  ? { text: `${currentStock} slots left`, color: '#fbbf24', bg: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.15)' }
+    :                       { text: `${currentStock} in stock`,   color: '#86efac', bg: 'rgba(74,222,128,0.08)', border: 'rgba(74,222,128,0.15)' };
 
   // ── Payment handlers ────────────────────────────────────────────────────────
   const capturePayPalOrder = async (orderId: string) => {
@@ -352,7 +375,7 @@ function CheckoutContent() {
   };
 
   return (
-    <div className="min-h-screen pt-20 pb-24 px-6 md:px-10 max-w-5xl mx-auto">
+    <div className="min-h-screen pt-14 pb-24 px-6 md:pl-24 md:pr-14 lg:pl-28 lg:pr-20">
 
       {/* ── Back + header ── */}
       <div className="mb-8">
@@ -419,6 +442,20 @@ function CheckoutContent() {
               </div>
               <p className="text-xs mt-1" style={{ color: 'rgba(255,255,255,0.3)' }}>{priceInfo.billingNote}</p>
             </div>
+
+            {/* Stock indicator */}
+            {stockDisplay && (
+              <div
+                className="flex items-center gap-2 text-xs font-medium rounded-lg px-3 py-2 mb-5"
+                style={{ backgroundColor: stockDisplay.bg, color: stockDisplay.color, border: `1px solid ${stockDisplay.border}` }}
+              >
+                <span className="relative flex h-1.5 w-1.5 shrink-0">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ backgroundColor: stockDisplay.color }} />
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5" style={{ backgroundColor: stockDisplay.color }} />
+                </span>
+                {stockDisplay.text} via {paymentMethod === 'paypal' ? 'PayPal' : paymentMethod === 'maya' ? 'Maya' : 'GCash'}
+              </div>
+            )}
 
             <div className="h-px mb-5" style={{ backgroundColor: `rgba(${r},${g},${b},0.12)` }} />
 
@@ -532,7 +569,7 @@ function CheckoutContent() {
           </div>
 
           {/* Terms of Service */}
-          <div className="rounded-2xl p-5 space-y-3" style={{ backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}>
+          <div className="rounded-2xl p-5 space-y-3" style={{ backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', opacity: isOutOfStock ? 0.4 : 1, pointerEvents: isOutOfStock ? 'none' : 'auto' }}>
             <p className="text-xs font-semibold text-white">Terms & Conditions</p>
 
             <div className="rounded-xl p-4" style={{ backgroundColor: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)' }}>
@@ -593,6 +630,8 @@ function CheckoutContent() {
           >
             {isProcessing ? (
               <><Loader2 className="w-4 h-4 animate-spin" /> Processing...</>
+            ) : isOutOfStock ? (
+              'Out of stock — switch payment method'
             ) : tosAccepted && noRefundAccepted && tosTimer > 0 ? (
               `Please wait ${tosTimer}s...`
             ) : !discordSession ? (
@@ -697,7 +736,11 @@ function CheckoutContent() {
                 title="Tap to enlarge"
               >
                 <img
-                  src={paymentMethod === 'gcash' ? '/images/gcash-qr.jpg' : '/images/maya-qr.jpg'}
+                  src={
+  paymentMethod === 'gcash'
+    ? `/images/gcash-qr-${planKey}.jpg`
+    : `/images/maya-qr-${planKey}.jpg`
+}
                   alt="QR Code"
                   className="w-full h-full object-contain"
                 />
@@ -747,7 +790,11 @@ function CheckoutContent() {
             </p>
             <div className="rounded-2xl overflow-hidden shadow-2xl" style={{ backgroundColor: 'white', width: 'min(92vw, 92vh)', height: 'min(92vw, 92vh)' }}>
               <img
-                src={paymentMethod === 'gcash' ? '/images/gcash-qr.jpg' : '/images/maya-qr.jpg'}
+                src={
+  paymentMethod === 'gcash'
+    ? `/images/gcash-qr-${planKey}.jpg`
+    : `/images/maya-qr-${planKey}.jpg`
+}
                 alt="QR Code"
                 className="w-full h-full object-contain"
               />

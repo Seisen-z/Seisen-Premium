@@ -10,9 +10,9 @@
   --text-primary:  #f0f0f0;
   --text-secondary:#999999;
   --text-muted:    #555555;
-  --accent:        #10b981;
-  --accent-hover:  #059669;
-  --accent-rgb:    16, 185, 129;
+  --accent:        #c9a97a;
+  --accent-hover:  #b89060;
+  --accent-rgb:    201, 169, 122;
   --border-color:  #1c1c1c;
   --border:        var(--border-color);
   --border-light:  #272727;

@@ -48,17 +48,17 @@ export default function LoadingScreen() {
         <div className="relative w-32 h-32 md:w-40 md:h-40 mb-12 flex items-center justify-center">
             
             {/* Rotating Outer Diamond */}
-            <div className="absolute w-full h-full border border-emerald-500/20 transform rotate-45 animate-spin-slow" />
-            
+            <div className="absolute w-full h-full border border-[#c9a97a]/20 transform rotate-45 animate-spin-slow" />
+
             {/* Counter-Rotating Inner Diamond */}
-            <div className="absolute w-3/4 h-3/4 border border-emerald-500/40 transform rotate-45 animate-spin-slow [animation-direction:reverse]" />
-            
+            <div className="absolute w-3/4 h-3/4 border border-[#c9a97a]/40 transform rotate-45 animate-spin-slow [animation-direction:reverse]" />
+
             {/* Static Pulse Core */}
-            <div className="absolute w-1/2 h-1/2 border-2 border-emerald-500/80 transform rotate-45 shadow-[0_0_30px_rgba(16,185,129,0.3)] animate-pulse" />
-            
+            <div className="absolute w-1/2 h-1/2 border-2 border-[#c9a97a]/80 transform rotate-45 shadow-[0_0_30px_rgba(201,169,122,0.3)] animate-pulse" />
+
             {/* Center Icon */}
             <div className="relative z-10">
-                 <Zap className="w-8 h-8 md:w-10 md:h-10 text-white fill-emerald-500/20 drop-shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+                 <Zap className="w-8 h-8 md:w-10 md:h-10 text-white fill-[#c9a97a]/20 drop-shadow-[0_0_10px_rgba(201,169,122,0.5)]" />
             </div>
 
         </div>
@@ -69,11 +69,11 @@ export default function LoadingScreen() {
                  SEISEN
              </h2>
              <div className="flex items-center justify-center gap-2">
-                 <div className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce [animation-delay:-0.3s]" />
-                 <div className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce [animation-delay:-0.15s]" />
-                 <div className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" />
+                 <div className="w-2 h-2 bg-[#c9a97a] rounded-full animate-bounce [animation-delay:-0.3s]" />
+                 <div className="w-2 h-2 bg-[#c9a97a] rounded-full animate-bounce [animation-delay:-0.15s]" />
+                 <div className="w-2 h-2 bg-[#c9a97a] rounded-full animate-bounce" />
              </div>
-             <p className="text-emerald-500/60 text-xs tracking-[0.3em] font-mono uppercase mt-4">
+             <p className="text-[#c9a97a]/60 text-xs tracking-[0.3em] font-mono uppercase mt-4">
                  Initializing System
              </p>
         </div>

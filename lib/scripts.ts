@@ -90,7 +90,7 @@ export async function fetchScripts(): Promise<Script[]> {
       }
     });
 
-    // Apply metadata
+    // Apply metadata — Supabase first, static file as fallback
     try {
       const { supabase } = await import('./server/db');
       const { data: metadataData } = await supabase
@@ -107,8 +107,19 @@ export async function fetchScripts(): Promise<Script[]> {
         });
       }
     } catch {
-      // fall through without metadata
+      // fall through to static fallback below
     }
+
+    // Static fallback for scripts with no Supabase metadata
+    gamesByName.forEach((game) => {
+      if (!game.description && !game.features?.length) {
+        const staticMeta = SCRIPT_METADATA[game.name];
+        if (staticMeta) {
+          game.description = staticMeta.description;
+          game.features    = staticMeta.features;
+        }
+      }
+    });
 
     return Array.from(gamesByName.values());
 

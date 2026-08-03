@@ -322,7 +322,7 @@ export class TicketDatabase {
     return this.premiumTiers.includes(normalized) ? normalized : null;
   }
 
-  private readonly paymentMethods = ['robux', 'paypal', 'card'];
+  private readonly paymentMethods = ['robux', 'paypal', 'card', 'gcash', 'maya'];
 
   private normalizeMethod(method: string) {
     const m = (method || '').toLowerCase();
@@ -338,7 +338,7 @@ export class TicketDatabase {
     const result: Record<string, Record<string, number>> = {};
 
     for (const tier of this.premiumTiers) {
-      result[tier] = { robux: 0, paypal: 0, gcash: 0, card: 0 };
+      result[tier] = { robux: 0, paypal: 0, gcash: 0, maya: 0, card: 0 };
     }
 
     if (error) {
@@ -368,6 +368,13 @@ export class TicketDatabase {
       }
     }
 
+    // GCash and Maya share the same QR-payment stock — always keep them in sync
+    for (const tier of this.premiumTiers) {
+      const qrStock = Math.max(result[tier].gcash ?? 0, result[tier].maya ?? 0);
+      result[tier].gcash = qrStock;
+      result[tier].maya  = qrStock;
+    }
+
     return result;
   }
 
@@ -379,24 +386,26 @@ export class TicketDatabase {
     if (!normalizedMethod) throw new Error('Invalid payment method');
 
     const safeStock = Number.isFinite(stock) ? Math.max(0, Math.floor(stock)) : 0;
+    const now = new Date().toISOString();
 
-    const { data, error } = await this.client
+    // GCash and Maya share the same QR-payment stock — always write both together
+    const methodsToWrite = (normalizedMethod === 'gcash' || normalizedMethod === 'maya')
+      ? ['gcash', 'maya']
+      : [normalizedMethod];
+
+    const { error } = await this.client
       .from('premium_stock')
-      .upsert({
-        tier: normalizedTier,
-        payment_method: normalizedMethod,
-        stock: safeStock,
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'tier,payment_method' })
-      .select('tier, payment_method, stock')
-      .single();
+      .upsert(
+        methodsToWrite.map(m => ({ tier: normalizedTier, payment_method: m, stock: safeStock, updated_at: now })),
+        { onConflict: 'tier,payment_method' }
+      );
 
     if (error) {
       console.error('Error setting payment method stock:', error);
       throw error;
     }
 
-    return data;
+    return { tier: normalizedTier, payment_method: normalizedMethod, stock: safeStock };
   }
 
   async decrementPaymentMethodStock(tier: string, method: string): Promise<boolean> {
@@ -404,12 +413,15 @@ export class TicketDatabase {
     const normalizedMethod = this.normalizeMethod(method);
     if (!normalizedTier || !normalizedMethod) return false;
 
+    // GCash and Maya share stock — always read/write the canonical 'gcash' row
+    const canonicalMethod = (normalizedMethod === 'gcash' || normalizedMethod === 'maya') ? 'gcash' : normalizedMethod;
+
     for (let attempt = 0; attempt < 3; attempt++) {
       const { data: current, error: readError } = await this.client
         .from('premium_stock')
         .select('stock')
         .eq('tier', normalizedTier)
-        .eq('payment_method', normalizedMethod)
+        .eq('payment_method', canonicalMethod)
         .single();
 
       if (readError) {
@@ -420,11 +432,14 @@ export class TicketDatabase {
       const currentStock = Number(current?.stock || 0);
       if (currentStock <= 0) return false;
 
+      const now = new Date().toISOString();
+
+      // Decrement both gcash and maya together (optimistic lock on gcash row)
       const { data: updated, error: updateError } = await this.client
         .from('premium_stock')
-        .update({ stock: currentStock - 1, updated_at: new Date().toISOString() })
+        .update({ stock: currentStock - 1, updated_at: now })
         .eq('tier', normalizedTier)
-        .eq('payment_method', normalizedMethod)
+        .eq('payment_method', canonicalMethod)
         .eq('stock', currentStock)
         .select('tier')
         .maybeSingle();
@@ -434,7 +449,15 @@ export class TicketDatabase {
         return false;
       }
 
-      if (updated) return true;
+      if (updated) {
+        // Keep maya row in sync
+        await this.client
+          .from('premium_stock')
+          .update({ stock: currentStock - 1, updated_at: now })
+          .eq('tier', normalizedTier)
+          .eq('payment_method', 'maya');
+        return true;
+      }
     }
 
     return false;

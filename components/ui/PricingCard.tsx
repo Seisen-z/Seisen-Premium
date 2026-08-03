@@ -42,7 +42,7 @@ export default function PricingCard({
   badgeVariant = 'default',
   priceIcon,
   cardIcon,
-  cardColor = '#4ade80',
+  cardColor = '#c9a97a',
   originalPrice,
   stockStatusText,
   stockStatusVariant = 'in-stock',

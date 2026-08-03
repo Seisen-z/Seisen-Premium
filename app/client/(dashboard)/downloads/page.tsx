@@ -239,7 +239,7 @@ export default function ClientScriptPage() {
                 <h3 className="text-sm font-bold text-white">Seisen Hub Premium</h3>
                 <p className="text-xs text-[#555]">Loadstring · Auto-Updates</p>
               </div>
-              <span className="ml-auto inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-[var(--accent)] border border-emerald-500/20">
+              <span className="ml-auto inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[rgba(201,169,122,0.1)] text-[var(--accent)] border border-[rgba(201,169,122,0.25)]">
                 Active
               </span>
             </div>

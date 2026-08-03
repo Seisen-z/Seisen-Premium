@@ -121,7 +121,7 @@ export default function ClientSupportContent() {
                 <h1 className="text-2xl font-bold text-white flex items-center gap-3">
                     Support Tickets
                     {tickets.filter(t => t.status === 'replied').length > 0 && (
-                        <span className="bg-emerald-500/20 text-emerald-500 text-xs px-2.5 py-0.5 rounded-full border border-emerald-500/20 font-medium">
+                        <span className="bg-[rgba(201,169,122,0.15)] text-[var(--accent)] text-xs px-2.5 py-0.5 rounded-full border border-[rgba(201,169,122,0.25)] font-medium">
                             {tickets.filter(t => t.status === 'replied').length} New Action Required
                         </span>
                     )}

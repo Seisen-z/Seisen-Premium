@@ -23,10 +23,10 @@ export default function PurchaseCounter() {
   }, []);
 
   return (
-    <div className="flex items-center justify-center gap-2 text-sm px-4 py-1.5 rounded-full mx-auto w-fit mb-8 animate-fade-in" style={{ color: 'var(--text-muted)', backgroundColor: 'var(--bg-tertiary)/50', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
-      <Users className="w-4 h-4" style={{ color: 'var(--accent)' }} />
+    <div className="inline-flex items-center gap-2 text-xs animate-fade-in" style={{ color: 'rgba(255,255,255,0.3)' }}>
+      <Users className="w-3.5 h-3.5" style={{ color: 'rgba(255,255,255,0.3)' }} />
       <span>
-        <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{count}</span> have purchased premium
+        <span className="font-semibold" style={{ color: 'rgba(255,255,255,0.7)' }}>{count} people</span> have purchased premium
       </span>
     </div>
   );

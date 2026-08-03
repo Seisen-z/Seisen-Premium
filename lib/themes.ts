@@ -10,11 +10,11 @@ export interface Theme {
 // Everything else stays the same dark theme
 export const themes: Theme[] = [
   {
-    id: 'emerald',
+    id: 'cream',
     name: 'Default Dark',
-    accent: '#10b981',
-    accentHover: '#059669',
-    swatches: ['#10b981', '#059669', '#047857'],
+    accent: '#c9a97a',
+    accentHover: '#b89060',
+    swatches: ['#c9a97a', '#b89060', '#9a7d58'],
   },
   {
     id: 'blue',

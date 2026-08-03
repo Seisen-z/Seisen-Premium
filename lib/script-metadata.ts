@@ -19,6 +19,17 @@ export const SCRIPT_METADATA: Record<string, ScriptMetadata> = {
     ]
   },
 
+  "Anime Expedition": {
+    description: "The go-to script for Anime Expedition — auto-farm, quest automation, and stat grinding on autopilot.",
+    features: [
+      "Auto Farm",
+      "Auto Quest",
+      "Teleport",
+      "God Mode",
+      "Speed Hack",
+    ]
+  },
+
   // Example by Name (Matches the name shown on the card)
   "Anime Vanguards": {
     description: "Dominate Anime Vanguards with powerful macro and auto-play features.",

@@ -38,7 +38,7 @@ const MarqueeColumn = ({ reviews, reverse = false, speed = 40 }: { reviews: Test
                 {[...reviews, ...reviews].map((review, i) => (
                     <div 
                         key={i} 
-                        className="flex-shrink-0 w-[350px] p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-green-500/30 transition-all duration-300 hover:bg-white/10 group-hover:[animation-play-state:paused]"
+                        className="flex-shrink-0 w-[350px] p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-[#c9a97a]/30 transition-all duration-300 hover:bg-white/10 group-hover:[animation-play-state:paused]"
                     >
                         <div className="flex gap-1 mb-4">
                             {[1, 2, 3, 4, 5].map((star) => (
@@ -60,7 +60,7 @@ const MarqueeColumn = ({ reviews, reverse = false, speed = 40 }: { reviews: Test
                                             className="w-full h-full object-cover"
                                         />
                                     </div>
-                                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-[#0a0a0a]" />
+                                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-[#c9a97a] rounded-full border-2 border-[#0a0a0a]" />
                                 </div>
                                 <div>
                                     <p className="text-sm font-medium text-white">{review.author}</p>
@@ -86,7 +86,7 @@ export default function TestimonialsMarquee({ initialTestimonials }: { initialTe
       <div className="container mx-auto px-6 mb-16 text-center relative z-10">
         
         <h2 className="text-4xl md:text-5xl font-bold mb-6 tracking-tight">
-          Loved by gamers <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-600">worldwide</span>
+          Loved by gamers <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#c9a97a] to-[#9a7d58]">worldwide</span>
         </h2>
         
         <p className="text-xl text-gray-400 max-w-2xl mx-auto">

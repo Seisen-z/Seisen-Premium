@@ -52,8 +52,8 @@ export default function DashboardPage() {
   const statusIsGood = !!subscription && !isExpired;
 
   const STATUS_COLORS: Record<string, string> = {
-    COMPLETED: 'bg-emerald-500/10 text-[var(--accent)] border-emerald-500/20',
-    paid:       'bg-emerald-500/10 text-[var(--accent)] border-emerald-500/20',
+    COMPLETED: 'bg-[rgba(201,169,122,0.1)] text-[var(--accent)] border-[rgba(201,169,122,0.25)]',
+    paid:       'bg-[rgba(201,169,122,0.1)] text-[var(--accent)] border-[rgba(201,169,122,0.25)]',
     PENDING:    'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
     FAILED:     'bg-red-500/10 text-red-400 border-red-500/20',
   };

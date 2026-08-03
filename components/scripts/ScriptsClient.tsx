@@ -44,7 +44,11 @@ export default function ScriptsClient({ initialScripts, lastUpdated }: ScriptsCl
   const [selected, setSelected]         = useState<Script | null>(null);
   const panelRef                        = useRef<HTMLDivElement>(null);
   const [mounted, setMounted]           = useState(false);
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    setMounted(true);
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, []);
 
   // Fetch thumbnails
   useEffect(() => {
@@ -121,7 +125,7 @@ export default function ScriptsClient({ initialScripts, lastUpdated }: ScriptsCl
 
       {/* ── Premium upgrade banner ── */}
       {counts.premium > 0 && filter !== 'premium' && (
-        <div className="shrink-0 px-6 md:px-12 py-2.5 flex items-center justify-between gap-4" style={{ backgroundColor: 'rgba(16,185,129,0.06)', borderBottom: '1px solid rgba(16,185,129,0.15)' }}>
+        <div className="shrink-0 px-6 md:pl-24 md:pr-14 lg:pl-28 lg:pr-20 py-2.5 flex items-center justify-between gap-4" style={{ backgroundColor: 'rgba(201,169,122,0.05)', borderBottom: '1px solid rgba(201,169,122,0.12)' }}>
           <p className="text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>
             <span style={{ color: 'var(--accent)', fontWeight: 600 }}>{counts.premium} premium scripts</span> are locked — upgrade to access everything with no key system.
           </p>
@@ -132,8 +136,8 @@ export default function ScriptsClient({ initialScripts, lastUpdated }: ScriptsCl
       )}
 
       {/* ── Top bar — never scrolls ── */}
-      <div className="shrink-0 px-6 md:px-12 py-3 z-[500]" style={{ backgroundColor: 'var(--bg-primary)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-start sm:items-center gap-3">
+      <div className="shrink-0 px-6 md:pl-24 md:pr-14 lg:pl-28 lg:pr-20 py-3 z-[500]" style={{ backgroundColor: 'var(--bg-primary)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
 
           {/* Search */}
           <div className="relative flex-1 w-full">
@@ -192,8 +196,8 @@ export default function ScriptsClient({ initialScripts, lastUpdated }: ScriptsCl
       </div>
 
       {/* ── Grid — only this part scrolls ── */}
-      <div className="flex-1 overflow-y-auto px-6 md:px-12 py-6">
-        <div className="max-w-7xl mx-auto">
+      <div className="flex-1 overflow-y-auto px-6 md:pl-24 md:pr-14 lg:pl-28 lg:pr-20 py-6">
+        <div>
           {filtered.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
               <AnimatePresence mode="popLayout">
@@ -278,7 +282,7 @@ export default function ScriptsClient({ initialScripts, lastUpdated }: ScriptsCl
                       <div className="flex items-center gap-1.5 mb-1">
                         <span
                           className="w-1.5 h-1.5 rounded-full shrink-0"
-                          style={{ backgroundColor: discontinued ? '#ef4444' : '#22c55e' }}
+                          style={{ backgroundColor: discontinued ? '#ef4444' : 'var(--accent)' }}
                         />
                         <span className="text-xs font-semibold text-white leading-tight truncate">{script.name}</span>
                       </div>
@@ -375,7 +379,7 @@ export default function ScriptsClient({ initialScripts, lastUpdated }: ScriptsCl
                       className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
                       style={selected.status === 'Discontinued'
                         ? { backgroundColor: 'rgba(239,68,68,0.15)', color: '#f87171' }
-                        : { backgroundColor: 'rgba(34,197,94,0.15)', color: '#22c55e' }
+                        : { backgroundColor: 'rgba(var(--accent-rgb),0.12)', color: 'var(--accent)' }
                       }
                     >
                       {selected.status}

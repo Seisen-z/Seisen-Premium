@@ -10,12 +10,12 @@ import autoTable from 'jspdf-autotable';
 const TIER_COLORS: Record<string, string> = {
   weekly:   'bg-blue-500/10 text-blue-400 border-blue-500/20',
   monthly:  'bg-purple-500/10 text-purple-400 border-purple-500/20',
-  lifetime: 'bg-emerald-500/10 text-[var(--accent)] border-emerald-500/20',
+  lifetime: 'bg-[rgba(201,169,122,0.1)] text-[var(--accent)] border-[rgba(201,169,122,0.25)]',
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  COMPLETED: 'bg-emerald-500/10 text-[var(--accent)] border-emerald-500/20',
-  paid:      'bg-emerald-500/10 text-[var(--accent)] border-emerald-500/20',
+  COMPLETED: 'bg-[rgba(201,169,122,0.1)] text-[var(--accent)] border-[rgba(201,169,122,0.25)]',
+  paid:      'bg-[rgba(201,169,122,0.1)] text-[var(--accent)] border-[rgba(201,169,122,0.25)]',
   PENDING:   'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
   FAILED:    'bg-red-500/10 text-red-400 border-red-500/20',
 };
