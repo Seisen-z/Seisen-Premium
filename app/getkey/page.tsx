@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { ExternalLink, Crown, Copy, Check, Terminal, ArrowRight } from 'lucide-react';
+import Reveal from '@/components/ui/Reveal';
 import { copyToClipboard } from '@/lib/utils';
 import Link from 'next/link';
 
@@ -22,7 +23,8 @@ export default function GetKeyPage() {
     <div className="min-h-screen px-6 md:px-14 pt-16 pb-28 max-w-6xl mx-auto">
 
       {/* ── Big header ── */}
-      <div className="mb-16 animate-fade-in">
+      <Reveal>
+      <div className="mb-16">
         <h1
           className="font-bold text-white leading-none mb-4"
           style={{ fontSize: 'clamp(3rem, 8vw, 6rem)', letterSpacing: '-0.04em' }}
@@ -33,11 +35,13 @@ export default function GetKeyPage() {
           Two access tiers. Free expires. Premium doesn't.
         </p>
       </div>
+      </Reveal>
 
       {/* ── Split layout ── */}
+      <Reveal delay={0.08}>
       <div
-        className="flex flex-col lg:flex-row gap-0 animate-fade-in"
-        style={{ border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', overflow: 'hidden', animationDelay: '0.08s', animationFillMode: 'backwards' }}
+        className="flex flex-col lg:flex-row gap-0"
+        style={{ border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', overflow: 'hidden' }}
       >
 
         {/* ── Left: Free Key ── */}
@@ -139,9 +143,11 @@ export default function GetKeyPage() {
           </Link>
         </div>
       </div>
+      </Reveal>
 
       {/* ── Script Loader ── */}
-      <div className="mt-16 animate-fade-in" style={{ animationDelay: '0.16s', animationFillMode: 'backwards' }}>
+      <Reveal delay={0.1}>
+      <div className="mt-16">
         <div className="flex items-center gap-3 mb-4">
           <Terminal className="w-3.5 h-3.5" style={{ color: 'var(--text-muted)' }} />
           <span className="font-mono text-xs uppercase tracking-[0.15em]" style={{ color: 'var(--text-muted)' }}>Script Loader</span>
@@ -175,6 +181,7 @@ export default function GetKeyPage() {
           </div>
         </div>
       </div>
+      </Reveal>
     </div>
   );
 }
