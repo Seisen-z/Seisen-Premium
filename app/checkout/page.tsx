@@ -1,13 +1,31 @@
-'use client';
+﻿'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Check, ArrowLeft, Loader2, AlertCircle, CheckCircle, AlertTriangle, X } from 'lucide-react';
+import { Check, ArrowLeft, Loader2, AlertCircle, CheckCircle, AlertTriangle, X, ChevronDown } from 'lucide-react';
 import { getApiUrl } from '@/lib/utils';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type PaymentMethod = 'paypal' | 'maya' | 'gcash';
+type PaymentMethod = 'paypal' | 'maya' | 'gcash' | 'local_qr';
+
+type CountryQRConfig = {
+  code: string;
+  name: string;
+  currency: string;
+  symbol: string;
+  qrTypeLabel: string;
+  prices: {
+    weekly: number;
+    monthly: number;
+    lifetime: number;
+  };
+  qrImages: {
+    weekly: string;
+    monthly: string;
+    lifetime: string;
+  };
+};
 
 type PriceInfo = {
   amount: number;
@@ -36,6 +54,321 @@ type DiscordSession = {
   avatar: string;
   email: string | null;
   tag: string;
+};
+
+const COUNTRY_QR_CONFIGS: Record<string, CountryQRConfig> = {
+  usd: {
+    code: 'usd',
+    name: 'United States (USD)',
+    currency: 'USD',
+    symbol: '$',
+    qrTypeLabel: 'Wise USD',
+    prices: { weekly: 3.5, monthly: 7, lifetime: 11.50 },
+    qrImages: {
+      weekly: '',
+      monthly: '',
+      lifetime: '/images/wise-qr/lifetime/Wise USD Lifetime.png'
+    }
+  },
+  eur: {
+    code: 'eur',
+    name: 'Europe (EUR)',
+    currency: 'EUR',
+    symbol: '€',
+    qrTypeLabel: 'Wise Euro',
+    prices: { weekly: 3, monthly: 6, lifetime: 10 },
+    qrImages: {
+      weekly: '',
+      monthly: '',
+      lifetime: '/images/wise-qr/lifetime/Wise Euro Lifetime.png'
+    }
+  },
+  gbp: {
+    code: 'gbp',
+    name: 'United Kingdom (GBP)',
+    currency: 'GBP',
+    symbol: '£',
+    qrTypeLabel: 'Wise GBP',
+    prices: { weekly: 2.5, monthly: 5, lifetime: 8.50 },
+    qrImages: {
+      weekly: '',
+      monthly: '',
+      lifetime: '/images/wise-qr/lifetime/Wise GBP Lifetime.png'
+    }
+  },
+  aud: {
+    code: 'aud',
+    name: 'Australia (AUD)',
+    currency: 'AUD',
+    symbol: 'A$',
+    qrTypeLabel: 'Wise AUD',
+    prices: { weekly: 5, monthly: 10, lifetime: 16.30 },
+    qrImages: {
+      weekly: '',
+      monthly: '',
+      lifetime: '/images/wise-qr/lifetime/Wise AUD Lifetime.png'
+    }
+  },
+  cad: {
+    code: 'cad',
+    name: 'Canada (CAD)',
+    currency: 'CAD',
+    symbol: 'C$',
+    qrTypeLabel: 'Wise CAD',
+    prices: { weekly: 5, monthly: 10, lifetime: 16.10 },
+    qrImages: {
+      weekly: '',
+      monthly: '',
+      lifetime: '/images/wise-qr/lifetime/Wise CAD Lifetime.png'
+    }
+  },
+  sgd: {
+    code: 'sgd',
+    name: 'Singapore (SGD)',
+    currency: 'SGD',
+    symbol: 'S$',
+    qrTypeLabel: 'Wise SGD',
+    prices: { weekly: 4.5, monthly: 9, lifetime: 15.20 },
+    qrImages: {
+      weekly: '',
+      monthly: '',
+      lifetime: '/images/wise-qr/lifetime/Wise SGD Lifetime.png'
+    }
+  },
+  php: {
+    code: 'php',
+    name: 'Philippines (PHP)',
+    currency: 'PHP',
+    symbol: '₱',
+    qrTypeLabel: 'Wise PHP',
+    prices: { weekly: 215, monthly: 430, lifetime: 710 },
+    qrImages: {
+      weekly: '',
+      monthly: '',
+      lifetime: '/images/wise-qr/lifetime/Wise Php Lifetime.png'
+    }
+  },
+  idr: {
+    code: 'idr',
+    name: 'Indonesia (IDR)',
+    currency: 'IDR',
+    symbol: 'Rp',
+    qrTypeLabel: 'Wise IDR',
+    prices: { weekly: 55000, monthly: 110000, lifetime: 184000 },
+    qrImages: {
+      weekly: '',
+      monthly: '',
+      lifetime: '/images/wise-qr/lifetime/Wise IDR Lifetime.png'
+    }
+  },
+  vnd: {
+    code: 'vnd',
+    name: 'Vietnam (VND)',
+    currency: 'VND',
+    symbol: '₫',
+    qrTypeLabel: 'Wise VND',
+    prices: { weekly: 88000, monthly: 176000, lifetime: 295000 },
+    qrImages: {
+      weekly: '',
+      monthly: '',
+      lifetime: '/images/wise-qr/lifetime/Wise VND Lifetime.png'
+    }
+  },
+  hkd: {
+    code: 'hkd',
+    name: 'Hong Kong (HKD)',
+    currency: 'HKD',
+    symbol: 'HK$',
+    qrTypeLabel: 'Wise HKD',
+    prices: { weekly: 27, monthly: 54, lifetime: 90 },
+    qrImages: {
+      weekly: '',
+      monthly: '',
+      lifetime: '/images/wise-qr/lifetime/Wise HKD Lifetime.png'
+    }
+  },
+  jpy: {
+    code: 'jpy',
+    name: 'Japan (JPY)',
+    currency: 'JPY',
+    symbol: '¥',
+    qrTypeLabel: 'Wise JPY',
+    prices: { weekly: 475, monthly: 950, lifetime: 1580 },
+    qrImages: {
+      weekly: '',
+      monthly: '',
+      lifetime: '/images/wise-qr/lifetime/Wise JPS Lifetime.png'
+    }
+  },
+  cny: {
+    code: 'cny',
+    name: 'China (CNY)',
+    currency: 'CNY',
+    symbol: '¥',
+    qrTypeLabel: 'Wise CNY',
+    prices: { weekly: 25, monthly: 50, lifetime: 83 },
+    qrImages: {
+      weekly: '',
+      monthly: '',
+      lifetime: '/images/wise-qr/lifetime/Wise CNY Lifetime.png'
+    }
+  },
+  chf: {
+    code: 'chf',
+    name: 'Switzerland (CHF)',
+    currency: 'CHF',
+    symbol: 'CHF',
+    qrTypeLabel: 'Wise CHF',
+    prices: { weekly: 2.8, monthly: 5.6, lifetime: 9.40 },
+    qrImages: {
+      weekly: '',
+      monthly: '',
+      lifetime: '/images/wise-qr/lifetime/Wise CHF Lifetime.png'
+    }
+  },
+  czk: {
+    code: 'czk',
+    name: 'Czech Republic (CZK)',
+    currency: 'CZK',
+    symbol: 'Kč',
+    qrTypeLabel: 'Wise CZK',
+    prices: { weekly: 81, monthly: 162, lifetime: 270 },
+    qrImages: {
+      weekly: '',
+      monthly: '',
+      lifetime: '/images/wise-qr/lifetime/Wise CZK Lifetime.png'
+    }
+  },
+  dkk: {
+    code: 'dkk',
+    name: 'Denmark (DKK)',
+    currency: 'DKK',
+    symbol: 'kr.',
+    qrTypeLabel: 'Wise DKK',
+    prices: { weekly: 22, monthly: 45, lifetime: 75 },
+    qrImages: {
+      weekly: '',
+      monthly: '',
+      lifetime: '/images/wise-qr/lifetime/Wise DKK Lifetime.png'
+    }
+  },
+  huf: {
+    code: 'huf',
+    name: 'Hungary (HUF)',
+    currency: 'HUF',
+    symbol: 'Ft',
+    qrTypeLabel: 'Wise HUF',
+    prices: { weekly: 1265, monthly: 2530, lifetime: 4220 },
+    qrImages: {
+      weekly: '',
+      monthly: '',
+      lifetime: '/images/wise-qr/lifetime/Wise HUF Lifetime.png'
+    }
+  },
+  ils: {
+    code: 'ils',
+    name: 'Israel (ILS)',
+    currency: 'ILS',
+    symbol: '₪',
+    qrTypeLabel: 'Wise ILS',
+    prices: { weekly: 13, monthly: 26, lifetime: 43.50 },
+    qrImages: {
+      weekly: '',
+      monthly: '',
+      lifetime: '/images/wise-qr/lifetime/Wise ILS Lifetime.png'
+    }
+  },
+  nok: {
+    code: 'nok',
+    name: 'Norway (NOK)',
+    currency: 'NOK',
+    symbol: 'kr',
+    qrTypeLabel: 'Wise NOK',
+    prices: { weekly: 38, monthly: 76, lifetime: 127 },
+    qrImages: {
+      weekly: '',
+      monthly: '',
+      lifetime: '/images/wise-qr/lifetime/Wise NOR Lifetime.png'
+    }
+  },
+  nzd: {
+    code: 'nzd',
+    name: 'New Zealand (NZD)',
+    currency: 'NZD',
+    symbol: 'NZ$',
+    qrTypeLabel: 'Wise NZD',
+    prices: { weekly: 5.5, monthly: 11, lifetime: 17.80 },
+    qrImages: {
+      weekly: '',
+      monthly: '',
+      lifetime: '/images/wise-qr/lifetime/Wise NZD Lifetime.png'
+    }
+  },
+  pln: {
+    code: 'pln',
+    name: 'Poland (PLN)',
+    currency: 'PLN',
+    symbol: 'zł',
+    qrTypeLabel: 'Wise PLN',
+    prices: { weekly: 14, monthly: 28, lifetime: 46 },
+    qrImages: {
+      weekly: '',
+      monthly: '',
+      lifetime: '/images/wise-qr/lifetime/Wise PLN Lifetime.png'
+    }
+  },
+  sek: {
+    code: 'sek',
+    name: 'Sweden (SEK)',
+    currency: 'SEK',
+    symbol: 'kr',
+    qrTypeLabel: 'Wise SEK',
+    prices: { weekly: 36, monthly: 73, lifetime: 121 },
+    qrImages: {
+      weekly: '',
+      monthly: '',
+      lifetime: '/images/wise-qr/lifetime/Wise SEK Lifetime.png'
+    }
+  },
+  ugx: {
+    code: 'ugx',
+    name: 'Uganda (UGX)',
+    currency: 'UGX',
+    symbol: 'USh',
+    qrTypeLabel: 'Wise UGX',
+    prices: { weekly: 13000, monthly: 26000, lifetime: 43500 },
+    qrImages: {
+      weekly: '',
+      monthly: '',
+      lifetime: '/images/wise-qr/lifetime/Wise UGX Lifetime.png'
+    }
+  },
+  zar: {
+    code: 'zar',
+    name: 'South Africa (ZAR)',
+    currency: 'ZAR',
+    symbol: 'R',
+    qrTypeLabel: 'Wise ZAR',
+    prices: { weekly: 65, monthly: 130, lifetime: 215 },
+    qrImages: {
+      weekly: '',
+      monthly: '',
+      lifetime: '/images/wise-qr/lifetime/Wise ZAR Lifetiem.png'
+    }
+  },
+  aed: {
+    code: 'aed',
+    name: 'United Arab Emirates (AED)',
+    currency: 'AED',
+    symbol: 'د.إ',
+    qrTypeLabel: 'Wise AED',
+    prices: { weekly: 13, monthly: 26, lifetime: 42.50 },
+    qrImages: {
+      weekly: '',
+      monthly: '',
+      lifetime: '/images/wise-qr/lifetime/Wise AED Lifetime.png'
+    }
+  }
 };
 
 // ─── Plan Config ──────────────────────────────────────────────────────────────
@@ -72,7 +405,7 @@ const PLAN_CONFIG: Record<string, PlanConfig> = {
     badge: '28% OFF',
     cardColor: '#c9a97a',
     features: ['All premium scripts', 'No key system', 'Priority support', 'Early access', 'Exclusive updates', 'Lifetime access'],
-    methods: ['paypal', 'maya', 'gcash'],
+    methods: ['paypal', 'maya', 'gcash', 'local_qr'],
     prices: {
       paypal: { amount: 10,  currency: '€', label: '€10',   originalLabel: '€14',    period: '',          billingNote: 'One-time payment' },
       maya:   { amount: 850, currency: '₱', label: '₱850',  originalLabel: '₱1,000', period: 'one-time',  billingNote: 'One-time payment' },
@@ -124,6 +457,12 @@ const GCashIcon = ({ className }: { className?: string }) => (
   <img src="/images/gcash.png" alt="GCash" className={className} style={{ objectFit: 'contain' }} />
 );
 
+const WiseIcon = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className={className} style={{ color: '#9FE870' }}>
+    <path d="M6.488 7.469L0 15.05h11.585l1.301-3.576H7.922l3.033-3.507.01-.092L8.993 4.48h8.873L10.988 23.405h4.706L24 .595H2.543z"/>
+  </svg>
+);
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function readDiscordSession(): DiscordSession | null {
   if (typeof document === 'undefined') return null;
@@ -136,6 +475,7 @@ const METHOD_LABELS: Record<PaymentMethod, string> = {
   paypal: 'PayPal',
   maya:   'Maya',
   gcash:  'GCash',
+  local_qr: 'Wise/Local QR',
 };
 
 // ─── Checkout Content ─────────────────────────────────────────────────────────
@@ -150,6 +490,7 @@ function CheckoutContent() {
   const [paymentMethod, setPaymentMethod]     = useState<PaymentMethod>(
     plan?.methods.includes(methodParam) ? methodParam : 'paypal'
   );
+  const [selectedCountry, setSelectedCountry] = useState<string>('usd');
   const [methodStocks, setMethodStocks]       = useState<Record<string, Record<string, number>>>({});
   const [discordSession, setDiscordSession]   = useState<DiscordSession | null>(null);
   const [tosAccepted, setTosAccepted]         = useState(false);
@@ -161,6 +502,10 @@ function CheckoutContent() {
   const [statusModal, setStatusModal]         = useState<{
     isOpen: boolean; type: 'success' | 'error'; title: string; message: string; details?: string;
   }>({ isOpen: false, type: 'success', title: '', message: '' });
+  const [liveRates, setLiveRates]             = useState<Record<string, number> | null>(null);
+  const [countryDropdownOpen, setCountryDropdownOpen] = useState(false);
+  const [countrySearch, setCountrySearch]     = useState('');
+  const countryDropdownRef                    = useRef<HTMLDivElement>(null);
 
   // Redirect invalid plan
   useEffect(() => { if (!plan) router.replace('/premium'); }, []);
@@ -174,6 +519,25 @@ function CheckoutContent() {
       .then(r => r.json())
       .then(d => { if (d.methodStocks) setMethodStocks(d.methodStocks); })
       .catch(() => {});
+  }, []);
+
+  // Load live exchange rates (free API, no key needed)
+  useEffect(() => {
+    fetch('/api/exchange-rates')
+      .then(r => r.json())
+      .then(d => { setLiveRates(d.rates); })
+      .catch(() => {});
+  }, []);
+
+  // Close country dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (countryDropdownRef.current && !countryDropdownRef.current.contains(e.target as Node)) {
+        setCountryDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
   }, []);
 
   // Handle discord_error return
@@ -211,7 +575,35 @@ function CheckoutContent() {
 
   if (!plan) return null;
 
-  const priceInfo    = plan.prices[paymentMethod] ?? plan.prices.paypal!;
+  // ── Live rate price helpers ──────────────────────────────────────────────
+  const BASE_EUR: Record<string, number> = { weekly: 3, monthly: 6, lifetime: 10 };
+
+  function roundPrice(amount: number, currency: string): number {
+    if (['IDR', 'VND', 'UGX'].includes(currency)) return Math.round(amount / 500) * 500;
+    if (['JPY', 'HUF', 'PHP', 'CZK', 'NOK', 'SEK', 'DKK', 'ZAR', 'ILS', 'PLN', 'HKD', 'CNY'].includes(currency))
+      return Math.round(amount);
+    return Math.round(amount * 100) / 100;
+  }
+
+  function getLivePrice(cfg: typeof countryConfig, plan: string): number {
+    const baseEUR = BASE_EUR[plan] ?? BASE_EUR.lifetime;
+    if (liveRates && liveRates[cfg.currency]) {
+      return roundPrice(baseEUR * liveRates[cfg.currency], cfg.currency);
+    }
+    return cfg.prices[plan as 'weekly' | 'monthly' | 'lifetime'] || 0;
+  }
+
+  const countryConfig = COUNTRY_QR_CONFIGS[selectedCountry] || COUNTRY_QR_CONFIGS.usd;
+  const liveAmount    = getLivePrice(countryConfig, planKey);
+  const priceInfo = paymentMethod === 'local_qr' && countryConfig
+    ? {
+        amount: liveAmount,
+        currency: countryConfig.currency,
+        label: `${countryConfig.symbol}${liveAmount.toLocaleString()}`,
+        period: plan.prices.paypal!.period,
+        billingNote: `One-time payment · QR payment via Discord ticket`
+      }
+    : (plan.prices[paymentMethod] ?? plan.prices.paypal!);
   const r            = parseInt(plan.cardColor.slice(1, 3), 16);
   const g            = parseInt(plan.cardColor.slice(3, 5), 16);
   const b            = parseInt(plan.cardColor.slice(5, 7), 16);
@@ -507,15 +899,97 @@ function CheckoutContent() {
                       {method === 'paypal' && <img src="/images/paypal.png" alt="PayPal" className="w-4 h-4 object-contain" />}
                       {method === 'maya'   && <MayaIcon className="w-4 h-4 rounded-sm" />}
                       {method === 'gcash'  && <GCashIcon className="w-4 h-4 rounded-sm" />}
+                      {method === 'local_qr' && <WiseIcon className="w-4 h-4" />}
                       {METHOD_LABELS[method]}
                     </button>
                   );
                 })}
               </div>
-              {paymentMethod !== 'paypal' && plan.prices[paymentMethod] && (
+              {paymentMethod !== 'paypal' && paymentMethod !== 'local_qr' && plan.prices[paymentMethod] && (
                 <p className="text-xs mt-3 pt-3 border-t" style={{ color: 'rgba(255,255,255,0.3)', borderColor: 'rgba(255,255,255,0.06)' }}>
                   Price in PHP: <strong className="text-white">{plan.prices[paymentMethod]!.label}</strong> · Payment via QR code, Discord ticket required
                 </p>
+              )}
+              {paymentMethod === 'local_qr' && (
+                <div className="mt-4 pt-4 border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+                  <label className="text-xs font-semibold text-white block mb-2">Select your Country</label>
+                  {(() => {
+                    const FLAGS: Record<string, string> = {
+                      usd: '🇺🇸', eur: '🇪🇺', gbp: '🇬🇧', aud: '🇦🇺', cad: '🇨🇦',
+                      sgd: '🇸🇬', php: '🇵🇭', idr: '🇮🇩', vnd: '🇻🇳', hkd: '🇭🇰',
+                      jpy: '🇯🇵', cny: '🇨🇳', chf: '🇨🇭', czk: '🇨🇿', dkk: '🇩🇰',
+                      huf: '🇭🇺', ils: '🇮🇱', nok: '🇳🇴', nzd: '🇳🇿', pln: '🇵🇱',
+                      sek: '🇸🇪', ugx: '🇺🇬', zar: '🇿🇦', aed: '🇦🇪',
+                    };
+                    const all = Object.values(COUNTRY_QR_CONFIGS);
+                    const filtered = countrySearch
+                      ? all.filter(c => c.name.toLowerCase().includes(countrySearch.toLowerCase()) || c.currency.toLowerCase().includes(countrySearch.toLowerCase()))
+                      : all;
+                    const sel = COUNTRY_QR_CONFIGS[selectedCountry];
+                    return (
+                      <div ref={countryDropdownRef} className="relative">
+                        <button
+                          type="button"
+                          onClick={() => { setCountryDropdownOpen(o => !o); setCountrySearch(''); }}
+                          className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl text-sm text-white transition-all duration-150"
+                          style={{
+                            backgroundColor: countryDropdownOpen ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.04)',
+                            border: countryDropdownOpen ? '1px solid rgba(255,255,255,0.18)' : '1px solid rgba(255,255,255,0.09)',
+                          }}
+                        >
+                          <span className="flex items-center gap-2.5">
+                            <span className="text-base leading-none">{FLAGS[selectedCountry] ?? '🌐'}</span>
+                            <span className="font-medium">{sel?.name ?? 'Select country'}</span>
+                          </span>
+                          <span className="flex items-center gap-2 shrink-0">
+                            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded" style={{ backgroundColor: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.45)' }}>{sel?.currency}</span>
+                            <ChevronDown className="w-3.5 h-3.5 transition-transform duration-200" style={{ color: 'rgba(255,255,255,0.35)', transform: countryDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)' }} />
+                          </span>
+                        </button>
+                        {countryDropdownOpen && (
+                          <div className="absolute z-50 w-full mt-1.5 rounded-xl overflow-hidden" style={{ backgroundColor: '#111', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 20px 60px rgba(0,0,0,0.75)' }}>
+                            <div className="flex items-center gap-2 px-3 py-2.5" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                              <svg className="w-3.5 h-3.5 shrink-0" style={{ color: 'rgba(255,255,255,0.3)' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                              <input autoFocus type="text" placeholder="Search country or currency..." value={countrySearch} onChange={e => setCountrySearch(e.target.value)} className="w-full bg-transparent text-sm text-white placeholder:text-white/25 outline-none" />
+                              {countrySearch && <button type="button" onClick={() => setCountrySearch('')} style={{ color: 'rgba(255,255,255,0.3)' }}><X className="w-3.5 h-3.5" /></button>}
+                            </div>
+                            <ul className="max-h-60 overflow-y-auto py-1" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.1) transparent' }}>
+                              {filtered.length === 0 && <li className="px-4 py-4 text-xs text-center" style={{ color: 'rgba(255,255,255,0.3)' }}>No countries found</li>}
+                              {filtered.map(c => {
+                                const active = selectedCountry === c.code;
+                                return (
+                                  <li key={c.code}>
+                                    <button
+                                      type="button"
+                                      onClick={() => { setSelectedCountry(c.code); setCountryDropdownOpen(false); setCountrySearch(''); }}
+                                      className="w-full flex items-center justify-between px-3 py-2.5 text-sm transition-colors duration-100"
+                                      style={{ backgroundColor: active ? 'rgba(255,255,255,0.07)' : 'transparent', color: active ? 'white' : 'rgba(255,255,255,0.65)' }}
+                                      onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(255,255,255,0.04)'; }}
+                                      onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; }}
+                                    >
+                                      <span className="flex items-center gap-2.5">
+                                        <span className="text-base leading-none w-5 text-center">{FLAGS[c.code] ?? '🌐'}</span>
+                                        <span className="font-medium text-left">{c.name}</span>
+                                      </span>
+                                      <span className="flex items-center gap-1.5 shrink-0 ml-2">
+                                        <span className="text-xs font-mono" style={{ color: 'rgba(255,255,255,0.4)' }}>{c.symbol}</span>
+                                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded" style={{ backgroundColor: active ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.4)' }}>{c.currency}</span>
+                                        {active && <span className="w-1.5 h-1.5 rounded-full bg-white/50 shrink-0" />}
+                                      </span>
+                                    </button>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+                  <p className="text-xs mt-3 text-white/50">
+                    Price: <strong className="text-white">{priceInfo.label}</strong> · Local QR payment via {countryConfig.qrTypeLabel}
+                  </p>
+                </div>
               )}
             </div>
           )}
@@ -643,6 +1117,7 @@ function CheckoutContent() {
                 {paymentMethod === 'paypal' && <img src="/images/paypal.png" alt="" className="w-4 h-4 object-contain" />}
                 {paymentMethod === 'maya'   && <MayaIcon className="w-4 h-4 rounded-sm" />}
                 {paymentMethod === 'gcash'  && <GCashIcon className="w-4 h-4 rounded-sm" />}
+                {paymentMethod === 'local_qr' && <WiseIcon className="w-4 h-4" />}
                 {payButtonLabel()}
               </>
             )}
@@ -706,7 +1181,7 @@ function CheckoutContent() {
             <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
               <div>
                 <p className="font-mono text-[10px] uppercase tracking-[0.2em] mb-0.5" style={{ color: 'var(--text-muted)' }}>
-                  {paymentMethod === 'gcash' ? 'GCash' : 'Maya'}
+                  {paymentMethod === 'gcash' ? 'GCash' : paymentMethod === 'maya' ? 'Maya' : countryConfig.qrTypeLabel}
                 </p>
                 <h2 className="font-bold text-white text-base capitalize">{plan.title}</h2>
               </div>
@@ -737,10 +1212,12 @@ function CheckoutContent() {
               >
                 <img
                   src={
-  paymentMethod === 'gcash'
-    ? `/images/gcash-qr-${planKey}.jpg`
-    : `/images/maya-qr-${planKey}.jpg`
-}
+                    paymentMethod === 'gcash'
+                      ? `/images/gcash-qr-${planKey}.jpg`
+                      : paymentMethod === 'maya'
+                      ? `/images/maya-qr-${planKey}.jpg`
+                      : countryConfig.qrImages[planKey as 'weekly' | 'monthly' | 'lifetime']
+                  }
                   alt="QR Code"
                   className="w-full h-full object-contain"
                 />
@@ -751,7 +1228,13 @@ function CheckoutContent() {
 
               <div className="w-full space-y-2">
                 {[
-                  `Scan the QR with your ${paymentMethod === 'gcash' ? 'GCash' : 'Maya'} app and send exactly ${priceInfo.label}`,
+                  `Scan the QR with your ${
+                    paymentMethod === 'gcash'
+                      ? 'GCash'
+                      : paymentMethod === 'maya'
+                      ? 'Maya'
+                      : countryConfig.qrTypeLabel
+                  } app and send exactly ${priceInfo.label}`,
                   'Screenshot your payment receipt',
                   'Open a ticket in Discord with the screenshot and your Discord ID',
                 ].map((step, i) => (
@@ -786,15 +1269,21 @@ function CheckoutContent() {
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black p-4 cursor-zoom-out" onClick={() => setQrZoomed(false)}>
           <div className="flex flex-col items-center gap-3 w-full h-full justify-center">
             <p className="font-mono text-[10px] uppercase tracking-[0.2em]" style={{ color: 'var(--text-muted)' }}>
-              {paymentMethod === 'gcash' ? 'GCash' : 'Maya'} — Scan with your app
+              {paymentMethod === 'gcash'
+                ? 'GCash'
+                : paymentMethod === 'maya'
+                ? 'Maya'
+                : countryConfig.qrTypeLabel} — Scan with your app
             </p>
             <div className="rounded-2xl overflow-hidden shadow-2xl" style={{ backgroundColor: 'white', width: 'min(92vw, 92vh)', height: 'min(92vw, 92vh)' }}>
               <img
                 src={
-  paymentMethod === 'gcash'
-    ? `/images/gcash-qr-${planKey}.jpg`
-    : `/images/maya-qr-${planKey}.jpg`
-}
+                  paymentMethod === 'gcash'
+                    ? `/images/gcash-qr-${planKey}.jpg`
+                    : paymentMethod === 'maya'
+                    ? `/images/maya-qr-${planKey}.jpg`
+                    : countryConfig.qrImages[planKey as 'weekly' | 'monthly' | 'lifetime']
+                }
                 alt="QR Code"
                 className="w-full h-full object-contain"
               />
