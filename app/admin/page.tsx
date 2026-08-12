@@ -91,6 +91,7 @@ export default function AdminPage() {
   const [scrPage,      setScrPage]      = useState(1);
 
   const [scripts,    setScripts]   = useState<any[]>([]);
+  const [thumbnails, setThumbnails] = useState<Record<string, string>>({});
   const [metadata,   setMeta]      = useState<Record<string,any>>({});
   const [saving,     setSaving]    = useState<string|null>(null);
   const [selScript,  setSelScript] = useState<any|null>(null);
@@ -232,6 +233,26 @@ export default function AdminPage() {
       setMeta(map);
     } catch {}
   };
+
+  useEffect(() => {
+    const ids = scripts.map((s: any) => s.universeId).filter(Boolean) as string[];
+    if (ids.length === 0) return;
+    const chunks: string[][] = [];
+    for (let i = 0; i < ids.length; i += 100) chunks.push(ids.slice(i, i + 100));
+    chunks.forEach(async chunk => {
+      try {
+        const res  = await fetch(`/api/proxy/thumbnails?universeIds=${chunk.join(',')}`);
+        const data = await res.json();
+        if (data.data) {
+          setThumbnails(prev => {
+            const next = { ...prev };
+            data.data.forEach((item: any) => { next[item.targetId] = item.imageUrl; });
+            return next;
+          });
+        }
+      } catch { /* silent */ }
+    });
+  }, [scripts]);
 
   useEffect(() => {
     if (tab === 'scripts' && scripts.length === 0) loadScripts();
@@ -650,9 +671,13 @@ export default function AdminPage() {
                         onMouseEnter={e => (e.currentTarget as HTMLElement).style.borderColor = '#222'}
                         onMouseLeave={e => (e.currentTarget as HTMLElement).style.borderColor = '#141414'}>
                         <div className="flex items-start justify-between">
-                          <div className="w-9 h-9 rounded-xl flex items-center justify-center"
+                          <div className="w-9 h-9 rounded-xl flex items-center justify-center overflow-hidden"
                             style={{ background: isPrem ? 'rgba(167,139,250,0.1)' : 'rgba(56,189,248,0.08)', border: `1px solid ${isPrem ? 'rgba(167,139,250,0.2)' : 'rgba(56,189,248,0.15)'}` }}>
-                            <FileCode className="w-4.5 h-4.5" style={{ color: isPrem ? '#a78bfa' : '#38bdf8', width: 18, height: 18 }} />
+                            {script.universeId && thumbnails[script.universeId] ? (
+                              <img src={thumbnails[script.universeId]} alt={script.name} className="w-full h-full object-cover" />
+                            ) : (
+                              <FileCode className="w-4.5 h-4.5" style={{ color: isPrem ? '#a78bfa' : '#38bdf8', width: 18, height: 18 }} />
+                            )}
                           </div>
                           <span className="flex items-center gap-1.5 text-[11px] font-semibold"
                             style={{ color: isWork ? '#34d399' : '#ef4444' }}>
