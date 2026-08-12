@@ -125,7 +125,7 @@ function MegaKeySection() {
               Big Account Farmer Offer
             </span>
             <span className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wide px-2.5 py-1 rounded-full" style={{ backgroundColor: 'rgba(245,158,11,0.1)', color: '#fbbf24', border: '1px solid rgba(245,158,11,0.2)' }}>
-              Limited slots
+              Limited stock
             </span>
           </div>
           <h2 className="text-white font-bold mb-2" style={{ fontSize: 'clamp(1.5rem, 3vw, 2.1rem)', letterSpacing: '-0.03em' }}>
@@ -234,9 +234,7 @@ function getStockDisplay(methodStocks: StockMap, tier: string): { text: string; 
   if (!tierStock) return null;
   const total = Object.values(tierStock).reduce((a, b) => a + b, 0);
   if (total === 0) return { text: 'Out of stock', variant: 'out-of-stock' };
-  if (total <= 5)  return { text: `${total} slots left`, variant: 'low-stock' };
-  if (total <= 20) return { text: `${total} slots available`, variant: 'low-stock' };
-  return null; // plenty of stock — don't show badge
+  return null;
 }
 
 // ── Main Content ──────────────────────────────────────────────────────────────

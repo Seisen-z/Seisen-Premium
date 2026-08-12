@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -382,8 +382,8 @@ const PLAN_CONFIG: Record<string, PlanConfig> = {
     methods: ['paypal', 'maya', 'gcash'],
     prices: {
       paypal: { amount: 3,   currency: '€', label: '€3',   period: '/week', billingNote: 'Billed once per week' },
-      maya:   { amount: 180, currency: '₱', label: '₱180', period: '/week', billingNote: 'Billed once per week · QR payment via Discord ticket' },
-      gcash:  { amount: 180, currency: '₱', label: '₱180', period: '/week', billingNote: 'Billed once per week · QR payment via Discord ticket' },
+      maya:   { amount: 210, currency: '₱', label: '₱210', period: '/week', billingNote: 'Billed once per week · QR payment via Discord ticket' },
+      gcash:  { amount: 210, currency: '₱', label: '₱210', period: '/week', billingNote: 'Billed once per week · QR payment via Discord ticket' },
     },
   },
   monthly: {
@@ -395,8 +395,8 @@ const PLAN_CONFIG: Record<string, PlanConfig> = {
     methods: ['paypal', 'maya', 'gcash'],
     prices: {
       paypal: { amount: 6,   currency: '€', label: '€6',    period: '/month',    billingNote: 'Billed once per month' },
-      maya:   { amount: 430, currency: '₱', label: '₱430',  period: '/month',    billingNote: 'Billed once per month' },
-      gcash:  { amount: 430, currency: '₱', label: '₱430',  period: '/month',    billingNote: 'Billed once per month' },
+      maya:   { amount: 420, currency: '₱', label: '₱420',  period: '/month',    billingNote: 'Billed once per month' },
+      gcash:  { amount: 420, currency: '₱', label: '₱420',  period: '/month',    billingNote: 'Billed once per month' },
     },
   },
   lifetime: {
@@ -408,8 +408,8 @@ const PLAN_CONFIG: Record<string, PlanConfig> = {
     methods: ['paypal', 'maya', 'gcash', 'local_qr'],
     prices: {
       paypal: { amount: 10,  currency: '€', label: '€10',   originalLabel: '€14',    period: '',          billingNote: 'One-time payment' },
-      maya:   { amount: 850, currency: '₱', label: '₱850',  originalLabel: '₱1,000', period: 'one-time',  billingNote: 'One-time payment' },
-      gcash:  { amount: 850, currency: '₱', label: '₱850',  originalLabel: '₱1,000', period: 'one-time',  billingNote: 'One-time payment' },
+      maya:   { amount: 840, currency: '₱', label: '₱840',  originalLabel: '₱1,000', period: 'one-time',  billingNote: 'One-time payment' },
+      gcash:  { amount: 840, currency: '₱', label: '₱840',  originalLabel: '₱1,000', period: 'one-time',  billingNote: 'One-time payment' },
     },
   },
   mega_1month: {
@@ -613,11 +613,12 @@ function CheckoutContent() {
   const currentStock = methodStocks[planKey]?.[paymentMethod] ?? null;
   const isOutOfStock = currentStock === 0;
   const canPay       = !!discordSession && tosAccepted && noRefundAccepted && tosTimer === 0 && !isProcessing && !isOutOfStock;
+  const isInfinite   = paymentMethod === 'gcash' || paymentMethod === 'maya' || paymentMethod === 'local_qr';
   const stockDisplay = currentStock === null ? null
     : currentStock === 0  ? { text: 'Out of stock',               color: '#f87171', bg: 'rgba(239,68,68,0.1)',    border: 'rgba(239,68,68,0.2)' }
-    : currentStock <= 3   ? { text: `${currentStock} slots left`, color: '#fbbf24', bg: 'rgba(245,158,11,0.1)',  border: 'rgba(245,158,11,0.2)' }
-    : currentStock <= 10  ? { text: `${currentStock} slots left`, color: '#fbbf24', bg: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.15)' }
-    :                       { text: `${currentStock} in stock`,   color: '#86efac', bg: 'rgba(74,222,128,0.08)', border: 'rgba(74,222,128,0.15)' };
+    : isInfinite          ? { text: 'Unlimited stock',            color: '#86efac', bg: 'rgba(74,222,128,0.08)', border: 'rgba(74,222,128,0.15)' }
+    : currentStock <= 10  ? { text: 'Low stock',                  color: '#fbbf24', bg: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.15)' }
+    :                       { text: 'In stock',                   color: '#86efac', bg: 'rgba(74,222,128,0.08)', border: 'rgba(74,222,128,0.15)' };
 
   // ── Payment handlers ────────────────────────────────────────────────────────
   const capturePayPalOrder = async (orderId: string) => {

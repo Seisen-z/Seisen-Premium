@@ -25,7 +25,7 @@ interface Stats {
   paypalRevenue: number; robloxRevenue: number;
 }
 type PremiumTier   = 'weekly' | 'monthly' | 'lifetime';
-type PaymentMethod = 'robux' | 'paypal' | 'gcash' | 'card';
+type PaymentMethod = 'robux' | 'paypal' | 'gcash' | 'card' | 'local_qr';
 type Tab = 'overview' | 'payments' | 'tickets' | 'scripts' | 'store';
 
 const TABS: { id: Tab; icon: React.ElementType; label: string }[] = [
@@ -41,15 +41,24 @@ const METHODS: { id: PaymentMethod; label: string; color: string }[] = [
   { id: 'paypal', label: 'PayPal', color: '#38bdf8' },
   { id: 'gcash',  label: 'GCash',  color: '#34d399' },
   { id: 'card',   label: 'Card',   color: '#a78bfa' },
+  { id: 'local_qr', label: 'Wise', color: '#f47fff' },
 ];
 const TIERS: PremiumTier[] = ['weekly', 'monthly', 'lifetime'];
 const TIER_COLOR: Record<string, string> = { weekly: '#38bdf8', monthly: '#a78bfa', lifetime: '#34d399' };
 
 function initStock(): Record<PremiumTier, Record<PaymentMethod, number>> {
-  return { weekly:{robux:0,paypal:0,gcash:0,card:0}, monthly:{robux:0,paypal:0,gcash:0,card:0}, lifetime:{robux:0,paypal:0,gcash:0,card:0} };
+  return { 
+    weekly:{robux:0,paypal:0,gcash:0,card:0,local_qr:0}, 
+    monthly:{robux:0,paypal:0,gcash:0,card:0,local_qr:0}, 
+    lifetime:{robux:0,paypal:0,gcash:0,card:0,local_qr:0} 
+  };
 }
 function initDraft(): Record<PremiumTier, Record<PaymentMethod, string>> {
-  return { weekly:{robux:'0',paypal:'0',gcash:'0',card:'0'}, monthly:{robux:'0',paypal:'0',gcash:'0',card:'0'}, lifetime:{robux:'0',paypal:'0',gcash:'0',card:'0'} };
+  return { 
+    weekly:{robux:'0',paypal:'0',gcash:'0',card:'0',local_qr:'0'}, 
+    monthly:{robux:'0',paypal:'0',gcash:'0',card:'0',local_qr:'0'}, 
+    lifetime:{robux:'0',paypal:'0',gcash:'0',card:'0',local_qr:'0'} 
+  };
 }
 
 function Av({ name, size = 34 }: { name: string; size?: number }) {
@@ -89,8 +98,7 @@ export default function AdminPage() {
 
   const [stock,     setStock]     = useState(initStock());
   const [draft,     setDraft]     = useState(initDraft());
-  const [savingKey, setSavingKey] = useState<string|null>(null);
-  const [savingRow, setSavingRow] = useState<PaymentMethod|null>(null);
+  const [savingStock, setSavingStock] = useState(false);
   const [stockLoad, setStockLoad] = useState(false);
   const [ghConfig,  setGhConfig]  = useState({ free_url:'', premium_url:'', discontinued_url:'' });
   const [savingGh,  setSavingGh]  = useState(false);
@@ -99,6 +107,15 @@ export default function AdminPage() {
   const [compose,   setCompose]   = useState(false);
   const [compData,  setCompData]  = useState({ email:'', subject:'', message:'' });
   const [composing, setComposing] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
+    setToast({ message, type });
+    if (typeof window !== 'undefined') {
+      (window as any)._toastTimeout && clearTimeout((window as any)._toastTimeout);
+      (window as any)._toastTimeout = setTimeout(() => setToast(null), 3000);
+    }
+  };
 
   const PER = 10; const SPER = 9;
 
@@ -129,7 +146,7 @@ export default function AdminPage() {
       if (r.ok) {
         const ms = (await r.json())?.methodStocks || {};
         const s = initStock(); const d = initDraft();
-        for (const t of TIERS) for (const m of ['robux','paypal','gcash','card'] as PaymentMethod[]) { const v = Number(ms[t]?.[m] || 0); s[t][m] = v; d[t][m] = String(v); }
+        for (const t of TIERS) for (const m of ['robux','paypal','gcash','card','local_qr'] as PaymentMethod[]) { const v = Number(ms[t]?.[m] || 0); s[t][m] = v; d[t][m] = String(v); }
         setStock(s); setDraft(d);
       }
     } finally { setStockLoad(false); }
@@ -149,28 +166,61 @@ export default function AdminPage() {
       const tok = localStorage.getItem('adminToken');
       const r = await fetch(`${getApiUrl()}/api/admin/github-config`, { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok}` }, body: JSON.stringify(ghConfig) });
       if (!r.ok) throw new Error();
-      setGhConfig(await r.json()); alert('Saved!');
-    } catch { alert('Failed'); } finally { setSavingGh(false); }
+      setGhConfig(await r.json());
+      showToast('GitHub configuration saved!');
+    } catch {
+      showToast('Failed to save configuration', 'error');
+    } finally {
+      setSavingGh(false);
+    }
   };
 
-  const saveCell = async (tier: PremiumTier, method: PaymentMethod) => {
+  const saveAllStock = async () => {
     const tok = localStorage.getItem('adminToken');
-    const v = Number(draft[tier][method]);
-    if (!Number.isInteger(v) || v < 0) { alert('Non-negative integer only'); return; }
-    setSavingKey(`${method}-${tier}`);
-    try {
-      const r = await fetch(`${getApiUrl()}/api/admin/premium-stock`, { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok}` }, body: JSON.stringify({ tier, method, stock: v }) });
-      const data = await r.json(); if (!r.ok) throw new Error(data?.error || 'Failed');
-      const ms = data.methodStocks || {}; const s = initStock(); const d = initDraft();
-      for (const t of TIERS) for (const m of ['robux','paypal','gcash','card'] as PaymentMethod[]) { const val = Number(ms[t]?.[m] || 0); s[t][m] = val; d[t][m] = String(val); }
-      setStock(s); setDraft(d);
-    } catch (e) { alert(e instanceof Error ? e.message : 'Failed'); }
-    finally { setSavingKey(null); }
-  };
+    const updates: Record<string, Record<string, number>> = {};
+    
+    for (const t of TIERS) {
+      updates[t] = {};
+      for (const m of ['robux','paypal','gcash','card','local_qr'] as PaymentMethod[]) {
+        const v = Number(draft[t][m]);
+        if (!Number.isInteger(v) || v < 0) {
+          showToast('Non-negative integers only', 'error');
+          return;
+        }
+        updates[t][m] = v;
+      }
+    }
 
-  const saveRow = async (method: PaymentMethod) => {
-    setSavingRow(method);
-    try { await Promise.all(TIERS.map(t => saveCell(t, method))); } finally { setSavingRow(null); }
+    setSavingStock(true);
+    try {
+      const r = await fetch(`${getApiUrl()}/api/admin/premium-stock`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${tok}`
+        },
+        body: JSON.stringify({ updates })
+      });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data?.error || 'Failed to save');
+      const ms = data.methodStocks || {};
+      const s = initStock();
+      const d = initDraft();
+      for (const t of TIERS) {
+        for (const m of ['robux','paypal','gcash','card','local_qr'] as PaymentMethod[]) {
+          const val = Number(ms[t]?.[m] || 0);
+          s[t][m] = val;
+          d[t][m] = String(val);
+        }
+      }
+      setStock(s);
+      setDraft(d);
+      showToast('All stocks saved successfully!');
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : 'Failed to save stocks', 'error');
+    } finally {
+      setSavingStock(false);
+    }
   };
 
   const loadScripts = async () => {
@@ -205,14 +255,14 @@ export default function AdminPage() {
     if (!confirm('Delete this payment?')) return;
     const tok = localStorage.getItem('adminToken');
     const r = await fetch('/api/admin/payments', { method: 'DELETE', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok}` }, body: JSON.stringify({ transactionId: id }) });
-    if (r.ok) setPayments(p => p.filter(x => x.transaction_id !== id)); else alert('Failed.');
+    if (r.ok) { setPayments(p => p.filter(x => x.transaction_id !== id)); showToast('Payment deleted successfully.'); } else { showToast('Failed to delete payment.', 'error'); }
   };
 
   const delTicket = async (num: string) => {
     if (!confirm('Delete this ticket?')) return;
     const tok = localStorage.getItem('adminToken');
     const r = await fetch('/api/admin/tickets', { method: 'DELETE', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok}` }, body: JSON.stringify({ ticketNumber: num }) });
-    if (r.ok) setTickets(p => p.filter(x => x.ticket_number !== num)); else alert('Failed.');
+    if (r.ok) { setTickets(p => p.filter(x => x.ticket_number !== num)); showToast('Ticket closed successfully.'); } else { showToast('Failed to close ticket.', 'error'); }
   };
 
   const handleCompose = async (e: React.FormEvent) => {
@@ -223,7 +273,7 @@ export default function AdminPage() {
       await fetch(`/api/admin/tickets/${ticket.ticketNumber}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok}` }, body: JSON.stringify({ status: 'replied' }) });
       setTickets(p => [{ id: ticket.id, ticket_number: ticket.ticketNumber, user_name: compData.email.split('@')[0], user_email: compData.email, subject: compData.subject, status: 'replied', created_at: new Date().toISOString() }, ...p]);
       setCompose(false); setCompData({ email: '', subject: '', message: '' });
-    } catch { alert('Error'); } finally { setComposing(false); }
+    } catch { showToast('Failed to reply/compose ticket.', 'error'); } finally { setComposing(false); }
   };
 
   const saveMeta = async (name: string) => {
@@ -234,8 +284,8 @@ export default function AdminPage() {
       const r = await fetch('/api/admin/script-metadata', { method: data.id ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok}` }, body: JSON.stringify(data) });
       if (!r.ok) throw new Error();
       const saved = await r.json();
-      setMeta(p => ({ ...p, [name]: saved })); alert('Saved!');
-    } catch { alert('Failed'); } finally { setSaving(null); }
+      setMeta(p => ({ ...p, [name]: saved })); showToast('Script metadata saved!');
+    } catch { showToast('Failed to save script metadata', 'error'); } finally { setSaving(null); }
   };
 
   const delMeta = async (name: string) => {
@@ -243,7 +293,7 @@ export default function AdminPage() {
     const data = metadata[name]; if (!data?.id) return;
     const tok = localStorage.getItem('adminToken');
     const r = await fetch(`/api/admin/script-metadata?id=${data.id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${tok}` } });
-    if (r.ok) setMeta(p => { const n = { ...p }; delete n[name]; return n; }); else alert('Failed.');
+    if (r.ok) { setMeta(p => { const n = { ...p }; delete n[name]; return n; }); showToast('Script metadata deleted.'); } else { showToast('Failed to delete script metadata.', 'error'); }
   };
 
   const updMeta = (name: string, field: string, val: any) => setMeta(p => ({ ...p, [name]: { ...p[name], script_name: name, [field]: val } }));
@@ -252,9 +302,9 @@ export default function AdminPage() {
   const remFeat  = (s: string, i: number) => updMeta(s, 'features', (metadata[s]?.features || []).filter((_: any, x: number) => x !== i));
   const impBulk  = (name: string) => {
     const feats = bulk.split('\n').map(l => l.replace(/^[\*\-\>]\s*/, '').trim()).filter(Boolean);
-    if (!feats.length) return alert('No features found');
+    if (!feats.length) { showToast('No features found', 'error'); return; }
     updMeta(name, 'features', [...(metadata[name]?.features || []), ...feats]);
-    setBulk(''); alert(`Imported ${feats.length}!`);
+    setBulk(''); showToast(`Imported ${feats.length} features successfully!`);
   };
 
   const getKey = (p: Payment) => {
@@ -696,8 +746,21 @@ export default function AdminPage() {
               {/* Matrix */}
               <div className="col-span-2 rounded-xl overflow-hidden" style={{ border: '1px solid #141414' }}>
                 <div className="px-5 py-3.5 flex items-center justify-between" style={{ background: '#0a0a0a', borderBottom: '1px solid #141414' }}>
-                  <p className="text-[13px] font-bold text-white">Stock matrix</p>
-                  {stockLoad && <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: '#333' }} />}
+                  <div className="flex items-center gap-2">
+                    <p className="text-[13px] font-bold text-white">Stock matrix</p>
+                    {stockLoad && <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: '#333' }} />}
+                  </div>
+                  {TIERS.some(t => (['robux','paypal','gcash','card','local_qr'] as PaymentMethod[]).some(m => draft[t][m] !== String(stock[t][m]))) && (
+                    <button onClick={saveAllStock} disabled={savingStock}
+                      className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold text-white transition-all disabled:opacity-50"
+                      style={{
+                        background: 'var(--accent)',
+                        boxShadow: '0 0 10px rgba(184,144,96,0.3)',
+                      }}>
+                      {savingStock ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+                      Save All Changes
+                    </button>
+                  )}
                 </div>
                 {stockLoad
                   ? <div className="py-12 flex items-center justify-center" style={{ background: '#080808' }}><Loader2 className="w-4 h-4 animate-spin" style={{ color: '#2a2a2a' }} /></div>
@@ -705,7 +768,6 @@ export default function AdminPage() {
                       <thead><tr style={{ borderBottom: '1px solid #111' }}>
                         <th className="text-left px-5 py-3 text-[10px] font-bold uppercase tracking-widest" style={{ color: '#252525' }}>Method</th>
                         {TIERS.map(t => <th key={t} className="text-center px-5 py-3 text-[10px] font-bold uppercase tracking-widest capitalize" style={{ color: '#252525' }}>{t}</th>)}
-                        <th className="px-5 py-3" />
                       </tr></thead>
                       <tbody>
                         {METHODS.map(({ id: mId, label, color }) => (
@@ -719,40 +781,22 @@ export default function AdminPage() {
                               </div>
                             </td>
                             {TIERS.map(tier => {
-                              const k = `${mId}-${tier}`; const live = stock[tier][mId];
-                              const hasChange = draft[tier][mId] !== String(live);
+                              const live = stock[tier][mId];
                               return (
                                 <td key={tier} className="px-4 py-3">
-                                  <div className="flex items-center gap-1.5 justify-center">
+                                  <div className="flex items-center justify-center">
                                     <input type="number" min={0} value={draft[tier][mId]}
                                       onChange={e => setDraft(p => ({ ...p, [tier]: { ...p[tier], [mId]: e.target.value } }))}
-                                      className="w-20 px-3 py-2 text-center text-[13px] rounded-lg outline-none font-mono font-bold tabular-nums"
+                                      className="w-24 px-3 py-2 text-center text-[13px] rounded-lg outline-none font-mono font-bold tabular-nums"
                                       style={{
                                         background: live > 0 ? 'rgba(52,211,153,0.07)' : 'rgba(239,68,68,0.06)',
                                         border: `1px solid ${live > 0 ? 'rgba(52,211,153,0.2)' : 'rgba(239,68,68,0.18)'}`,
                                         color: live > 0 ? '#34d399' : '#ef4444',
                                       }} />
-                                    <button onClick={() => saveCell(tier, mId)} disabled={savingKey === k || savingRow === mId}
-                                      className="p-1.5 rounded-lg disabled:opacity-20 transition-colors"
-                                      style={{ color: hasChange ? 'var(--accent)' : '#2a2a2a' }}
-                                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.opacity = '0.7'}
-                                      onMouseLeave={e => (e.currentTarget as HTMLElement).style.opacity = '1'}>
-                                      {savingKey === k ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                                    </button>
                                   </div>
                                 </td>
                               );
                             })}
-                            <td className="px-5 py-4 text-right">
-                              <button onClick={() => saveRow(mId)} disabled={savingRow === mId}
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium ml-auto disabled:opacity-25"
-                                style={{ background: '#111', border: '1px solid #1e1e1e', color: '#444' }}
-                                onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#aaa'}
-                                onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = '#444'}>
-                                {savingRow === mId ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
-                                Save row
-                              </button>
-                            </td>
                           </tr>
                         ))}
                       </tbody>
