@@ -456,6 +456,8 @@ export class TicketDatabase {
           .update({ stock: currentStock - 1, updated_at: now })
           .eq('tier', normalizedTier)
           .eq('payment_method', 'maya');
+        // Notify Discord Bot of the new stock level
+        void this.notifyDiscordBotOfStockChange();
         return true;
       }
     }
@@ -669,6 +671,22 @@ export class TicketDatabase {
     }
 
     return data;
+  }
+
+  async notifyDiscordBotOfStockChange() {
+    try {
+      const botApiUrl = process.env.DISCORD_BOT_API_URL || 'http://localhost:9460';
+      const secret = process.env.VERIFICATION_INTERNAL_SECRET || '088887b0721646bf9186b12a6fbdb533b216d5aa3dd844cfac2be44e16020c23';
+      const methodStocks = await this.getPaymentMethodStocks();
+      
+      await fetch(`${botApiUrl}/api/internal/restock`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ methodStocks, secret })
+      });
+    } catch (err: any) {
+      console.warn('⚠️ Failed to notify Discord Bot of stock change:', err.message);
+    }
   }
 }
 
