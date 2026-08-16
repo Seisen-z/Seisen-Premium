@@ -61,6 +61,7 @@ const navLinks = [
   { href: '/obfuscator', label: 'Obfuscate' },
   { href: '/getkey', label: 'Get Key' },
   { href: '/premium', label: 'Premium' },
+  { href: '/updates', label: 'Updates' },
   { href: '/faq', label: 'FAQ' },
   { href: '/videos', label: 'Videos' },
 ];
