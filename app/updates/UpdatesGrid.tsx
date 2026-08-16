@@ -40,7 +40,74 @@ export interface Update {
   created_at: string;
 }
 
-// ── Spring config ────────────────────────────────────────────────────────────
+// ── Discord content formatter ────────────────────────────────────────────────
+function FormatContent({ text }: { text: string }) {
+  // Split on Discord blockquote markers " > " used as line separators
+  const lines = text.split(/ *\n| > /).map(s => s.trim()).filter(Boolean);
+
+  return (
+    <div className="space-y-1.5 text-sm" style={{ color: 'rgba(255,255,255,0.55)', lineHeight: 1.75 }}>
+      {lines.map((line, i) => {
+        // Section headers
+        if (/^\[?\+\]?\s*(Added|New)/i.test(line) || line.startsWith('[+]')) {
+          const label = line.replace(/^\[?\+\]\s*/i, '').replace(/^Added:\s*/i, '');
+          return (
+            <p key={i} className="font-semibold text-xs uppercase tracking-wider mt-3 mb-0.5" style={{ color: '#6ee7b7' }}>
+              ✦ {label || 'Added'}
+            </p>
+          );
+        }
+        if (/^\[?\*\]?\s*(Fixed)/i.test(line) || line.startsWith('[*]')) {
+          const label = line.replace(/^\[?\*\]\s*/i, '').replace(/^Fixed:\s*/i, '');
+          return (
+            <p key={i} className="font-semibold text-xs uppercase tracking-wider mt-3 mb-0.5" style={{ color: '#fbbf24' }}>
+              ✦ {label || 'Fixed'}
+            </p>
+          );
+        }
+        if (/^\[?~\]?\s*(Improved)/i.test(line) || line.startsWith('[~]')) {
+          const label = line.replace(/^\[?~\]\s*/i, '').replace(/^Improved:\s*/i, '');
+          return (
+            <p key={i} className="font-semibold text-xs uppercase tracking-wider mt-3 mb-0.5" style={{ color: '#60a5fa' }}>
+              ✦ {label || 'Improved'}
+            </p>
+          );
+        }
+        // Divider
+        if (/^-{3,}/.test(line)) {
+          return <hr key={i} style={{ borderColor: 'rgba(255,255,255,0.08)', margin: '8px 0' }} />;
+        }
+        // Bullet
+        if (line.startsWith('•') || line.startsWith('-')) {
+          const content = line.replace(/^[•\-]\s*/, '');
+          return (
+            <p key={i} className="flex gap-2">
+              <span className="shrink-0 mt-1" style={{ color: 'rgba(255,255,255,0.25)' }}>•</span>
+              <span>{renderInline(content)}</span>
+            </p>
+          );
+        }
+        // Normal line
+        return <p key={i}>{renderInline(line)}</p>;
+      })}
+    </div>
+  );
+}
+
+function renderInline(text: string): React.ReactNode {
+  // Replace URLs with links
+  const urlRegex = /(https?:\/\/[^\s)]+)/g;
+  const parts = text.split(urlRegex);
+  return parts.map((part, i) =>
+    urlRegex.test(part) ? (
+      <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 break-all" style={{ color: '#c9a97a' }} onClick={(e) => e.stopPropagation()}>
+        {part.length > 40 ? part.slice(0, 40) + '…' : part}
+      </a>
+    ) : part
+  );
+}
+
+// ── Spring configs ───────────────────────────────────────────────────────────
 const CARD_SPRING = { type: 'spring', stiffness: 200, damping: 22, mass: 1.2 } as const;
 const MENU_SPRING = { type: 'spring', stiffness: 240, damping: 20, mass: 1 } as const;
 
@@ -97,25 +164,26 @@ function UpdateCard({ update }: { update: Update }) {
             )}
           </div>
 
-          <p className={`text-sm leading-relaxed ${open ? '' : 'line-clamp-3'}`} style={{ color: 'rgba(255,255,255,0.45)' }}>
-            {update.content}
-          </p>
-
-          <AnimatePresence initial={false}>
-            {open && (
+          {/* Collapsed: plain 3-line preview. Expanded: full formatted content */}
+          {open ? (
+            <AnimatePresence initial={false}>
               <motion.div
                 initial={{ opacity: 0, filter: 'blur(6px)', y: 16 }}
                 animate={{ opacity: 1, filter: 'blur(0px)', y: 0, transition: { ...CARD_SPRING, delay: 0.15 } }}
-                exit={{ opacity: 0, filter: 'blur(6px)', y: 8, transition: { duration: 0.2 } }}
-                className="space-y-3 pt-1"
+                exit={{ opacity: 0 }}
                 onClick={(e) => e.stopPropagation()}
               >
+                <FormatContent text={update.content} />
                 {update.footer && (
-                  <p className="text-xs italic" style={{ color: 'rgba(255,255,255,0.35)' }}>{update.footer}</p>
+                  <p className="mt-3 text-xs italic" style={{ color: 'rgba(255,255,255,0.3)' }}>{update.footer}</p>
                 )}
               </motion.div>
-            )}
-          </AnimatePresence>
+            </AnimatePresence>
+          ) : (
+            <p className="text-sm leading-relaxed line-clamp-3" style={{ color: 'rgba(255,255,255,0.45)' }}>
+              {update.content.replace(/ > /g, ' ').replace(/\[[\+\*~]\]/g, '').replace(/^[•\-]\s*/gm, '')}
+            </p>
+          )}
 
           <div className="flex items-center justify-between pt-2" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
             <p className="text-[11px]" style={{ color: 'rgba(255,255,255,0.18)' }}>{dateStr}</p>
@@ -129,7 +197,7 @@ function UpdateCard({ update }: { update: Update }) {
   );
 }
 
-// ── Filter disclosure (pill → spring list) ───────────────────────────────────
+// ── Filter disclosure — exact reference implementation ───────────────────────
 function TagFilterDisclosure({ value, onChange, counts }: { value: string; onChange: (v: string) => void; counts: Record<string, number> }) {
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -143,16 +211,16 @@ function TagFilterDisclosure({ value, onChange, counts }: { value: string; onCha
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const handleSelect = (tag: string) => {
-    onChange(tag);
-    setTimeout(() => setOpen(false), 200);
+  const handleSelect = (id: string) => {
+    onChange(id);
+    setTimeout(() => setOpen(false), 220);
   };
 
-  const validTags = TAG_KEYS.filter((t) => t === 'All' || (counts[t] ?? 0) > 0);
+  const validItems = TAG_KEYS.filter((t) => t === 'All' || (counts[t] ?? 0) > 0);
 
   return (
-    <div ref={wrapperRef} className="relative flex items-center justify-end">
-      <MotionConfig transition={{ type: 'spring', bounce: 0.25, duration: 0.6 }}>
+    <div ref={wrapperRef} className="flex items-center justify-center" style={{ position: 'relative', height: 70, width: 120 }}>
+      <MotionConfig transition={{ type: 'spring', bounce: 0.25, duration: 0.7 }}>
         <AnimatePresence mode="popLayout" initial={false}>
           {open ? (
             <motion.div
@@ -161,45 +229,57 @@ function TagFilterDisclosure({ value, onChange, counts }: { value: string; onCha
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0, transition: { duration: 0 } }}
-              style={{ transformOrigin: '100% 100%', borderRadius: 24, position: 'absolute', right: 0, bottom: '110%', zIndex: 50 }}
-              className="flex flex-col gap-1 overflow-hidden p-2"
-              onClick={(e) => e.stopPropagation()}
-              onMouseDown={(e) => e.stopPropagation()}
-              {...{ style: { transformOrigin: '100% 100%', borderRadius: 24, position: 'absolute', right: 0, bottom: '110%', zIndex: 50, backgroundColor: '#111', border: '1.5px solid rgba(255,255,255,0.1)', boxShadow: '0 20px 50px rgba(0,0,0,0.7)', padding: '8px', minWidth: '200px' } }}
+              style={{
+                transformOrigin: '50% 100%',
+                borderRadius: 24,
+                position: 'absolute',
+                right: 0,
+                bottom: '100%',
+                zIndex: 50,
+                backgroundColor: '#111',
+                border: '1.5px solid rgba(255,255,255,0.12)',
+                boxShadow: '0 20px 50px rgba(0,0,0,0.7)',
+                padding: 8,
+                minWidth: 220,
+              }}
+              className="flex flex-col gap-1"
             >
-              {validTags.map((tag, index) => {
+              {validItems.map((tag, index) => {
                 const Icon = TAG_ICONS[tag] ?? LayoutGrid;
                 const selected = value === tag;
                 const ts = tag !== 'All' ? tagStyle(tag) : null;
-                const count = counts[tag] ?? 0;
+
                 return (
                   <motion.button
                     key={tag}
-                    initial={{ opacity: 0, scale: 1.05, y: 30 }}
+                    initial={{ opacity: 0, scale: 1.1, y: 40 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     onClick={() => handleSelect(tag)}
-                    transition={{ ...MENU_SPRING, delay: (2 + index) * 0.04 }}
-                    className="flex w-full cursor-pointer items-center justify-between rounded-2xl px-3 py-2.5 transition-colors"
+                    whileTap={{ scale: 0.98 }}
+                    transition={{ ...MENU_SPRING, delay: (3 + index) * 0.05 }}
+                    className="flex w-full cursor-pointer items-center justify-between rounded-2xl px-3 py-2.5"
                     style={{ backgroundColor: selected ? 'rgba(255,255,255,0.07)' : 'transparent' }}
                     onMouseEnter={(e) => !selected && (e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.04)')}
                     onMouseLeave={(e) => !selected && (e.currentTarget.style.backgroundColor = 'transparent')}
                   >
-                    <div className="flex items-center gap-3">
-                      <Icon className="h-4 w-4" style={{ color: selected && ts ? ts.text : 'rgba(255,255,255,0.3)' }} />
-                      <span className="text-sm font-semibold" style={{ color: selected && ts ? ts.text : selected ? '#c9a97a' : 'rgba(255,255,255,0.65)' }}>
+                    <div className="flex items-center gap-4">
+                      <Icon className="h-5 w-5" style={{ color: selected && ts ? ts.text : 'rgba(255,255,255,0.3)' }} />
+                      <span className="text-base font-bold tracking-tight" style={{ color: selected && ts ? ts.text : selected ? '#c9a97a' : 'rgba(255,255,255,0.65)' }}>
                         {tag === 'All' ? 'All Types' : tag}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-[11px]" style={{ color: 'rgba(255,255,255,0.25)' }}>{count}</span>
+                      <span className="text-xs" style={{ color: 'rgba(255,255,255,0.25)' }}>{counts[tag] ?? 0}</span>
                       <motion.div
-                        animate={{ backgroundColor: selected ? (ts?.dot ?? '#c9a97a') : 'transparent' }}
-                        transition={{ duration: 0.15 }}
-                        className="h-5 w-5 rounded-full flex items-center justify-center shrink-0"
-                        style={{ border: `2px solid ${selected ? (ts?.dot ?? '#c9a97a') : 'rgba(255,255,255,0.2)'}` }}
+                        animate={{ backgroundColor: selected ? (ts?.dot ?? '#c9a97a') : 'rgba(0,0,0,0)' }}
+                        className="flex h-6 w-6 items-center justify-center rounded-full shrink-0"
+                        style={{ border: `3px solid ${selected ? (ts?.dot ?? '#c9a97a') : 'rgba(255,255,255,0.2)'}` }}
                       >
-                        <motion.div animate={{ scale: selected ? 1 : 0, opacity: selected ? 1 : 0 }} transition={{ type: 'spring', stiffness: 520, damping: 30 }}>
-                          <Check className="h-2.5 w-2.5 text-black" strokeWidth={3} />
+                        <motion.div
+                          animate={{ scale: selected ? 1 : 0, opacity: selected ? 1 : 0 }}
+                          transition={{ type: 'spring', stiffness: 520, damping: 30 }}
+                        >
+                          <Check className="h-3 w-3 text-black" strokeWidth={3} />
                         </motion.div>
                       </motion.div>
                     </div>
@@ -217,25 +297,28 @@ function TagFilterDisclosure({ value, onChange, counts }: { value: string; onCha
                 onClick={() => setOpen(true)}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                style={{ borderRadius: 9999, backgroundColor: 'rgba(255,255,255,0.05)', border: '1.5px solid rgba(255,255,255,0.1)', width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 10, position: 'relative' }}
+                style={{ borderRadius: 9999, zIndex: 10 }}
+                className="flex h-[60px] w-[60px] cursor-pointer items-center justify-center rounded-full border will-change-transform"
+                {...{ style: { borderRadius: 9999, zIndex: 10, height: 60, width: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', backgroundColor: '#111', border: '1.5px solid rgba(255,255,255,0.12)', boxShadow: '0 2px 8px rgba(0,0,0,0.3)' } }}
               >
-                <SlidersHorizontal className="h-5 w-5" style={{ color: value !== 'All' ? '#c9a97a' : 'rgba(255,255,255,0.6)' }} />
+                <SlidersHorizontal className="h-6 w-6" style={{ color: value !== 'All' ? '#c9a97a' : 'rgba(255,255,255,0.6)' }} />
               </motion.button>
 
               <motion.div
-                initial={{ x: -24 }}
+                initial={{ x: -30 }}
                 animate={{ x: 0 }}
-                transition={{ type: 'spring', bounce: 0, duration: 1 }}
-                style={{ borderRadius: 9999, backgroundColor: 'rgba(255,255,255,0.04)', border: '1.5px solid rgba(255,255,255,0.08)', width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', marginLeft: -10, zIndex: 9, opacity: 0.8 }}
+                transition={{ type: 'spring', bounce: 0, duration: 1.2 }}
+                className="flex h-[60px] w-[60px] items-center justify-center rounded-full"
+                style={{ marginLeft: -12, zIndex: 9, opacity: 0.8, backgroundColor: '#111', border: '1.5px solid rgba(255,255,255,0.1)', boxShadow: '0 2px 8px rgba(0,0,0,0.3)' }}
               >
                 <AnimatePresence mode="popLayout" initial={false}>
                   <motion.div
                     key={value}
-                    initial={{ opacity: 0, scale: 0.5 }}
+                    initial={{ opacity: 0, scale: 0.6 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.5 }}
+                    exit={{ opacity: 0, scale: 0.6 }}
                   >
-                    <ActiveIcon className="h-4 w-4" style={{ color: value !== 'All' ? (tagStyle(value)?.text ?? 'rgba(255,255,255,0.3)') : 'rgba(255,255,255,0.3)' }} />
+                    <ActiveIcon className="h-5 w-5" style={{ color: value !== 'All' ? (tagStyle(value)?.text ?? 'rgba(255,255,255,0.3)') : 'rgba(255,255,255,0.3)' }} />
                   </motion.div>
                 </AnimatePresence>
               </motion.div>
