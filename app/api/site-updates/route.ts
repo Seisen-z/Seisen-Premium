@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { title, content, tag, image_url, thumbnail_url, footer } = body;
+    const { title, content, tag, image_url, thumbnail_url, footer, game_name } = body;
 
     if (!title || !content) {
       return NextResponse.json({ error: 'title and content are required' }, { status: 400 });
@@ -39,6 +39,7 @@ export async function POST(req: NextRequest) {
         image_url: image_url || null,
         thumbnail_url: thumbnail_url || null,
         footer: footer || null,
+        game_name: game_name || null,
       })
       .select()
       .single();
