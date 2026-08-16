@@ -81,16 +81,45 @@ export default function HomeBento({
   totalExecutions = 0,
 }: Props) {
   const [hov, setHov] = useState<number | null>(null);
-  const [execStats, setExecStats] = useState({ free: freeExecutions, premium: premiumExecutions, total: totalExecutions });
+  const [execStats, setExecStats] = useState<{
+    free: number; premium: number; total: number;
+    topCountries: { code: string; count: number }[];
+  }>({ free: freeExecutions, premium: premiumExecutions, total: totalExecutions, topCountries: [] });
 
   useEffect(() => {
-    fetch('/api/stats/executions')
-      .then(r => r.json())
-      .then(data => setExecStats({ free: data.free ?? 0, premium: data.premium ?? 0, total: data.total ?? 0 }))
-      .catch(() => {});
+    const load = () => {
+      fetch('/api/stats/executions')
+        .then(r => r.json())
+        .then(data => setExecStats({
+          free: data.free ?? 0,
+          premium: data.premium ?? 0,
+          total: data.total ?? 0,
+          topCountries: data.topCountries ?? [],
+        }))
+        .catch(() => {});
+    };
+    load();
+    const id = setInterval(load, 30_000);
+    return () => clearInterval(id);
   }, []);
 
   const bars = [40, 70, 45, 90, 65, 85, 35, 60, 50, 80, 55, 75];
+
+  // Country code → [left%, top%] position on the 120×60 SVG viewBox world map
+  // Converted to percentage of the card's overflow container
+  const COUNTRY_POS: Record<string, [string, string]> = {
+    US: ['23%', '28%'], CA: ['20%', '18%'], MX: ['21%', '38%'],
+    BR: ['35%', '55%'], AR: ['32%', '67%'], CO: ['28%', '47%'],
+    GB: ['49%', '19%'], FR: ['50%', '22%'], DE: ['52%', '19%'],
+    ES: ['48%', '25%'], IT: ['53%', '24%'], NL: ['51%', '18%'],
+    RU: ['65%', '14%'], TR: ['58%', '26%'], SA: ['62%', '35%'],
+    NG: ['51%', '43%'], ZA: ['56%', '65%'], EG: ['57%', '33%'],
+    IN: ['71%', '38%'], PK: ['68%', '33%'], BD: ['74%', '37%'],
+    CN: ['78%', '28%'], JP: ['87%', '27%'], KR: ['84%', '28%'],
+    TH: ['77%', '40%'], VN: ['79%', '41%'], MY: ['79%', '47%'],
+    ID: ['80%', '50%'], PH: ['83%', '42%'], SG: ['79%', '48%'],
+    AU: ['84%', '63%'], NZ: ['92%', '70%'],
+  };
 
   return (
     <section className="px-6 md:pl-24 md:pr-14 lg:pl-28 lg:pr-20 py-28">
@@ -362,38 +391,51 @@ export default function HomeBento({
               <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[60%] h-16 rounded-[100%] blur-3xl" style={{ backgroundColor: 'rgba(201,169,122,0.12)' }} />
             </motion.div>
 
-            {/* Avatar pins */}
+            {/* Country pins — dynamic from execution data */}
             <div className="absolute inset-0">
-              {([
-                { label: 'ZJ', top: '12%', left: '18%', delay: 0 },
-                { label: 'MR', top: '38%', left: '40%', delay: 0.4 },
-                { label: 'SK', top: '8%',  left: '63%', delay: 0.2 },
-                { label: 'AL', top: '30%', left: '82%', delay: 0.6 },
-              ] as const).map((pin, idx) => (
-                <motion.div
-                  key={idx}
-                  className="absolute flex flex-col items-center"
-                  style={{ top: pin.top, left: pin.left }}
-                  animate={hov === 4 ? { y: [0, -6, 0] } : { y: 0 }}
-                  transition={hov === 4 ? { duration: 3, repeat: Infinity, ease: 'easeInOut', delay: pin.delay } : { duration: 0.5 }}
-                >
-                  <div
-                    className="relative z-10 flex h-9 w-9 items-center justify-center rounded-full text-[10px] font-bold text-white"
-                    style={{ backgroundColor: 'rgba(201,169,122,0.14)', border: `1px solid rgba(201,169,122,0.3)` }}
+              {(execStats.topCountries.length > 0
+                ? execStats.topCountries.filter(c => COUNTRY_POS[c.code]).slice(0, 5)
+                : [
+                    { code: 'US', count: 0 }, { code: 'PH', count: 0 },
+                    { code: 'GB', count: 0 }, { code: 'AU', count: 0 },
+                  ]
+              ).map((pin, idx) => {
+                const pos = COUNTRY_POS[pin.code];
+                if (!pos) return null;
+                return (
+                  <motion.div
+                    key={pin.code}
+                    className="absolute flex flex-col items-center"
+                    style={{ left: pos[0], top: pos[1] }}
+                    animate={hov === 4 ? { y: [0, -6, 0] } : { y: 0 }}
+                    transition={hov === 4 ? { duration: 3, repeat: Infinity, ease: 'easeInOut', delay: idx * 0.2 } : { duration: 0.5 }}
                   >
-                    {pin.label}
-                    <motion.div
-                      className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-[1.5px]"
-                      style={{ backgroundColor: ACCENT, borderColor: '#080808' }}
-                      animate={hov === 4 ? { scale: [1, 1.2, 1] } : { scale: 1 }}
-                      transition={hov === 4 ? { duration: 2, repeat: Infinity, delay: pin.delay } : { duration: 0.3 }}
-                    />
-                  </div>
-                  <svg width="8" height="10" viewBox="0 0 8 10" fill="none" style={{ color: 'rgba(201,169,122,0.3)', marginTop: '-1px' }}>
-                    <path d="M1 0L4 9L7 0" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </motion.div>
-              ))}
+                    <div
+                      className="relative z-10 flex h-9 w-9 items-center justify-center rounded-full text-[9px] font-bold text-white"
+                      style={{ backgroundColor: 'rgba(201,169,122,0.14)', border: `1px solid rgba(201,169,122,0.3)` }}
+                    >
+                      {pin.code}
+                      {pin.count > 0 && (
+                        <div
+                          className="absolute -top-2 -right-2 flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[8px] font-bold"
+                          style={{ backgroundColor: ACCENT, color: '#080808' }}
+                        >
+                          {pin.count}
+                        </div>
+                      )}
+                      <motion.div
+                        className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-[1.5px]"
+                        style={{ backgroundColor: ACCENT, borderColor: '#080808' }}
+                        animate={hov === 4 ? { scale: [1, 1.2, 1] } : { scale: 1 }}
+                        transition={hov === 4 ? { duration: 2, repeat: Infinity, delay: idx * 0.2 } : { duration: 0.3 }}
+                      />
+                    </div>
+                    <svg width="8" height="10" viewBox="0 0 8 10" fill="none" style={{ color: 'rgba(201,169,122,0.3)', marginTop: '-1px' }}>
+                      <path d="M1 0L4 9L7 0" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </motion.div>
+                );
+              })}
             </div>
 
             {/* Stats */}
