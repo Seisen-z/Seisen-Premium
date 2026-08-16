@@ -4,6 +4,9 @@ import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
+
+const WorldExecutionMap = dynamic(() => import('@/components/WorldExecutionMap'), { ssr: false });
 
 const ACCENT = '#c9a97a';
 
@@ -369,17 +372,10 @@ export default function HomeBento({
             </p>
           </div>
 
-          <div className="relative z-10 flex w-full flex-1 items-end justify-center overflow-hidden min-h-[180px]">
-            {/* Dot world map */}
-            <div
-              className="absolute inset-0 flex items-center justify-center pointer-events-none"
-              style={{
-                maskImage: 'radial-gradient(ellipse at center, black 30%, transparent 80%)',
-                WebkitMaskImage: 'radial-gradient(ellipse at center, black 30%, transparent 75%)',
-                opacity: 0.7,
-              }}
-            >
-              <WorldMap />
+          <div className="relative z-10 flex w-full flex-1 items-end justify-center overflow-hidden min-h-[200px]">
+            {/* Real world map */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ opacity: 0.85 }}>
+              <WorldExecutionMap topCountries={execStats.topCountries} mini />
             </div>
 
             {/* Glow on hover */}
@@ -390,53 +386,6 @@ export default function HomeBento({
             >
               <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[60%] h-16 rounded-[100%] blur-3xl" style={{ backgroundColor: 'rgba(201,169,122,0.12)' }} />
             </motion.div>
-
-            {/* Country pins — dynamic from execution data */}
-            <div className="absolute inset-0">
-              {(execStats.topCountries.length > 0
-                ? execStats.topCountries.filter(c => COUNTRY_POS[c.code]).slice(0, 5)
-                : [
-                    { code: 'US', count: 0 }, { code: 'PH', count: 0 },
-                    { code: 'GB', count: 0 }, { code: 'AU', count: 0 },
-                  ]
-              ).map((pin, idx) => {
-                const pos = COUNTRY_POS[pin.code];
-                if (!pos) return null;
-                return (
-                  <motion.div
-                    key={pin.code}
-                    className="absolute flex flex-col items-center"
-                    style={{ left: pos[0], top: pos[1] }}
-                    animate={hov === 4 ? { y: [0, -6, 0] } : { y: 0 }}
-                    transition={hov === 4 ? { duration: 3, repeat: Infinity, ease: 'easeInOut', delay: idx * 0.2 } : { duration: 0.5 }}
-                  >
-                    <div
-                      className="relative z-10 flex h-9 w-9 items-center justify-center rounded-full text-[9px] font-bold text-white"
-                      style={{ backgroundColor: 'rgba(201,169,122,0.14)', border: `1px solid rgba(201,169,122,0.3)` }}
-                    >
-                      {pin.code}
-                      {pin.count > 0 && (
-                        <div
-                          className="absolute -top-2 -right-2 flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[8px] font-bold"
-                          style={{ backgroundColor: ACCENT, color: '#080808' }}
-                        >
-                          {pin.count}
-                        </div>
-                      )}
-                      <motion.div
-                        className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-[1.5px]"
-                        style={{ backgroundColor: ACCENT, borderColor: '#080808' }}
-                        animate={hov === 4 ? { scale: [1, 1.2, 1] } : { scale: 1 }}
-                        transition={hov === 4 ? { duration: 2, repeat: Infinity, delay: idx * 0.2 } : { duration: 0.3 }}
-                      />
-                    </div>
-                    <svg width="8" height="10" viewBox="0 0 8 10" fill="none" style={{ color: 'rgba(201,169,122,0.3)', marginTop: '-1px' }}>
-                      <path d="M1 0L4 9L7 0" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </motion.div>
-                );
-              })}
-            </div>
 
             {/* Stats */}
             <div className="relative z-10 flex items-end gap-8 pb-1">
