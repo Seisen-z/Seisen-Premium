@@ -67,8 +67,8 @@ export async function POST(req: NextRequest) {
     // Dynamic Frontend URL for Redirects
     const frontendUrl = req.nextUrl.origin;
 
-    const returnUrl = `${frontendUrl}/premium`;
-    const cancelUrl = `${frontendUrl}/premium?canceled=true`;
+    const returnUrl = `${frontendUrl}/checkout?plan=${tier}`;
+    const cancelUrl = `${frontendUrl}/checkout?plan=${tier}&canceled=true`;
 
     // Encode quantity into custom_id so capture-order can read it: "lifetime:3"
     const customId = `${tier}:${quantity}`;
