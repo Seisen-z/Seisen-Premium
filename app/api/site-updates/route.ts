@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { title, content, tag, image_url } = body;
+    const { title, content, tag, image_url, thumbnail_url, footer } = body;
 
     if (!title || !content) {
       return NextResponse.json({ error: 'title and content are required' }, { status: 400 });
@@ -32,7 +32,14 @@ export async function POST(req: NextRequest) {
 
     const { data, error } = await supabase
       .from('site_updates')
-      .insert({ title, content, tag: tag ?? 'Update', image_url: image_url || null })
+      .insert({
+        title,
+        content,
+        tag: tag ?? 'Update',
+        image_url: image_url || null,
+        thumbnail_url: thumbnail_url || null,
+        footer: footer || null,
+      })
       .select()
       .single();
 

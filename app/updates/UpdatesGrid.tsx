@@ -23,6 +23,8 @@ export interface Update {
   content: string;
   tag: string;
   image_url: string | null;
+  thumbnail_url: string | null;
+  footer: string | null;
   created_at: string;
 }
 
@@ -141,13 +143,23 @@ export default function UpdatesGrid({ updates }: { updates: Update[] }) {
                     </span>
                   </div>
 
-                  {/* Title */}
-                  <h2
-                    className="text-base font-bold text-white leading-snug"
-                    style={{ letterSpacing: '-0.02em' }}
-                  >
-                    {update.title}
-                  </h2>
+                  {/* Title + thumbnail */}
+                  <div className="flex items-start gap-3">
+                    <h2
+                      className="text-base font-bold text-white leading-snug flex-1"
+                      style={{ letterSpacing: '-0.02em' }}
+                    >
+                      {update.title}
+                    </h2>
+                    {update.thumbnail_url && (
+                      <img
+                        src={update.thumbnail_url}
+                        alt=""
+                        className="h-10 w-10 rounded-lg object-cover shrink-0"
+                        style={{ border: '1px solid rgba(255,255,255,0.1)' }}
+                      />
+                    )}
+                  </div>
 
                   {/* Content preview */}
                   <p
@@ -157,10 +169,17 @@ export default function UpdatesGrid({ updates }: { updates: Update[] }) {
                     {update.content}
                   </p>
 
-                  {/* Footer date */}
-                  <p className="text-[11px] pt-2" style={{ color: 'rgba(255,255,255,0.18)', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                    {dateStr}
-                  </p>
+                  {/* Footer text + date */}
+                  <div className="pt-2 space-y-1" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                    {update.footer && (
+                      <p className="text-[11px] italic" style={{ color: 'rgba(255,255,255,0.3)' }}>
+                        {update.footer}
+                      </p>
+                    )}
+                    <p className="text-[11px]" style={{ color: 'rgba(255,255,255,0.18)' }}>
+                      {dateStr}
+                    </p>
+                  </div>
                 </div>
               </div>
             );
