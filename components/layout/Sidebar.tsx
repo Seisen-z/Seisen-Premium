@@ -16,6 +16,7 @@ import {
   Zap,
   Menu,
   X,
+  Newspaper,
 } from 'lucide-react';
 import { Logo } from '@/components/ui/Logo';
 
@@ -26,6 +27,7 @@ const navItems = [
   { href: '/getkey', icon: Key, label: 'Get Key' },
   { href: '/premium', icon: Crown, label: 'Premium' },
 
+  { href: '/updates', icon: Newspaper, label: 'Updates' },
   { href: '/faq', icon: HelpCircle, label: 'FAQ' },
   { href: 'https://discord.gg/F4sAf6z8Ph', icon: () => (
     <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
