@@ -498,6 +498,7 @@ export default async function HomePage() {
           freeExecutions={executions.free}
           premiumExecutions={executions.premium}
           totalExecutions={executions.total}
+          scripts={scripts.map(s => ({ name: s.name, universeId: s.universeId, type: s.type.toLowerCase() }))}
         />
       </Reveal>
 

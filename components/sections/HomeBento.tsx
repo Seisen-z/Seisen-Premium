@@ -61,6 +61,8 @@ function WorldMap() {
 }
 
 /* ── Props ─────────────────────────────────────────── */
+interface ScriptEntry { name: string; universeId?: string; type: string; }
+
 interface Props {
   scriptCount: number;
   freeCount: number;
@@ -70,6 +72,7 @@ interface Props {
   freeExecutions?: number;
   premiumExecutions?: number;
   totalExecutions?: number;
+  scripts?: ScriptEntry[];
 }
 
 /* ── Component ─────────────────────────────────────── */
@@ -82,12 +85,14 @@ export default function HomeBento({
   freeExecutions = 0,
   premiumExecutions = 0,
   totalExecutions = 0,
+  scripts = [],
 }: Props) {
   const [hov, setHov] = useState<number | null>(null);
   const [execStats, setExecStats] = useState<{
-    free: number; premium: number; total: number;
+    free: number; premium: number; total: number; countryCount: number;
     topCountries: { code: string; count: number }[];
-  }>({ free: freeExecutions, premium: premiumExecutions, total: totalExecutions, topCountries: [] });
+    topScripts: { universeId: string; name: string; count: number; type: string }[];
+  }>({ free: freeExecutions, premium: premiumExecutions, total: totalExecutions, countryCount: 28, topCountries: [], topScripts: [] });
 
   useEffect(() => {
     const load = () => {
@@ -97,7 +102,9 @@ export default function HomeBento({
           free: data.free ?? 0,
           premium: data.premium ?? 0,
           total: data.total ?? 0,
+          countryCount: data.countryCount ?? (data.topCountries?.length || 28),
           topCountries: data.topCountries ?? [],
+          topScripts: data.topScripts ?? [],
         }))
         .catch(() => {});
     };
@@ -106,7 +113,38 @@ export default function HomeBento({
     return () => clearInterval(id);
   }, []);
 
-  const bars = [40, 70, 45, 90, 65, 85, 35, 60, 50, 80, 55, 75];
+  // Filter state for Script Hub card
+  const [hubFilter, setHubFilter] = useState<'all' | 'free' | 'premium'>('all');
+  const [hoveredBar, setHoveredBar] = useState<number | null>(null);
+
+  // Build bar chart data from real execution counts
+  const filteredTopScripts = execStats.topScripts.filter(s =>
+    hubFilter === 'all' || s.type === hubFilter
+  );
+
+  const maxCount = filteredTopScripts.reduce((m, s) => Math.max(m, s.count), 1);
+
+  const barData = filteredTopScripts.slice(0, 8).map(s => ({
+    name: s.name,
+    count: s.count,
+    type: s.type,
+    heightPct: Math.max(15, Math.round((s.count / maxCount) * 90)),
+  }));
+
+  // Fallback placeholder bars when no real data yet
+  const fallbackBars = [
+    { name: 'Blox Fruits', count: 0, type: 'free', heightPct: 85 },
+    { name: 'Pet Sim 99', count: 0, type: 'free', heightPct: 65 },
+    { name: 'MM2', count: 0, type: 'free', heightPct: 50 },
+    { name: 'Anime Def.', count: 0, type: 'premium', heightPct: 70 },
+    { name: 'Rivals', count: 0, type: 'free', heightPct: 45 },
+    { name: 'Blade Ball', count: 0, type: 'free', heightPct: 55 },
+    { name: 'AV', count: 0, type: 'premium', heightPct: 60 },
+    { name: 'Other', count: 0, type: 'free', heightPct: 40 },
+  ];
+
+  const chartBars = barData.length > 0 ? barData : fallbackBars;
+  const isLiveData = barData.length > 0;
 
   // Country code → [left%, top%] position on the 120×60 SVG viewBox world map
   // Converted to percentage of the card's overflow container
@@ -145,23 +183,46 @@ export default function HomeBento({
 
         {/* ── Card 1: Script Hub stats (2-col) ── */}
         <div
-          className={cn(card, 'min-h-[300px] flex-col justify-end md:col-span-2')}
+          className={cn(card, 'min-h-[320px] flex-col justify-between md:col-span-2 overflow-visible')}
           style={{ backgroundColor: CARD_BG }}
           onMouseEnter={() => setHov(1)}
           onMouseLeave={() => setHov(null)}
         >
-          <div className="relative z-10 flex w-full flex-1 items-start justify-center overflow-visible">
-            <motion.div className="flex w-full flex-col">
-              <div className="mb-6 flex items-center justify-between">
-                <div>
-                  <span className="text-[10px] font-semibold tracking-wider uppercase" style={{ color: 'rgba(255,255,255,0.3)' }}>
-                    Script Hub
+          <div className="relative z-10 flex w-full flex-col">
+            {/* Header with filter buttons */}
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <span className="text-[10px] font-semibold tracking-wider uppercase" style={{ color: 'rgba(255,255,255,0.3)' }}>
+                  Script Hub Activity
+                </span>
+                <p className="text-2xl font-bold text-white tabular-nums">
+                  {hubFilter === 'free' ? freeCount : hubFilter === 'premium' ? premiumCount : scriptCount}{' '}
+                  <span className="text-sm font-medium" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                    {hubFilter === 'free' ? 'free scripts' : hubFilter === 'premium' ? 'premium scripts' : 'scripts total'}
                   </span>
-                  <p className="text-2xl font-bold text-white tabular-nums">
-                    {scriptCount}{' '}
-                    <span className="text-sm font-medium" style={{ color: 'rgba(255,255,255,0.4)' }}>scripts</span>
-                  </p>
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {/* Filter selector tabs */}
+                <div className="flex items-center gap-1 rounded-lg bg-white/[0.04] p-1 border border-white/10">
+                  {(['all', 'free', 'premium'] as const).map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => setHubFilter(tab)}
+                      className={cn(
+                        'px-2.5 py-1 rounded-md text-[11px] font-semibold capitalize transition-all duration-200',
+                        hubFilter === tab
+                          ? 'bg-[#c9a97a] text-black shadow-sm font-bold'
+                          : 'text-white/60 hover:text-white hover:bg-white/5'
+                      )}
+                    >
+                      {tab}
+                    </button>
+                  ))}
                 </div>
+
+                {/* Live Badge */}
                 <div
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold"
                   style={{ backgroundColor: 'rgba(201,169,122,0.1)', color: ACCENT, border: `1px solid rgba(201,169,122,0.2)` }}
@@ -173,32 +234,87 @@ export default function HomeBento({
                   Live
                 </div>
               </div>
+            </div>
 
-              {/* Bar chart */}
-              <div className="flex h-28 items-end gap-1.5 overflow-hidden">
-                {bars.map((h, i) => (
-                  <motion.div
-                    key={i}
-                    className="w-full rounded-t-sm"
-                    style={{ backgroundColor: i % 3 === 0 ? ACCENT : 'rgba(201,169,122,0.28)' }}
-                    initial={{ height: `${h}%` }}
-                    animate={
-                      hov === 1
-                        ? { height: [`${h}%`, `${Math.max(15, h - 30)}%`, `${h}%`] }
-                        : { height: `${h}%` }
-                    }
-                    transition={{ duration: 2, repeat: hov === 1 ? Infinity : 0, delay: i * 0.05, ease: 'easeInOut' }}
-                  />
-                ))}
-              </div>
-            </motion.div>
+            {/* Per-script execution bar chart */}
+            <div className="relative flex h-32 items-end gap-2 overflow-visible pt-6 pb-1">
+              {!isLiveData && (
+                <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
+                  <span className="text-[10px] font-semibold px-2 py-1 rounded-md bg-black/60 backdrop-blur-sm" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                    No executions logged yet
+                  </span>
+                </div>
+              )}
+              {chartBars.map((item, i) => {
+                const isHovered = hoveredBar === i;
+
+                return (
+                  <div
+                    key={`${item.name}-${i}`}
+                    className="relative flex-1 h-full flex flex-col justify-end group cursor-pointer"
+                    onMouseEnter={() => setHoveredBar(i)}
+                    onMouseLeave={() => setHoveredBar(null)}
+                  >
+                    {/* Hover Glassmorphic Tooltip */}
+                    {isHovered && isLiveData && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 5, scale: 0.95 }}
+                        animate={{ opacity: 1, y: -8, scale: 1 }}
+                        className="absolute bottom-full left-1/2 -translate-x-1/2 z-30 pointer-events-none min-w-[140px] rounded-xl bg-[#121212]/95 border border-white/15 p-2.5 shadow-2xl backdrop-blur-md text-left"
+                      >
+                        <span className="text-xs font-bold text-white leading-tight block mb-1 truncate max-w-[130px]">
+                          {item.name}
+                        </span>
+                        <div className="text-[11px] space-y-0.5" style={{ color: 'rgba(255,255,255,0.7)' }}>
+                          <p className="font-semibold text-[#c9a97a]">
+                            {item.count.toLocaleString()} run{item.count !== 1 ? 's' : ''}
+                          </p>
+                          <p className="text-[10px] capitalize" style={{ color: item.type === 'premium' ? '#a78bfa' : '#6ee7b7' }}>
+                            {item.type}
+                          </p>
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {/* Bar */}
+                    <motion.div
+                      className="w-full rounded-t-md transition-all duration-300"
+                      style={{
+                        backgroundColor: isHovered
+                          ? '#e5ca9e'
+                          : !isLiveData
+                          ? 'rgba(201,169,122,0.12)'
+                          : item.type === 'premium'
+                          ? (i % 2 === 0 ? '#a78bfa' : 'rgba(167,139,250,0.4)')
+                          : (i % 2 === 0 ? ACCENT : 'rgba(201,169,122,0.35)'),
+                        boxShadow: isHovered && isLiveData ? '0 0 16px rgba(201,169,122,0.6)' : 'none',
+                      }}
+                      animate={{ height: `${isLiveData ? item.heightPct : item.heightPct * 0.3}%` }}
+                      transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+                    />
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
-          <div className="relative z-10 flex flex-col gap-1 pt-5">
-            <h3 className="text-white text-lg font-semibold">Real-time Hub Stats</h3>
-            <p className="text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>
-              {freeCount} free · {premiumCount} premium · {workingCount} working right now
-            </p>
+          {/* Bottom Live Status Badges */}
+          <div className="relative z-10 flex flex-wrap items-center justify-between gap-2 pt-4 border-t border-white/[0.06]">
+            <div>
+              <h3 className="text-white text-base font-semibold">Real-time Hub Stats</h3>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                {workingCount} Working
+              </span>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-300 border border-amber-500/20">
+                {freeCount} Free
+              </span>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-500/10 text-purple-300 border border-purple-500/20">
+                {premiumCount} Premium
+              </span>
+            </div>
           </div>
         </div>
 
@@ -360,47 +476,55 @@ export default function HomeBento({
 
         {/* ── Card 4: Community (2-col) ── */}
         <div
-          className={cn(card, 'min-h-[300px] flex-col items-end justify-start text-right md:col-span-2')}
+          className={cn(card, 'relative min-h-[380px] flex-col justify-between md:col-span-2 overflow-hidden p-0')}
           style={{ backgroundColor: CARD_BG }}
           onMouseEnter={() => setHov(4)}
           onMouseLeave={() => setHov(null)}
         >
-          <div className="relative z-10 flex flex-col items-end gap-1.5 pb-4">
-            <h3 className="text-white text-lg font-semibold">Global Community</h3>
-            <p className="text-sm max-w-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>
+          {/* Full-card Map Canvas */}
+          <div className="absolute inset-0 z-0 h-full w-full opacity-90">
+            <WorldExecutionMap topCountries={execStats.topCountries} className="h-full w-full" />
+          </div>
+
+          {/* Vignette gradient overlay for crisp text readability over map */}
+          <div className="absolute inset-0 z-1 pointer-events-none bg-gradient-to-b from-black/80 via-transparent to-black/80" />
+
+          {/* Header text above map */}
+          <div className="relative z-10 flex flex-col items-end p-6 text-right pointer-events-none">
+            <h3 className="text-white text-xl font-bold tracking-tight mb-1">Global Community</h3>
+            <p className="text-sm max-w-sm" style={{ color: 'rgba(255,255,255,0.6)' }}>
               Join {memberCount > 0 ? `${memberCount.toLocaleString()}+` : '2,000+'} members on Discord. Active support, early drops, and community scripts.
             </p>
           </div>
 
-          <div className="relative z-10 w-full flex-1 flex flex-col justify-end">
-            {/* Real world map */}
-            <div className="w-full pointer-events-none" style={{ opacity: 0.9 }}>
-              <WorldExecutionMap topCountries={execStats.topCountries} mini />
+          {/* Glow effect on hover */}
+          <motion.div
+            className="absolute inset-0 z-1 pointer-events-none"
+            animate={hov === 4 ? { opacity: 1 } : { opacity: 0 }}
+            transition={{ duration: 0.8 }}
+          >
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[60%] h-24 rounded-[100%] blur-3xl" style={{ backgroundColor: 'rgba(201,169,122,0.15)' }} />
+          </motion.div>
+
+          {/* Stats bar above map */}
+          <div className="relative z-10 flex items-end justify-between sm:justify-start gap-6 sm:gap-10 p-6 pt-0 pointer-events-auto">
+            <div className="text-left">
+              <p className="font-bold text-white leading-none mb-1" style={{ fontSize: '1.85rem', letterSpacing: '-0.04em' }}>
+                {memberCount > 0 ? `${memberCount.toLocaleString()}+` : '2,000+'}
+              </p>
+              <p className="text-xs font-semibold text-white/70">Discord Members</p>
             </div>
-
-            {/* Glow on hover */}
-            <motion.div
-              className="absolute inset-0 z-0 pointer-events-none"
-              animate={hov === 4 ? { opacity: 1 } : { opacity: 0 }}
-              transition={{ duration: 0.8 }}
-            >
-              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[60%] h-16 rounded-[100%] blur-3xl" style={{ backgroundColor: 'rgba(201,169,122,0.12)' }} />
-            </motion.div>
-
-            {/* Stats */}
-            <div className="relative z-10 flex items-end gap-8 pb-1">
-              <div className="text-center">
-                <p className="font-bold text-white leading-none mb-0.5" style={{ fontSize: '1.75rem', letterSpacing: '-0.04em' }}>
-                  {memberCount > 0 ? `${memberCount.toLocaleString()}+` : '2,000+'}
-                </p>
-                <p className="text-xs font-semibold text-white">Discord Members</p>
-              </div>
-              <div className="text-center">
-                <p className="font-bold text-white leading-none mb-0.5" style={{ fontSize: '1.75rem', letterSpacing: '-0.04em' }}>
-                  {execStats.total > 0 ? `${execStats.total.toLocaleString()}+` : '—'}
-                </p>
-                <p className="text-xs font-semibold text-white">Executions</p>
-              </div>
+            <div className="text-left">
+              <p className="font-bold text-white leading-none mb-1" style={{ fontSize: '1.85rem', letterSpacing: '-0.04em' }}>
+                {execStats.countryCount > 0 ? `${execStats.countryCount}+` : '28+'}
+              </p>
+              <p className="text-xs font-semibold text-white/70">Countries</p>
+            </div>
+            <div className="text-left">
+              <p className="font-bold text-white leading-none mb-1" style={{ fontSize: '1.85rem', letterSpacing: '-0.04em' }}>
+                {execStats.total > 0 ? `${execStats.total.toLocaleString()}+` : '—'}
+              </p>
+              <p className="text-xs font-semibold text-white/70">Executions</p>
             </div>
           </div>
         </div>
