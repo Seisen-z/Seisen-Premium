@@ -47,6 +47,9 @@ export default function WorldExecutionMap({
       if (cancelled || !containerRef.current) return;
       const ml = (mlModule as any).default ?? mlModule;
 
+      // point worker at self-hosted file to avoid MIME type errors
+      if (ml.setWorkerUrl) ml.setWorkerUrl('/maplibre-gl-worker.mjs');
+
       // inject maplibre CSS once
       if (!document.getElementById('maplibre-css')) {
         const link = document.createElement('link');
@@ -70,6 +73,7 @@ export default function WorldExecutionMap({
       mapRef.current = map;
 
       map.on('load', () => {
+        map.resize();
         addMarkers(ml, map);
       });
     });
@@ -140,9 +144,11 @@ export default function WorldExecutionMap({
     });
   }
 
+  const height = mini ? 220 : 420;
+
   return (
-    <div className={`relative w-full h-full ${className}`} style={{ minHeight: mini ? 180 : 420 }}>
-      <div ref={containerRef} style={{ width: '100%', height: '100%', borderRadius: 'inherit' }} />
+    <div className={`relative w-full ${className}`} style={{ height }}>
+      <div ref={containerRef} style={{ position: 'absolute', inset: 0, borderRadius: 'inherit' }} />
 
       {/* Hide MapLibre logo/attribution to keep it clean */}
       <style>{`

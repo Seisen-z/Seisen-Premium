@@ -372,9 +372,9 @@ export default function HomeBento({
             </p>
           </div>
 
-          <div className="relative z-10 flex w-full flex-1 items-end justify-center min-h-[200px]">
+          <div className="relative z-10 w-full flex-1 flex flex-col justify-end">
             {/* Real world map */}
-            <div className="absolute inset-x-0 top-0 bottom-0 flex items-center pointer-events-none" style={{ opacity: 0.9 }}>
+            <div className="w-full pointer-events-none" style={{ opacity: 0.9 }}>
               <WorldExecutionMap topCountries={execStats.topCountries} mini />
             </div>
 
