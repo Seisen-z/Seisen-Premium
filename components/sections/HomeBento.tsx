@@ -2,7 +2,7 @@
 
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
 const ACCENT = '#c9a97a';
@@ -81,6 +81,14 @@ export default function HomeBento({
   totalExecutions = 0,
 }: Props) {
   const [hov, setHov] = useState<number | null>(null);
+  const [execStats, setExecStats] = useState({ free: freeExecutions, premium: premiumExecutions, total: totalExecutions });
+
+  useEffect(() => {
+    fetch('/api/stats/executions')
+      .then(r => r.json())
+      .then(data => setExecStats({ free: data.free ?? 0, premium: data.premium ?? 0, total: data.total ?? 0 }))
+      .catch(() => {});
+  }, []);
 
   const bars = [40, 70, 45, 90, 65, 85, 35, 60, 50, 80, 55, 75];
 
@@ -196,11 +204,11 @@ export default function HomeBento({
               </div>
 
               {([
-                { name: 'Free Runs',     count: freeExecutions,    delay: 0.2 },
-                { name: 'Premium Runs',  count: premiumExecutions, delay: 0.5 },
-                { name: 'Total Runs',    count: totalExecutions,   delay: 0.8 },
+                { name: 'Free Runs',     count: execStats.free,    delay: 0.2 },
+                { name: 'Premium Runs',  count: execStats.premium, delay: 0.5 },
+                { name: 'Total Runs',    count: execStats.total,   delay: 0.8 },
               ] as const).map((item) => {
-                const base = totalExecutions > 0 ? totalExecutions : 1;
+                const base = execStats.total > 0 ? execStats.total : 1;
                 const pct = Math.min(100, Math.round((item.count / base) * 100));
                 return (
                   <div key={item.name} className="flex flex-col gap-1.5">
@@ -398,7 +406,7 @@ export default function HomeBento({
               </div>
               <div className="text-center">
                 <p className="font-bold text-white leading-none mb-0.5" style={{ fontSize: '1.75rem', letterSpacing: '-0.04em' }}>
-                  {totalExecutions > 0 ? `${totalExecutions.toLocaleString()}+` : '—'}
+                  {execStats.total > 0 ? `${execStats.total.toLocaleString()}+` : '—'}
                 </p>
                 <p className="text-xs font-semibold text-white">Executions</p>
               </div>
