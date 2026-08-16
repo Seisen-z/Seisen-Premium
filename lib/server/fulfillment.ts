@@ -167,9 +167,10 @@ export async function fulfillOrder(db: TicketDatabase, params: FulfillOrderParam
 
     if (decrementStock) {
         for (let i = 0; i < quantity; i++) {
-            const ok = await db.decrementPaymentMethodStock(tier, paymentMethod);
+            const ok = await db.decrementPaymentMethodStock(tier, paymentMethod, true);
             if (!ok) console.warn(`⚠️ Could not decrement ${paymentMethod} stock for tier ${tier} (unit ${i + 1})`);
         }
+        void db.notifyDiscordBotOfStockChange();
     }
 
     const { allKeys, lastKeyResult } = await issueKeys(junkie, tier, quantity, validity, customerEmail, amountPerUnit, currency, transactionId);

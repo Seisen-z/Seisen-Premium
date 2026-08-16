@@ -408,7 +408,7 @@ export class TicketDatabase {
     return { tier: normalizedTier, payment_method: normalizedMethod, stock: safeStock };
   }
 
-  async decrementPaymentMethodStock(tier: string, method: string): Promise<boolean> {
+  async decrementPaymentMethodStock(tier: string, method: string, skipNotify = false): Promise<boolean> {
     const normalizedTier = this.normalizeTier(tier);
     const normalizedMethod = this.normalizeMethod(method);
     if (!normalizedTier || !normalizedMethod) return false;
@@ -456,8 +456,7 @@ export class TicketDatabase {
           .update({ stock: currentStock - 1, updated_at: now })
           .eq('tier', normalizedTier)
           .eq('payment_method', 'maya');
-        // Notify Discord Bot of the new stock level
-        void this.notifyDiscordBotOfStockChange();
+        if (!skipNotify) void this.notifyDiscordBotOfStockChange();
         return true;
       }
     }
@@ -674,16 +673,25 @@ export class TicketDatabase {
   }
 
   async notifyDiscordBotOfStockChange() {
+    const botApiUrl = process.env.DISCORD_BOT_API_URL;
+    const secret = process.env.VERIFICATION_INTERNAL_SECRET;
+
+    if (!botApiUrl || !secret) {
+      console.warn('⚠️ Discord bot notification skipped: DISCORD_BOT_API_URL or VERIFICATION_INTERNAL_SECRET not set');
+      return;
+    }
+
     try {
-      const botApiUrl = process.env.DISCORD_BOT_API_URL || 'http://localhost:9460';
-      const secret = process.env.VERIFICATION_INTERNAL_SECRET || '088887b0721646bf9186b12a6fbdb533b216d5aa3dd844cfac2be44e16020c23';
       const methodStocks = await this.getPaymentMethodStocks();
-      
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 5000);
+
       await fetch(`${botApiUrl}/api/internal/restock`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ methodStocks, secret })
-      });
+        body: JSON.stringify({ methodStocks, secret }),
+        signal: controller.signal,
+      }).finally(() => clearTimeout(timeout));
     } catch (err: any) {
       console.warn('⚠️ Failed to notify Discord Bot of stock change:', err.message);
     }
