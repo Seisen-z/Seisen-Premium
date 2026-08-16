@@ -6,7 +6,7 @@ export const revalidate = 60;
 async function fetchLastUpdated(): Promise<string | null> {
   try {
     const res = await fetch(
-      'https://api.github.com/repos/Ken-884/roblox/commits?path=gamelist.lua&per_page=1',
+      'https://api.github.com/repos/Mentos4/roblox/commits?path=gamelist.lua&per_page=1',
       { next: { revalidate: 3600 }, headers: { 'Accept': 'application/vnd.github+json' } }
     );
     if (!res.ok) return null;
