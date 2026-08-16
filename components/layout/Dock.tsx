@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Menu, X, User, Crown } from 'lucide-react';
 import { Logo } from '@/components/ui/Logo';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -71,6 +71,63 @@ const DiscordIcon = () => (
   </svg>
 );
 
+function NavPill({ pathname }: { pathname: string }) {
+  const navRef  = useRef<HTMLElement>(null);
+  const linkRefs = useRef<(HTMLAnchorElement | null)[]>([]);
+  const [pill, setPill] = useState({ left: 0, width: 0, ready: false });
+
+  useEffect(() => {
+    const activeIdx = navLinks.findIndex(l => l.href === pathname);
+    const link = linkRefs.current[activeIdx];
+    const nav  = navRef.current;
+    if (!link || !nav) return;
+    // Measure relative to the nav container — scroll-proof
+    const navRect  = nav.getBoundingClientRect();
+    const linkRect = link.getBoundingClientRect();
+    setPill({ left: linkRect.left - navRect.left, width: linkRect.width, ready: true });
+  }, [pathname]);
+
+  return (
+    <div className="hidden md:flex items-center absolute left-1/2 -translate-x-1/2">
+      <nav
+        ref={navRef}
+        className="relative flex items-center gap-0.5 p-1 rounded-full"
+        style={{
+          backgroundColor: 'rgba(26,26,26,0.65)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+        }}
+      >
+        {/* Sliding pill — container-relative coords, scroll-proof */}
+        {pill.ready && (
+          <motion.div
+            className="absolute top-1 bottom-1 rounded-full pointer-events-none bg-white"
+            animate={{ left: pill.left, width: pill.width }}
+            transition={{ type: 'spring', stiffness: 400, damping: 32 }}
+          />
+        )}
+
+        {navLinks.map(({ href, label }, i) => {
+          const active = pathname === href;
+          return (
+            <Link
+              key={href}
+              href={href}
+              ref={el => { linkRefs.current[i] = el; }}
+              className="relative z-10 px-3 py-1 rounded-full text-xs transition-colors duration-150"
+              style={{ color: active ? '#000000' : 'rgba(255,255,255,0.45)', fontWeight: active ? 600 : 400 }}
+              onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.8)'; }}
+              onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.45)'; }}
+            >
+              {label}
+            </Link>
+          );
+        })}
+      </nav>
+    </div>
+  );
+}
+
 export default function Dock() {
   const pathname  = usePathname();
   const [isOpen, setIsOpen]     = useState(false);
@@ -113,38 +170,7 @@ export default function Dock() {
         </Link>
 
         {/* ── Centre: Nav pill (desktop) ── */}
-        <div className="hidden md:flex items-center absolute left-1/2 -translate-x-1/2">
-          <div
-            className="flex items-center gap-0.5 p-1 rounded-full"
-            style={{ backgroundColor: '#1a1a1a' }}
-          >
-            {navLinks.map(({ href, label }) => {
-              const active = pathname === href;
-              return (
-                <Link
-                  key={href}
-                  href={href}
-                  className="relative px-4 py-1.5 rounded-full text-sm transition-colors duration-150"
-                  style={{
-                    color: active ? '#000000' : 'rgba(255,255,255,0.45)',
-                    fontWeight: active ? 600 : 400,
-                  }}
-                  onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.8)'; }}
-                  onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.45)'; }}
-                >
-                  {active && (
-                    <motion.span
-                      layoutId="nav-active-pill"
-                      className="absolute inset-0 rounded-full bg-white"
-                      transition={{ type: 'spring', stiffness: 400, damping: 32 }}
-                    />
-                  )}
-                  <span className="relative z-10">{label}</span>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
+        <NavPill pathname={pathname} />
 
         {/* ── Right: Social + Client (desktop) ── */}
         <div className="hidden md:flex items-center gap-3 ml-auto shrink-0" suppressHydrationWarning>

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Crown, ArrowRight, Zap, Shield, RefreshCw, CheckCircle2, Users } from 'lucide-react';
+import { Crown, ArrowRight, CheckCircle2, Users } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { fetchScripts } from '@/lib/scripts';
 import { fetchVideos } from '@/lib/videos';
@@ -7,9 +7,10 @@ import YoutubeCarousel from '@/components/YoutubeCarousel';
 import Testimonials from '@/components/sections/Testimonials';
 import PartnerLogos from '@/components/sections/PartnerLogos';
 import ScriptShowcase from '@/components/ScriptShowcase';
-import FeaturedScriptCard from '@/components/FeaturedScriptCard';
-import MiniScriptGrid from '@/components/MiniScriptGrid';
+import ScriptShowcaseCarousel from '@/components/ScriptShowcaseCarousel';
 import HomeFAQ from '@/components/sections/HomeFAQ';
+import HomeTourSection from '@/components/sections/HomeTourSection';
+import HomeBento from '@/components/sections/HomeBento';
 import Reveal from '@/components/ui/Reveal';
 
 // ── Brand tokens (cream/warm — homepage only) ──────────────────
@@ -43,10 +44,26 @@ async function fetchDiscordStats(): Promise<DiscordStats> {
   } catch { return { memberCount: 0, members: [] }; }
 }
 
+async function fetchExecutionStats() {
+  try {
+    const { supabase } = await import('@/lib/server/db');
+    const [freeResult, premiumResult] = await Promise.all([
+      supabase.from('script_execution_log').select('*', { count: 'exact', head: true }).eq('script_type', 'free'),
+      supabase.from('script_execution_log').select('*', { count: 'exact', head: true }).eq('script_type', 'premium'),
+    ]);
+    const free = freeResult.count ?? 0;
+    const premium = premiumResult.count ?? 0;
+    return { free, premium, total: free + premium };
+  } catch {
+    return { free: 0, premium: 0, total: 0 };
+  }
+}
+
 export default async function HomePage() {
   const scripts = await fetchScripts();
   const videos  = await fetchVideos();
   const discord = await fetchDiscordStats();
+  const executions = await fetchExecutionStats();
 
   const freeCount    = scripts.filter(s => s.type === 'Free'    || s.displayType === 'Free & Premium').length;
   const premiumCount = scripts.filter(s => s.type === 'Premium' || s.displayType === 'Free & Premium').length;
@@ -445,208 +462,51 @@ export default async function HomePage() {
               </div>
             </div>
 
-            {/* Right — featured script + grid */}
+            {/* Right — script showcase carousel */}
             <div className="flex flex-col gap-4">
-              {/* Featured: Anime Expedition */}
               {(() => {
                 const featured = scripts.find(s =>
                   s.name.toLowerCase().includes('anime expedition')
                 ) ?? scripts[0];
-                return featured ? <FeaturedScriptCard script={featured} /> : null;
+                const rest = scripts
+                  .filter(s => s.id !== featured?.id)
+                  .slice(0, 8);
+                const all = featured ? [featured, ...rest] : rest;
+                return (
+                  <ScriptShowcaseCarousel
+                    scripts={all}
+                    initialActiveId={featured?.id}
+                  />
+                );
               })()}
-
-              {/* Remaining scripts mini-grid */}
-              <MiniScriptGrid
-                scripts={scripts
-                  .filter(s => !s.name.toLowerCase().includes('anime expedition'))
-                  .slice(0, 8)
-                }
-              />
             </div>
           </div>
         </section>
       </Reveal>
 
       {/* ══════════════════════════════════════════════════════════
-          WHY SEISEN
+          WHY SEISEN — BENTO
       ══════════════════════════════════════════════════════════ */}
-      <section className="px-6 md:pl-24 md:pr-14 lg:pl-28 lg:pr-20 py-28">
+      <Reveal>
 
-        {/* Section label + headline — left only */}
-        <Reveal>
-          <div className="mb-20 max-w-2xl">
-            <p className="section-label mb-4" style={{ color: C.accent, opacity: 1 }}>Why Seisen</p>
-            <h2
-              className="font-bold text-white mb-5"
-              style={{ fontSize: 'clamp(2.25rem, 5vw, 4rem)', letterSpacing: '-0.04em', lineHeight: 1.02 }}
-            >
-              The script hub that<br />takes quality seriously.
-            </h2>
-            <p className="text-base" style={{ color: 'rgba(255,255,255,0.38)', lineHeight: 1.75 }}>
-              Most hubs ship and forget. We review, update, and verify everything before it reaches your executor.
-            </p>
-          </div>
-        </Reveal>
+        <HomeBento
+          scriptCount={scripts.length}
+          freeCount={freeCount}
+          premiumCount={premiumCount}
+          workingCount={workingCount}
+          memberCount={discord.memberCount}
+          freeExecutions={executions.free}
+          premiumExecutions={executions.premium}
+          totalExecutions={executions.total}
+        />
+      </Reveal>
 
-        {/* ── Feature 01: Verified ── */}
-        <Reveal delay={0}>
-          <div
-            className="grid md:grid-cols-[1fr_1.6fr] gap-0 mb-px overflow-hidden rounded-2xl"
-            style={{ border: '1px solid rgba(255,255,255,0.07)' }}
-          >
-            {/* Left — copy */}
-            <div className="p-10 flex flex-col justify-between" style={{ backgroundColor: 'rgba(255,255,255,0.02)' }}>
-              <div>
-                <div className="flex items-center gap-3 mb-6">
-                  <span className="font-mono text-xs font-bold" style={{ color: 'rgba(255,255,255,0.18)' }}>01</span>
-                  <div className="h-px flex-1" style={{ backgroundColor: 'rgba(255,255,255,0.07)' }} />
-                  <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(201,169,122,0.12)', color: C.accent }}>
-                    <Shield className="w-3.5 h-3.5" />
-                  </div>
-                </div>
-                <h3 className="font-bold text-white mb-3" style={{ fontSize: '1.35rem', letterSpacing: '-0.02em' }}>Verified & Tested</h3>
-                <p className="text-sm leading-relaxed" style={{ color: 'rgba(255,255,255,0.4)', lineHeight: 1.75 }}>
-                  Every script is reviewed by the Seisen team before release. No untested, broken, or dangerous code ever ships to users.
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-2 mt-8">
-                {['Malware-free', 'Team reviewed', 'Tested per update', 'Status tracked live'].map(t => (
-                  <span key={t} className="text-xs px-2.5 py-1 rounded-full" style={{ backgroundColor: 'rgba(201,169,122,0.08)', color: C.accentSoft, border: `1px solid rgba(201,169,122,0.18)` }}>
-                    {t}
-                  </span>
-                ))}
-              </div>
-            </div>
-            {/* Right — live status panel */}
-            <div className="p-6 flex flex-col gap-2" style={{ backgroundColor: '#080808', borderLeft: '1px solid rgba(255,255,255,0.06)' }}>
-              <p className="font-mono text-xs mb-3" style={{ color: 'rgba(255,255,255,0.18)' }}>{'// live script status · ' + workingCount + ' verified'}</p>
-              {scripts.filter(s => s.status === 'Working').slice(0, 7).map((s, i) => (
-                <div key={s.id} className="flex items-center justify-between py-2.5 px-3 rounded-lg" style={{ backgroundColor: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                  <span className="text-sm font-medium truncate" style={{ color: 'rgba(255,255,255,0.7)', maxWidth: '75%' }}>{s.name}</span>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                    <span className="text-xs" style={{ color: 'rgba(255,255,255,0.3)' }}>Working</span>
-                  </div>
-                </div>
-              ))}
-              <p className="font-mono text-[10px] mt-2" style={{ color: 'rgba(255,255,255,0.14)' }}>{scripts.length - workingCount} discontinued · hidden from hub</p>
-            </div>
-          </div>
-        </Reveal>
-
-        {/* ── Feature 02 + 03 side by side ── */}
-        <div className="grid md:grid-cols-2 gap-4 mt-4">
-
-          {/* Instant Access */}
-          <Reveal delay={0.05}>
-            <div className="rounded-2xl overflow-hidden flex flex-col h-full" style={{ border: '1px solid rgba(255,255,255,0.07)', backgroundColor: 'rgba(255,255,255,0.02)' }}>
-              <div className="p-10 flex-1">
-                <div className="flex items-center gap-3 mb-6">
-                  <span className="font-mono text-xs font-bold" style={{ color: 'rgba(255,255,255,0.18)' }}>02</span>
-                  <div className="h-px flex-1" style={{ backgroundColor: 'rgba(255,255,255,0.07)' }} />
-                  <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(201,169,122,0.12)', color: C.accent }}>
-                    <Zap className="w-3.5 h-3.5" />
-                  </div>
-                </div>
-                <h3 className="font-bold text-white mb-3" style={{ fontSize: '1.35rem', letterSpacing: '-0.02em' }}>Instant Access</h3>
-                <p className="text-sm leading-relaxed" style={{ color: 'rgba(255,255,255,0.4)', lineHeight: 1.75 }}>
-                  Free key delivered instantly. Premium unlocks everything with no waiting — just copy, paste, and play.
-                </p>
-              </div>
-              {/* Code block */}
-              <div className="m-4 rounded-xl p-5 font-mono text-xs" style={{ backgroundColor: '#080808', border: '1px solid rgba(255,255,255,0.07)' }}>
-                <p className="mb-1.5" style={{ color: 'rgba(255,255,255,0.2)' }}>{`-- one line. that's it.`}</p>
-                <p style={{ color: '#e8d5b5' }}>{'loadstring(game:HttpGet('}</p>
-                <p className="pl-4" style={{ color: C.accentSoft }}>{'"https://seisen.vercel.app"'}</p>
-                <p className="mb-3" style={{ color: '#e8d5b5' }}>{'))()'}</p>
-                <div className="flex items-center gap-1.5 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                  <span className="relative flex h-1.5 w-1.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
-                  </span>
-                  <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px' }}>ready to execute</span>
-                </div>
-              </div>
-            </div>
-          </Reveal>
-
-          {/* Regular Updates + Community stacked */}
-          <div className="flex flex-col gap-4">
-            <Reveal delay={0.09}>
-              <div className="rounded-2xl p-10 flex-1" style={{ border: '1px solid rgba(255,255,255,0.07)', backgroundColor: 'rgba(255,255,255,0.02)' }}>
-                <div className="flex items-center gap-3 mb-6">
-                  <span className="font-mono text-xs font-bold" style={{ color: 'rgba(255,255,255,0.18)' }}>03</span>
-                  <div className="h-px flex-1" style={{ backgroundColor: 'rgba(255,255,255,0.07)' }} />
-                  <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(201,169,122,0.12)', color: C.accent }}>
-                    <RefreshCw className="w-3.5 h-3.5" />
-                  </div>
-                </div>
-                <h3 className="font-bold text-white mb-3" style={{ fontSize: '1.35rem', letterSpacing: '-0.02em' }}>Regular Updates</h3>
-                <p className="text-sm leading-relaxed mb-6" style={{ color: 'rgba(255,255,255,0.4)', lineHeight: 1.75 }}>
-                  Scripts get patched as Roblox games change. We keep them working so you never have to chase patches.
-                </p>
-                {/* Inline changelog */}
-                <div className="flex flex-col gap-3">
-                  {[
-                    { label: 'Patch applied',  name: scripts[0]?.name ?? 'Anime Expedition', time: '2h ago',  hot: true },
-                    { label: 'Fix deployed',   name: scripts[1]?.name ?? 'Blox Fruits',      time: '1d ago'  },
-                    { label: 'Status updated', name: scripts[2]?.name ?? 'Dragon Blox',      time: '2d ago'  },
-                  ].map((entry, i, arr) => (
-                    <div key={i} className="flex items-start gap-3">
-                      <div className="flex flex-col items-center shrink-0 pt-0.5">
-                        <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: entry.hot ? C.accent : 'rgba(255,255,255,0.2)', flexShrink: 0 }} />
-                        {i < arr.length - 1 && <div className="w-px mt-1" style={{ backgroundColor: 'rgba(255,255,255,0.07)', height: '18px' }} />}
-                      </div>
-                      <div>
-                        <p className="text-xs font-semibold text-white leading-none mb-0.5">{entry.label}</p>
-                        <p className="text-xs" style={{ color: 'rgba(255,255,255,0.3)' }}>{entry.name} · {entry.time}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </Reveal>
-
-            {/* Community */}
-            <Reveal delay={0.13}>
-              <div
-                className="rounded-2xl p-8"
-                style={{ background: `linear-gradient(135deg, rgba(201,169,122,0.12) 0%, rgba(201,169,122,0.03) 100%)`, border: `1px solid rgba(201,169,122,0.2)` }}
-              >
-                <div className="flex items-center justify-between mb-5">
-                  <div className="flex -space-x-2">
-                    {(discord.members.length > 0 ? discord.members.slice(0, 5) : []).map(m => (
-                      <img key={m.id} src={m.avatar_url} alt={m.username} className="w-7 h-7 rounded-full border-2 object-cover" style={{ borderColor: '#080808' }} />
-                    ))}
-                    {discord.members.length === 0 && ['#9a7d58','#6b5a42','#b89a74','#7c6248','#a08060'].map((c, i) => (
-                      <div key={i} className="w-7 h-7 rounded-full border-2 flex items-center justify-center text-xs font-bold text-white" style={{ background: c, borderColor: '#080808' }}>
-                        {['S','R','A','J','K'][i]}
-                      </div>
-                    ))}
-                  </div>
-                  <a href="https://discord.gg/F4sAf6z8Ph" target="_blank" rel="noopener noreferrer" className="text-xs font-medium flex items-center gap-1 hover:opacity-70 transition-opacity" style={{ color: C.accent }}>
-                    Join Discord <ArrowRight className="w-3 h-3" />
-                  </a>
-                </div>
-                <div className="flex items-end gap-8">
-                  <div>
-                    <p className="font-bold text-white leading-none mb-1" style={{ fontSize: '2rem', letterSpacing: '-0.04em' }}>
-                      {discord.memberCount > 0 ? `${discord.memberCount.toLocaleString()}+` : '2,000+'}
-                    </p>
-                    <p className="text-xs text-white font-semibold mb-0.5">Discord Members</p>
-                    <p className="text-xs" style={{ color: 'rgba(255,255,255,0.3)' }}>active community</p>
-                  </div>
-                  <div>
-                    <p className="font-bold text-white leading-none mb-1" style={{ fontSize: '2rem', letterSpacing: '-0.04em' }}>500K+</p>
-                    <p className="text-xs text-white font-semibold mb-0.5">Executions</p>
-                    <p className="text-xs" style={{ color: 'rgba(255,255,255,0.3)' }}>scripts run daily</p>
-                  </div>
-                </div>
-              </div>
-            </Reveal>
-          </div>
-        </div>
-      </section>
+      {/* ══════════════════════════════════════════════════════════
+          PLATFORM TOUR
+      ══════════════════════════════════════════════════════════ */}
+      <Reveal>
+        <HomeTourSection />
+      </Reveal>
 
       {/* ══════════════════════════════════════════════════════════
           VIDEOS
