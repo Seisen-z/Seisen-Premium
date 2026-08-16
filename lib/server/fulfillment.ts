@@ -166,11 +166,13 @@ export async function fulfillOrder(db: TicketDatabase, params: FulfillOrderParam
     }
 
     if (decrementStock) {
+        let anyDecremented = false;
         for (let i = 0; i < quantity; i++) {
             const ok = await db.decrementPaymentMethodStock(tier, paymentMethod, true);
-            if (!ok) console.warn(`⚠️ Could not decrement ${paymentMethod} stock for tier ${tier} (unit ${i + 1})`);
+            if (ok) anyDecremented = true;
+            else console.warn(`⚠️ Could not decrement ${paymentMethod} stock for tier ${tier} (unit ${i + 1})`);
         }
-        void db.notifyDiscordBotOfStockChange();
+        if (anyDecremented) void db.notifyDiscordBotOfStockChange();
     }
 
     const { allKeys, lastKeyResult } = await issueKeys(junkie, tier, quantity, validity, customerEmail, amountPerUnit, currency, transactionId);

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   LayoutDashboard, CreditCard, MessageSquare, FileCode,
   Package, LogOut, Shield, Search, Loader2, AlertCircle,
@@ -109,16 +109,19 @@ export default function AdminPage() {
   const [compData,  setCompData]  = useState({ email:'', subject:'', message:'' });
   const [composing, setComposing] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
     setToast({ message, type });
-    if (typeof window !== 'undefined') {
-      (window as any)._toastTimeout && clearTimeout((window as any)._toastTimeout);
-      (window as any)._toastTimeout = setTimeout(() => setToast(null), 3000);
-    }
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => setToast(null), 3000);
   };
 
   const PER = 10; const SPER = 9;
+
+  useEffect(() => {
+    return () => { if (toastTimerRef.current) clearTimeout(toastTimerRef.current); };
+  }, []);
 
   useEffect(() => {
     const tok = localStorage.getItem('adminToken');
