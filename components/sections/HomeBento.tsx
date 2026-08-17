@@ -1,10 +1,12 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import { motion } from 'framer-motion';
-import { useState, useEffect } from 'react';
+import { motion, AnimatePresence as AP, MotionConfig } from 'framer-motion';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
+import useMeasure from 'react-use-measure';
+import { RefreshCw, Zap, Wrench, Settings, Megaphone, BellRing } from 'lucide-react';
 
 const WorldExecutionMap = dynamic(() => import('@/components/WorldExecutionMap'), { ssr: false });
 
@@ -16,6 +18,122 @@ const card = cn(
 );
 
 const CARD_BG = 'rgba(255,255,255,0.025)';
+
+const TAG_ICONS: Record<string, React.ElementType> = {
+  'Update':       RefreshCw,
+  'New Script':   Zap,
+  'Patch':        Wrench,
+  'Maintenance':  Settings,
+  'Announcement': Megaphone,
+};
+const TAG_COLORS: Record<string, string> = {
+  'Update':       '#c9a97a',
+  'New Script':   '#6ee7b7',
+  'Patch':        '#fbbf24',
+  'Maintenance':  '#a78bfa',
+  'Announcement': '#60a5fa',
+};
+
+function AlertsDisclosure({ updates }: { updates: { title: string; tag: string; game_name: string | null }[] }) {
+  const [open, setOpen] = useState(false);
+  const [ref, bounds] = useMeasure({ offsetSize: true });
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const h = (e: MouseEvent) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, [open]);
+
+  const fallback = [
+    { title: 'Script Updated', tag: 'Update', game_name: 'Anime Expedition' },
+    { title: 'New Script Added', tag: 'New Script', game_name: null },
+  ];
+  const items = (updates.length > 0 ? updates : fallback).slice(0, 5);
+
+  return (
+    <MotionConfig transition={{ type: 'spring', stiffness: 280, damping: 26 }}>
+      <div ref={wrapRef}>
+      <motion.div
+        className="flex items-center justify-center overflow-hidden rounded-3xl"
+        style={{ backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
+        animate={{
+          width: bounds.width > 0 ? bounds.width : 'auto',
+          height: bounds.height > 0 ? bounds.height : 'auto',
+        }}
+      >
+        <div ref={ref} className="p-2">
+          <AP mode="popLayout" initial={false}>
+            {!open ? (
+              <motion.button
+                key="closed"
+                className="flex shrink-0 cursor-pointer items-center gap-2 px-5 py-2"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                onClick={() => setOpen(true)}
+              >
+                <BellRing className="h-5 w-5" style={{ color: 'rgba(255,255,255,0.6)' }} />
+                {updates.length > 0 && (
+                  <span className="flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold text-black" style={{ backgroundColor: ACCENT }}>
+                    {Math.min(updates.length, 9)}
+                  </span>
+                )}
+              </motion.button>
+            ) : (
+              <motion.div key="open" className="flex shrink-0 flex-col gap-1.5 min-w-[230px]">
+                {/* Header */}
+                <motion.div
+                  className="px-1 pb-1"
+                  style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.08 }}
+                >
+                  <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.3)' }}>Recent Updates</span>
+                </motion.div>
+
+                {/* Update rows */}
+                {items.map((item, i) => {
+                  const Icon = TAG_ICONS[item.tag] ?? RefreshCw;
+                  const color = TAG_COLORS[item.tag] ?? ACCENT;
+                  return (
+                    <motion.div
+                      key={i}
+                      className="flex flex-1 shrink-0 items-center gap-2.5 rounded-xl p-2"
+                      style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}
+                      initial={{ opacity: 0, filter: 'blur(4px)', y: 16 }}
+                      animate={{ opacity: 1, filter: 'blur(0px)', y: 0 }}
+                      exit={{ opacity: 0, filter: 'blur(4px)', transition: { duration: 0.15 } }}
+                      transition={{ delay: 0.1 + i * 0.05, type: 'spring', stiffness: 200, damping: 20 }}
+                      onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.06)')}
+                      onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.03)')}
+                    >
+                      <div className="shrink-0 flex h-7 w-7 items-center justify-center rounded-lg" style={{ backgroundColor: `${color}18`, border: `1px solid ${color}28` }}>
+                        <Icon className="h-3.5 w-3.5" style={{ color }} />
+                      </div>
+                      <div className="flex min-w-0 flex-col leading-none">
+                        <p className="truncate text-[12px] font-semibold text-white">{item.title}</p>
+                        <span className="text-[10px] mt-0.5 truncate" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                          {item.game_name ?? item.tag}
+                        </span>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </motion.div>
+            )}
+          </AP>
+        </div>
+      </motion.div>
+      </div>
+    </MotionConfig>
+  );
+}
 
 /* ── Simplified dot world map ───────────────────────── */
 function WorldMap() {
@@ -88,6 +206,18 @@ export default function HomeBento({
   scripts = [],
 }: Props) {
   const [hov, setHov] = useState<number | null>(null);
+  const [recentUpdates, setRecentUpdates] = useState<{ title: string; tag: string; game_name: string | null }[]>([]);
+
+  useEffect(() => {
+    fetch('/api/site-updates')
+      .then(r => r.json())
+      .then((data: any[]) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setRecentUpdates(data.slice(0, 5).map(u => ({ title: u.title, tag: u.tag, game_name: u.game_name })));
+        }
+      })
+      .catch(() => {});
+  }, []);
   const [execStats, setExecStats] = useState<{
     free: number; premium: number; total: number; countryCount: number;
     topCountries: { code: string; count: number }[];
@@ -409,67 +539,14 @@ export default function HomeBento({
           onMouseEnter={() => setHov(3)}
           onMouseLeave={() => setHov(null)}
         >
-          <div className="relative z-10 flex w-full flex-1 items-start justify-center overflow-visible pt-6">
-            <div className="relative flex w-full flex-col items-center">
-              {/* Bell icon */}
-              <motion.div
-                className="relative z-30 flex h-12 w-12 items-center justify-center rounded-2xl backdrop-blur-md"
-                style={{ backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
-                animate={hov === 3 ? { y: -10 } : { y: 0 }}
-                transition={{ type: 'spring', stiffness: 300 }}
-              >
-                <motion.svg
-                  xmlns="http://www.w3.org/2000/svg" width="20" height="20"
-                  viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                  strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                  className="text-white"
-                  animate={hov === 3 ? { rotate: [0, -15, 15, -15, 15, 0] } : { rotate: 0 }}
-                  transition={{ duration: 0.5, delay: 0.1 }}
-                >
-                  <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
-                  <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
-                </motion.svg>
-                <motion.div
-                  className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full"
-                  style={{ backgroundColor: ACCENT }}
-                  initial={{ scale: 0 }}
-                  animate={hov === 3 ? { scale: 1 } : { scale: 0 }}
-                  transition={{ type: 'spring', delay: 0.3 }}
-                />
-                <motion.div
-                  className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full"
-                  style={{ backgroundColor: ACCENT }}
-                  initial={{ scale: 0, opacity: 0 }}
-                  animate={hov === 3 ? { scale: 2.5, opacity: 0 } : { scale: 0, opacity: 0 }}
-                  transition={{ duration: 1, delay: 0.3, repeat: hov === 3 ? Infinity : 0 }}
-                />
-              </motion.div>
-
-              {/* Toast */}
-              <div className="absolute top-6 flex w-full flex-col items-center pt-8">
-                <motion.div
-                  className="relative z-20 flex w-[210px] items-center gap-3 rounded-xl p-3"
-                  style={{ backgroundColor: 'rgba(8,8,8,0.92)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(12px)' }}
-                  initial={{ opacity: 0, y: -20, scale: 0.95 }}
-                  animate={hov === 3 ? { opacity: 1, y: 0, scale: 1 } : { opacity: 0, y: -20, scale: 0.95 }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 25, delay: 0.2 }}
-                >
-                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: 'rgba(201,169,122,0.15)' }}>
-                    <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: ACCENT }} />
-                  </div>
-                  <div>
-                    <p className="text-[11px] font-semibold text-white">Script Updated</p>
-                    <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.4)' }}>Anime Expedition patched</p>
-                  </div>
-                </motion.div>
-              </div>
-            </div>
+          <div className="relative z-10 flex w-full flex-1 items-start justify-center pt-6">
+            <AlertsDisclosure updates={recentUpdates} />
           </div>
 
           <div className="relative z-10 flex flex-col gap-1.5 pt-5">
             <h3 className="text-white text-lg font-semibold">Instant Alerts</h3>
             <p className="text-sm max-w-[180px]" style={{ color: 'rgba(255,255,255,0.4)' }}>
-              Get notified the moment a script is patched or goes down.
+              Latest script updates and patches from the hub.
             </p>
           </div>
         </div>

@@ -12,6 +12,12 @@ const productLinks = [
   { href: '/getkey', label: 'Get Key' },
 ];
 
+const resourceLinks = [
+  { href: '/faq', label: 'FAQ' },
+  { href: '/videos', label: 'Videos' },
+  { href: '/updates', label: 'Updates' },
+];
+
 const communityLinks = [
   { href: 'https://discord.gg/F4sAf6z8Ph', label: 'Discord ↗', external: true },
   { href: 'https://www.youtube.com/@SeisenHub', label: 'YouTube ↗', external: true },
@@ -36,10 +42,10 @@ export default function Footer() {
   return (
     <footer style={{ backgroundColor: 'var(--bg-primary)' }}>
       <div className="max-w-6xl mx-auto px-6 md:px-10 py-10" suppressHydrationWarning>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 lg:gap-12" suppressHydrationWarning>
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-8 lg:gap-12" suppressHydrationWarning>
 
           {/* Brand */}
-          <div className="col-span-2 md:col-span-1" suppressHydrationWarning>
+          <div className="col-span-2 md:col-span-1 lg:col-span-1" suppressHydrationWarning>
             <Link href="/" className="inline-flex items-center gap-2 mb-4">
               <Logo className="w-4 h-4" style={{ color: 'var(--accent)' }} />
               <span className="font-mono font-bold text-xs uppercase tracking-widest text-white">Seisen</span>
@@ -56,6 +62,26 @@ export default function Footer() {
             </h4>
             <ul className="space-y-2.5">
               {productLinks.map(link => (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    className="text-xs transition-colors hover-accent"
+                    style={{ color: 'var(--text-secondary)' }}
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Resources */}
+          <div suppressHydrationWarning>
+            <h4 className="font-mono text-[10px] uppercase tracking-widest mb-4" style={{ color: 'var(--text-muted)' }}>
+              Resources
+            </h4>
+            <ul className="space-y-2.5">
+              {resourceLinks.map(link => (
                 <li key={link.href}>
                   <Link
                     href={link.href}

@@ -44,6 +44,30 @@ async function fetchDiscordStats(): Promise<DiscordStats> {
   } catch { return { memberCount: 0, members: [] }; }
 }
 
+async function fetchRecentlyUpdatedGameNames(): Promise<string[]> {
+  try {
+    const { supabase } = await import('@/lib/server/db');
+    const { data } = await supabase
+      .from('site_updates')
+      .select('game_name')
+      .not('game_name', 'is', null)
+      .order('created_at', { ascending: false })
+      .limit(30);
+    // Deduplicate while preserving most-recent-first order
+    const seen = new Set<string>();
+    const ordered: string[] = [];
+    for (const row of data ?? []) {
+      if (row.game_name && !seen.has(row.game_name)) {
+        seen.add(row.game_name);
+        ordered.push(row.game_name);
+      }
+    }
+    return ordered;
+  } catch {
+    return [];
+  }
+}
+
 async function fetchExecutionStats() {
   try {
     const { supabase } = await import('@/lib/server/db');
@@ -60,10 +84,13 @@ async function fetchExecutionStats() {
 }
 
 export default async function HomePage() {
-  const scripts = await fetchScripts();
-  const videos  = await fetchVideos();
-  const discord = await fetchDiscordStats();
-  const executions = await fetchExecutionStats();
+  const [scripts, videos, discord, executions, recentGameNames] = await Promise.all([
+    fetchScripts(),
+    fetchVideos(),
+    fetchDiscordStats(),
+    fetchExecutionStats(),
+    fetchRecentlyUpdatedGameNames(),
+  ]);
 
   const freeCount    = scripts.filter(s => s.type === 'Free'    || s.displayType === 'Free & Premium').length;
   const premiumCount = scripts.filter(s => s.type === 'Premium' || s.displayType === 'Free & Premium').length;
@@ -462,15 +489,22 @@ export default async function HomePage() {
               </div>
             </div>
 
-            {/* Right — script showcase carousel */}
+            {/* Right — script showcase carousel, prioritised by recent updates */}
             <div className="flex flex-col gap-4">
               {(() => {
-                const featured = scripts.find(s =>
-                  s.name.toLowerCase().includes('anime expedition')
-                ) ?? scripts[0];
-                const rest = scripts
-                  .filter(s => s.id !== featured?.id)
-                  .slice(0, 8);
+                // Sort working scripts: recently-updated games first, rest after
+                const working = scripts.filter(s => s.status === 'Working');
+                const getRank = (scriptName: string) => {
+                  const sn = scriptName.toLowerCase();
+                  for (let i = 0; i < recentGameNames.length; i++) {
+                    const gn = recentGameNames[i].toLowerCase();
+                    if (sn === gn || sn.includes(gn) || gn.includes(sn)) return i;
+                  }
+                  return Infinity;
+                };
+                const sorted = [...working].sort((a, b) => getRank(a.name) - getRank(b.name));
+                const featured = sorted[0];
+                const rest = sorted.slice(1, 9);
                 const all = featured ? [featured, ...rest] : rest;
                 return (
                   <ScriptShowcaseCarousel

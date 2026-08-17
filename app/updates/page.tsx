@@ -23,17 +23,17 @@ export default async function UpdatesPage() {
     <div className="min-h-screen" style={{ backgroundColor: '#080808' }}>
       {/* Header */}
       <div
-        className="px-6 md:pl-24 md:pr-14 lg:pl-28 lg:pr-20 pt-28 pb-14"
+        className="px-6 md:pl-24 md:pr-14 lg:pl-28 lg:pr-20 pt-24 pb-8"
         style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}
       >
-        <p className="section-label mb-4" style={{ color: '#c9a97a', opacity: 1 }}>Changelog</p>
+        <p className="section-label mb-3" style={{ color: '#c9a97a', opacity: 1 }}>Changelog</p>
         <h1
-          className="font-bold text-white mb-4"
-          style={{ fontSize: 'clamp(2.25rem, 5vw, 3.5rem)', letterSpacing: '-0.04em', lineHeight: 1.05 }}
+          className="font-bold text-white mb-3"
+          style={{ fontSize: 'clamp(1.5rem, 2.5vw, 2rem)', letterSpacing: '-0.03em', lineHeight: 1.1 }}
         >
           Updates & Announcements
         </h1>
-        <p className="text-base max-w-xl" style={{ color: 'rgba(255,255,255,0.4)', lineHeight: 1.75 }}>
+        <p className="text-sm max-w-xl" style={{ color: 'rgba(255,255,255,0.4)', lineHeight: 1.7 }}>
           Script patches, new additions, and hub announcements — all in one place.
         </p>
       </div>

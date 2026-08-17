@@ -62,8 +62,6 @@ const navLinks = [
   { href: '/getkey', label: 'Get Key' },
   { href: '/premium', label: 'Premium' },
   { href: '/updates', label: 'Updates' },
-  { href: '/faq', label: 'FAQ' },
-  { href: '/videos', label: 'Videos' },
 ];
 
 const DiscordIcon = () => (
@@ -79,10 +77,10 @@ function NavPill({ pathname }: { pathname: string }) {
 
   useEffect(() => {
     const activeIdx = navLinks.findIndex(l => l.href === pathname);
+    if (activeIdx === -1) { setPill(p => ({ ...p, ready: false })); return; }
     const link = linkRefs.current[activeIdx];
     const nav  = navRef.current;
     if (!link || !nav) return;
-    // Measure relative to the nav container — scroll-proof
     const navRect  = nav.getBoundingClientRect();
     const linkRect = link.getBoundingClientRect();
     setPill({ left: linkRect.left - navRect.left, width: linkRect.width, ready: true });
@@ -115,7 +113,7 @@ function NavPill({ pathname }: { pathname: string }) {
               key={href}
               href={href}
               ref={el => { linkRefs.current[i] = el; }}
-              className="relative z-10 px-3 py-1 rounded-full text-xs transition-colors duration-150"
+              className="relative z-10 px-3.5 py-1.5 rounded-full text-[13px] transition-colors duration-150"
               style={{ color: active ? '#000000' : 'rgba(255,255,255,0.45)', fontWeight: active ? 600 : 400 }}
               onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.8)'; }}
               onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.45)'; }}
@@ -159,7 +157,7 @@ export default function Dock() {
     <>
       {/* ── Top Nav Bar ─────────────────────────────────────── */}
       <nav
-        className="fixed top-0 left-0 right-0 z-[2000] h-14 flex items-center px-5 md:px-8 transition-all duration-300"
+        className="fixed top-0 left-0 right-0 z-[2000] h-16 flex items-center px-5 md:px-8 transition-all duration-300"
         style={{
           backgroundColor: 'transparent',
         }}
@@ -250,7 +248,7 @@ export default function Dock() {
             <motion.div
               initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.15 }}
-              className="fixed top-14 left-0 right-0 z-[1900] md:hidden py-2"
+              className="fixed top-16 left-0 right-0 z-[1900] md:hidden py-2"
               style={{ backgroundColor: 'rgba(8,8,8,0.96)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}
             >
               {navLinks.map(({ href, label }) => {
