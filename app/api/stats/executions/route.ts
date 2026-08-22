@@ -1,6 +1,8 @@
 import { supabase } from '@/lib/server/db';
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const [freeResult, premiumResult, countryResult, scriptResult] = await Promise.all([
@@ -68,7 +70,7 @@ export async function GET() {
       const ids = topScriptsRaw.map(([id]) => id).join(',');
       const robloxRes = await fetch(
         `https://games.roblox.com/v1/games?universeIds=${ids}`,
-        { next: { revalidate: 3600 } }
+        { next: { revalidate: 600 } }
       );
       if (robloxRes.ok) {
         const robloxData = await robloxRes.json();
