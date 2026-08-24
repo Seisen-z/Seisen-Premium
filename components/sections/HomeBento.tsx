@@ -243,6 +243,30 @@ export default function HomeBento({
     return () => clearInterval(id);
   }, []);
 
+  // Live script hub counts (mirrors execStats polling — server-rendered props go stale
+  // because fetchScripts() is ISR-cached, so this card never grew on its own before)
+  const [hubStats, setHubStats] = useState({
+    scriptCount, freeCount, premiumCount, workingCount,
+  });
+
+  useEffect(() => {
+    const load = () => {
+      fetch('/api/stats/scripts')
+        .then(r => r.json())
+        .then(data => setHubStats({
+          scriptCount: data.scriptCount ?? scriptCount,
+          freeCount: data.freeCount ?? freeCount,
+          premiumCount: data.premiumCount ?? premiumCount,
+          workingCount: data.workingCount ?? workingCount,
+        }))
+        .catch(() => {});
+    };
+    load();
+    const id = setInterval(load, 30_000);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Filter state for Script Hub card
   const [hubFilter, setHubFilter] = useState<'all' | 'free' | 'premium'>('all');
   const [hoveredBar, setHoveredBar] = useState<number | null>(null);
@@ -326,7 +350,7 @@ export default function HomeBento({
                   Script Hub Activity
                 </span>
                 <p className="text-2xl font-bold text-white tabular-nums">
-                  {hubFilter === 'free' ? freeCount : hubFilter === 'premium' ? premiumCount : scriptCount}{' '}
+                  {hubFilter === 'free' ? hubStats.freeCount : hubFilter === 'premium' ? hubStats.premiumCount : hubStats.scriptCount}{' '}
                   <span className="text-sm font-medium" style={{ color: 'rgba(255,255,255,0.4)' }}>
                     {hubFilter === 'free' ? 'free scripts' : hubFilter === 'premium' ? 'premium scripts' : 'scripts total'}
                   </span>
@@ -436,13 +460,13 @@ export default function HomeBento({
             <div className="flex items-center gap-2 flex-wrap">
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                {workingCount} Working
+                {hubStats.workingCount} Working
               </span>
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-300 border border-amber-500/20">
-                {freeCount} Free
+                {hubStats.freeCount} Free
               </span>
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-500/10 text-purple-300 border border-purple-500/20">
-                {premiumCount} Premium
+                {hubStats.premiumCount} Premium
               </span>
             </div>
           </div>

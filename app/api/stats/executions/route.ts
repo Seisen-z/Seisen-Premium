@@ -3,9 +3,29 @@ import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
+// PostgREST caps a single .select() at 1000 rows by default, so once the log
+// table grows past that, an unpaginated select silently misses newer rows.
+// Page through in batches so tallies stay accurate as the table grows.
+async function fetchAllRows<T>(
+  select: string,
+  filter?: (q: any) => any
+): Promise<T[]> {
+  const rows: T[] = [];
+  const PAGE_SIZE = 1000;
+  for (let from = 0; ; from += PAGE_SIZE) {
+    let query = supabase.from('script_execution_log').select(select).range(from, from + PAGE_SIZE - 1);
+    if (filter) query = filter(query);
+    const { data, error } = await query;
+    if (error || !data || data.length === 0) break;
+    rows.push(...(data as T[]));
+    if (data.length < PAGE_SIZE) break;
+  }
+  return rows;
+}
+
 export async function GET() {
   try {
-    const [freeResult, premiumResult, countryResult, scriptResult] = await Promise.all([
+    const [freeResult, premiumResult, countryRows, scriptRows] = await Promise.all([
       supabase
         .from('script_execution_log')
         .select('*', { count: 'exact', head: true })
@@ -14,14 +34,8 @@ export async function GET() {
         .from('script_execution_log')
         .select('*', { count: 'exact', head: true })
         .eq('script_type', 'premium'),
-      supabase
-        .from('script_execution_log')
-        .select('country')
-        .neq('country', 'unknown')
-        .not('country', 'is', null),
-      supabase
-        .from('script_execution_log')
-        .select('universe_id, script_type'),
+      fetchAllRows<{ country: string }>('country', q => q.neq('country', 'unknown').not('country', 'is', null)),
+      fetchAllRows<{ universe_id: string; script_type: string }>('universe_id, script_type'),
     ]);
 
     const free    = freeResult.count ?? 0;
@@ -29,7 +43,7 @@ export async function GET() {
 
     // Tally country counts in JS
     const countryCounts: Record<string, number> = {};
-    for (const row of countryResult.data ?? []) {
+    for (const row of countryRows) {
       if (row.country) {
         countryCounts[row.country] = (countryCounts[row.country] ?? 0) + 1;
       }
@@ -55,7 +69,7 @@ export async function GET() {
 
     // Per-script execution counts
     const scriptCounts: Record<string, { count: number; type: string }> = {};
-    for (const row of scriptResult.data ?? []) {
+    for (const row of scriptRows) {
       if (!row.universe_id) continue;
       if (!scriptCounts[row.universe_id]) scriptCounts[row.universe_id] = { count: 0, type: row.script_type };
       scriptCounts[row.universe_id].count++;
