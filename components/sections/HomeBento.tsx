@@ -208,6 +208,18 @@ export default function HomeBento({
   const [hov, setHov] = useState<number | null>(null);
   const [recentUpdates, setRecentUpdates] = useState<{ title: string; tag: string; game_name: string | null }[]>([]);
 
+  // Live Discord member count — same invite endpoint TestimonialsMarquee uses,
+  // fetched client-side so it reflects the real server instead of the SSR fallback.
+  const [liveMemberCount, setLiveMemberCount] = useState(memberCount);
+  useEffect(() => {
+    fetch('https://discord.com/api/v9/invites/F4sAf6z8Ph?with_counts=true')
+      .then(r => r.json())
+      .then(data => {
+        if (data.approximate_member_count) setLiveMemberCount(data.approximate_member_count);
+      })
+      .catch(() => {});
+  }, []);
+
   useEffect(() => {
     fetch('/api/site-updates')
       .then(r => r.json())
@@ -594,7 +606,7 @@ export default function HomeBento({
           <div className="relative z-10 flex flex-col items-end p-6 text-right pointer-events-none">
             <h3 className="text-white text-xl font-bold tracking-tight mb-1">Global Community</h3>
             <p className="text-sm max-w-sm" style={{ color: 'rgba(255,255,255,0.6)' }}>
-              Join {memberCount > 0 ? `${memberCount.toLocaleString()}+` : '2,000+'} members on Discord. Active support, early drops, and community scripts.
+              Join {liveMemberCount > 0 ? `${liveMemberCount.toLocaleString()}+` : '2,000+'} members on Discord. Active support, early drops, and community scripts.
             </p>
           </div>
 
@@ -611,7 +623,7 @@ export default function HomeBento({
           <div className="relative z-10 flex items-end justify-between sm:justify-start gap-6 sm:gap-10 p-6 pt-0 pointer-events-auto">
             <div className="text-left">
               <p className="font-bold text-white leading-none mb-1" style={{ fontSize: '1.85rem', letterSpacing: '-0.04em' }}>
-                {memberCount > 0 ? `${memberCount.toLocaleString()}+` : '2,000+'}
+                {liveMemberCount > 0 ? `${liveMemberCount.toLocaleString()}+` : '2,000+'}
               </p>
               <p className="text-xs font-semibold text-white/70">Discord Members</p>
             </div>
