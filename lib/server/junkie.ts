@@ -5,6 +5,7 @@ interface JunkieConfig {
   webhookUrlWeekly?: string;
   webhookUrlMonthly?: string;
   webhookUrlAnnual?: string;
+  webhookUrlAnnualWeekly?: string;
   webhookUrlLifetime?: string;
   hmacSecret?: string;
   hmacSecretAnnual?: string;
@@ -36,7 +37,7 @@ export class JunkieKeySystem {
       weekly: config.webhookUrlWeekly || config.webhookUrl,
       monthly: config.webhookUrlMonthly || config.webhookUrl,
       annual: config.webhookUrlAnnual || config.webhookUrl,
-      annual_weekly: config.webhookUrlAnnual || config.webhookUrl,
+      annual_weekly: config.webhookUrlAnnualWeekly || config.webhookUrlAnnual || config.webhookUrl,
       lifetime: config.webhookUrlLifetime || config.webhookUrl
     };
     this.hmacSecret = config.hmacSecret ? config.hmacSecret.trim() : undefined;

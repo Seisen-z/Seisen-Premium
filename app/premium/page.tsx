@@ -83,13 +83,13 @@ const faqs = [
 const annualPlan = {
   plan: 'annual', title: 'Annual', badge: '2 Months Free', price: 60, currency: '€', period: '/year',
   billingNote: 'One-time payment · 12 months access', description: 'Pay for 10 months. Get 12.', cardColor: '#a08060',
-  features: ['All premium scripts', 'No key system', 'Priority support', 'Early access', '2 months free', '100 HWID'],
+  features: ['All premium scripts', 'No key system', 'Priority support', 'Early access', '2 months free', '50 HWID'],
 };
 
 const annualWeeklyPlan = {
   plan: 'annual_weekly', title: 'Weekly', badge: '2 Months Free', price: 30, currency: '€', period: '/year',
   billingNote: 'One-time payment · 12 months access', description: 'Weekly access, billed yearly.', cardColor: '#b89060',
-  features: ['All premium scripts', 'No key system', 'Priority support', 'Early access', '2 months free', '100 HWID'],
+  features: ['All premium scripts', 'No key system', 'Priority support', 'Early access', '2 months free', '20 HWID'],
 };
 
 // ── Mega Key Section ──────────────────────────────────────────────────────────
