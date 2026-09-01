@@ -13,7 +13,7 @@ export const supabase = createClient(supabaseUrl, supabaseKey);
 
 export class TicketDatabase {
   private client: SupabaseClient;
-  private readonly premiumTiers = ['weekly', 'monthly', 'lifetime'];
+  private readonly premiumTiers = ['weekly', 'monthly', 'annual', 'annual_weekly', 'lifetime'];
 
   constructor() {
     this.client = supabase;

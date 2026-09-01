@@ -3,57 +3,42 @@ import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-// PostgREST caps a single .select() at 1000 rows by default, so once the log
-// table grows past that, an unpaginated select silently misses newer rows.
-// Page through in batches so tallies stay accurate as the table grows.
-async function fetchAllRows<T>(
-  select: string,
-  filter?: (q: any) => any
-): Promise<T[]> {
-  const rows: T[] = [];
-  const PAGE_SIZE = 1000;
-  for (let from = 0; ; from += PAGE_SIZE) {
-    let query = supabase.from('script_execution_log').select(select).range(from, from + PAGE_SIZE - 1);
-    if (filter) query = filter(query);
-    const { data, error } = await query;
-    if (error || !data || data.length === 0) break;
-    rows.push(...(data as T[]));
-    if (data.length < PAGE_SIZE) break;
-  }
-  return rows;
-}
+type ScriptSummaryRow = {
+  universe_id: string;
+  script_type: 'free' | 'premium';
+  executions: number | string;
+};
+
+type CountrySummaryRow = { country: string; executions: number | string };
 
 export async function GET() {
   try {
-    const [freeResult, premiumResult, countryRows, scriptRows] = await Promise.all([
-      supabase
-        .from('script_execution_log')
-        .select('*', { count: 'exact', head: true })
-        .eq('script_type', 'free'),
-      supabase
-        .from('script_execution_log')
-        .select('*', { count: 'exact', head: true })
-        .eq('script_type', 'premium'),
-      fetchAllRows<{ country: string }>('country', q => q.neq('country', 'unknown').not('country', 'is', null)),
-      fetchAllRows<{ universe_id: string; script_type: string }>('universe_id, script_type'),
+    // These views aggregate in Postgres, so this endpoint transfers one row per
+    // game/type rather than every execution-log row. The previous paginated scan
+    // made the home-page chart increasingly slow as the log grew.
+    const [scriptSummaryResult, countrySummaryResult] = await Promise.all([
+      supabase.from('script_execution_summary').select('universe_id, script_type, executions'),
+      supabase.from('execution_country_summary').select('country, executions'),
     ]);
 
-    const free    = freeResult.count ?? 0;
-    const premium = premiumResult.count ?? 0;
-
-    // Tally country counts in JS
-    const countryCounts: Record<string, number> = {};
-    for (const row of countryRows) {
-      if (row.country) {
-        countryCounts[row.country] = (countryCounts[row.country] ?? 0) + 1;
-      }
+    if (scriptSummaryResult.error || countrySummaryResult.error) {
+      throw scriptSummaryResult.error ?? countrySummaryResult.error;
     }
 
-    let topCountries = Object.entries(countryCounts)
-      .sort((a, b) => b[1] - a[1])
-      .map(([code, count]) => ({ code, count }));
+    const scriptRows = (scriptSummaryResult.data ?? []) as ScriptSummaryRow[];
+    const countryRows = (countrySummaryResult.data ?? []) as CountrySummaryRow[];
+    const free = scriptRows
+      .filter(row => row.script_type === 'free')
+      .reduce((total, row) => total + Number(row.executions), 0);
+    const premium = scriptRows
+      .filter(row => row.script_type === 'premium')
+      .reduce((total, row) => total + Number(row.executions), 0);
 
-    let countryCount = Object.keys(countryCounts).length;
+    let topCountries = countryRows
+      .map(row => ({ code: row.country, count: Number(row.executions) }))
+      .sort((a, b) => b.count - a.count);
+
+    let countryCount = topCountries.length;
 
     if (topCountries.length === 0) {
       topCountries = [
@@ -68,23 +53,29 @@ export async function GET() {
     }
 
     // Per-script execution counts
-    const scriptCounts: Record<string, { count: number; type: string }> = {};
+    const scriptCounts: Record<string, { count: number; freeCount: number; premiumCount: number }> = {};
     for (const row of scriptRows) {
       if (!row.universe_id) continue;
-      if (!scriptCounts[row.universe_id]) scriptCounts[row.universe_id] = { count: 0, type: row.script_type };
-      scriptCounts[row.universe_id].count++;
+      if (!scriptCounts[row.universe_id]) {
+        scriptCounts[row.universe_id] = { count: 0, freeCount: 0, premiumCount: 0 };
+      }
+      const count = Number(row.executions);
+      scriptCounts[row.universe_id].count += count;
+      if (row.script_type === 'free') scriptCounts[row.universe_id].freeCount += count;
+      if (row.script_type === 'premium') scriptCounts[row.universe_id].premiumCount += count;
     }
     const topScriptsRaw = Object.entries(scriptCounts)
       .sort((a, b) => b[1].count - a[1].count)
       .slice(0, 12);
 
     // Resolve game names from Roblox API
-    let nameMap: Record<string, string> = {};
+    const nameMap: Record<string, string> = {};
     try {
       const ids = topScriptsRaw.map(([id]) => id).join(',');
       const robloxRes = await fetch(
         `https://games.roblox.com/v1/games?universeIds=${ids}`,
-        { next: { revalidate: 600 } }
+        // Names are cosmetic; never let a slow upstream lookup hold up the chart.
+        { next: { revalidate: 600 }, signal: AbortSignal.timeout(1500) }
       );
       if (robloxRes.ok) {
         const robloxData = await robloxRes.json();
@@ -94,11 +85,13 @@ export async function GET() {
       }
     } catch { /* keep nameMap empty, fall back to universe ID */ }
 
-    const topScripts = topScriptsRaw.map(([universeId, { count, type }]) => ({
+    const topScripts = topScriptsRaw.map(([universeId, counts]) => ({
       universeId,
       name: nameMap[universeId] ?? universeId,
-      count,
-      type,
+      ...counts,
+      type: counts.freeCount > 0 && counts.premiumCount > 0
+        ? 'both'
+        : counts.premiumCount > 0 ? 'premium' : 'free',
     }));
 
     return NextResponse.json({
@@ -128,4 +121,3 @@ export async function GET() {
     });
   }
 }
-

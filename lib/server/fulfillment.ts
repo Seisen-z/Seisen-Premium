@@ -3,7 +3,7 @@ import { JunkieKeySystem, JunkieResponse } from './junkie';
 import { EmailService } from './email';
 import { sendDiscordWebhook } from './discord';
 
-const VALIDITY_MAP: Record<string, number> = { weekly: 168, monthly: 720, lifetime: 0 };
+const VALIDITY_MAP: Record<string, number> = { weekly: 168, monthly: 720, annual: 8760, annual_weekly: 8760, lifetime: 0 };
 
 export interface FulfillOrderParams {
     transactionId: string;

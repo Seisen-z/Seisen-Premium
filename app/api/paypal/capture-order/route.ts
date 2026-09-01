@@ -38,8 +38,11 @@ export async function POST(req: NextRequest) {
         webhookUrl: process.env.JUNKIE_WEBHOOK_URL,
         webhookUrlWeekly: process.env.JUNKIE_WEBHOOK_URL_WEEKLY,
         webhookUrlMonthly: process.env.JUNKIE_WEBHOOK_URL_MONTHLY,
+        webhookUrlAnnual: process.env.JUNKIE_WEBHOOK_URL_ANNUAL,
         webhookUrlLifetime: process.env.JUNKIE_WEBHOOK_URL_LIFETIME,
         hmacSecret: process.env.JUNKIE_HMAC_SECRET,
+        hmacSecretAnnual: process.env.JUNKIE_HMAC_SECRET_ANNUAL,
+        hmacHeaderAnnual: process.env.JUNKIE_HMAC_HEADER_ANNUAL,
         provider: process.env.JUNKIE_PROVIDER,
         defaultService: process.env.JUNKIE_SERVICE
     });
@@ -57,13 +60,6 @@ export async function POST(req: NextRequest) {
     // Auto-mark as shipped to release funds
     await paypal.addTrackingToReleaseFunds(paymentInfo.transactionId);
 
-    // Updated Pricing — Monthly €6, Lifetime €12
-    const tierPricing: Record<string, number> = {
-        weekly: 3,
-        monthly: 6,
-        lifetime: 12
-    };
-
     // Parse tier and quantity from custom_id — format: "tier:quantity" or just "tier" (legacy)
     const rawTier = paymentInfo.tier || 'weekly';
     let normalizedTier: string;
@@ -78,9 +74,8 @@ export async function POST(req: NextRequest) {
         quantity = 1;
     }
 
-    const amountPerUnit = tierPricing[normalizedTier] !== undefined
-        ? tierPricing[normalizedTier]
-        : paymentInfo.amount;
+    // Persist the amount actually captured by PayPal, including any tax.
+    const amountPerUnit = paymentInfo.amount / quantity;
 
     // 2-7. Idempotent claim, stock decrement, key generation, save, email, Discord notify.
     const result = await fulfillOrder(db, {

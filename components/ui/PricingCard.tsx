@@ -23,6 +23,7 @@ interface PricingCardProps {
   stockStatusVariant?: 'in-stock' | 'low-stock' | 'out-of-stock';
   isOutOfStock?: boolean;
   className?: string;
+  headerContent?: React.ReactNode;
 }
 
 export default function PricingCard({
@@ -48,6 +49,7 @@ export default function PricingCard({
   stockStatusVariant = 'in-stock',
   isOutOfStock = false,
   className = '',
+  headerContent,
 }: PricingCardProps) {
   const stockBg     = stockStatusVariant === 'out-of-stock' ? 'rgba(239,68,68,0.08)' : stockStatusVariant === 'low-stock' ? 'rgba(245,158,11,0.08)' : 'rgba(74,222,128,0.08)';
   const stockColor  = stockStatusVariant === 'out-of-stock' ? '#f87171' : stockStatusVariant === 'low-stock' ? '#fbbf24' : '#4ade80';
@@ -116,6 +118,7 @@ export default function PricingCard({
             )}
           </div>
         </div>
+        {headerContent && <div className="mb-4">{headerContent}</div>}
 
         {/* Price */}
         <div className="mb-5">

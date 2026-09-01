@@ -41,8 +41,11 @@ export async function POST(req: NextRequest) {
             webhookUrl: process.env.JUNKIE_WEBHOOK_URL,
             webhookUrlWeekly: process.env.JUNKIE_WEBHOOK_URL_WEEKLY,
             webhookUrlMonthly: process.env.JUNKIE_WEBHOOK_URL_MONTHLY,
+            webhookUrlAnnual: process.env.JUNKIE_WEBHOOK_URL_ANNUAL,
             webhookUrlLifetime: process.env.JUNKIE_WEBHOOK_URL_LIFETIME,
             hmacSecret: process.env.JUNKIE_HMAC_SECRET,
+            hmacSecretAnnual: process.env.JUNKIE_HMAC_SECRET_ANNUAL,
+            hmacHeaderAnnual: process.env.JUNKIE_HMAC_HEADER_ANNUAL,
             provider: process.env.JUNKIE_PROVIDER,
             defaultService: process.env.JUNKIE_SERVICE
         });

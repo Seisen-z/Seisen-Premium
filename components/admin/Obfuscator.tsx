@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback, useDeferredValue } from 'react';
-import { Lock, FileCode, CheckCircle, AlertCircle, Copy, Download, RefreshCw, Upload, RotateCcw, Github, X, Folder, ChevronLeft, File, Check } from 'lucide-react';
+import Link from 'next/link';
+import { Lock, FileCode, CheckCircle, AlertCircle, Copy, Download, RefreshCw, Upload, RotateCcw, Github, X, Folder, ChevronLeft, File, Check, ArrowLeft, BookmarkPlus, ShieldCheck } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { copyToClipboard } from '@/lib/utils';
 import Editor from 'react-simple-code-editor';
@@ -11,6 +12,7 @@ import 'prismjs/themes/prism-tomorrow.css';
 
 type Preset      = 'Minify' | 'Weak' | 'Medium' | 'Strong';
 type LuaVersion  = 'lua51' | 'luau';
+type SavedPreset = { name: string; preset: Preset; luaVersion: LuaVersion };
 
 const PRESETS: { id: Preset; label: string; desc: string }[] = [
   { id: 'Minify', label: 'Minify', desc: 'Strip whitespace & comments' },
@@ -46,6 +48,8 @@ export default function ObfuscatorPage() {
   const [luaVersion, setLuaVersion]     = useState<LuaVersion>('luau');
   const [fileName, setFileName]         = useState('obfuscated_script');
   const [copied, setCopied]             = useState(false);
+  const [savedPresets, setSavedPresets] = useState<SavedPreset[]>([]);
+  const [verifyStatus, setVerifyStatus] = useState<string | null>(null);
 
   /* GitHub */
   const [showGithub, setShowGithub]     = useState(false);
@@ -56,6 +60,10 @@ export default function ObfuscatorPage() {
   const [ghCommit, setGhCommit]         = useState('Update obfuscated script');
   const [dirPath, setDirPath]           = useState('');
   const [dirItems, setDirItems]         = useState<any[]>([]);
+  const [repoSearch, setRepoSearch]     = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchingRepo, setSearchingRepo] = useState(false);
+  const [repoMenuOpen, setRepoMenuOpen] = useState(false);
   const [loadingDir, setLoadingDir]     = useState(false);
   const [pushing, setPushing]           = useState(false);
   const [pushStatus, setPushStatus]     = useState<string | null>(null);
@@ -64,6 +72,8 @@ export default function ObfuscatorPage() {
   const inputWrapRef  = useRef<HTMLDivElement>(null);
   const inputGutRef   = useRef<HTMLDivElement>(null);
   const outputAreaRef = useRef<HTMLTextAreaElement>(null);
+  const directoryCache = useRef(new Map<string, any[]>());
+  const repositoryTreeCache = useRef(new Map<string, any[]>());
 
   /* ── Performance: defer syntax highlighting so typing never lags ── */
   const deferredCode = useDeferredValue(code);
@@ -90,6 +100,15 @@ export default function ObfuscatorPage() {
   useEffect(() => {
     if (ghToken) localStorage.setItem('seisen_github_pat', ghToken);
   }, [ghToken]);
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('seisen_obfuscator_presets') ?? '[]');
+      if (Array.isArray(saved)) setSavedPresets(saved.filter((item): item is SavedPreset =>
+        typeof item?.name === 'string' && PRESETS.some(p => p.id === item.preset)
+        && (item.luaVersion === 'lua51' || item.luaVersion === 'luau'),
+      ));
+    } catch { /* Ignore malformed browser storage. */ }
+  }, []);
 
   /* Sync gutter scroll */
   const syncGutter = useCallback(() => {
@@ -103,15 +122,39 @@ export default function ObfuscatorPage() {
   }, [ghRepo]);
 
   /* ── Actions ── */
-  const handleReset = () => { setCode(''); setOutput(''); setError(null); };
+  const handleReset = () => { setCode(''); setOutput(''); setError(null); setVerifyStatus(null); };
+
+  const handleSavePreset = () => {
+    const name = window.prompt('Name this preset');
+    if (!name?.trim()) return;
+    const saved = { name: name.trim().slice(0, 40), preset, luaVersion };
+    const next = [...savedPresets.filter(item => item.name.toLowerCase() !== saved.name.toLowerCase()), saved];
+    setSavedPresets(next);
+    localStorage.setItem('seisen_obfuscator_presets', JSON.stringify(next));
+  };
+
+  const handleApplyPreset = (name: string) => {
+    const saved = savedPresets.find(item => item.name === name);
+    if (saved) { setPreset(saved.preset); setLuaVersion(saved.luaVersion); }
+  };
+
+  const handleVerifyOutput = async () => {
+    if (!output) { setError('Generate an output before verifying it'); return; }
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(output));
+    const hash = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
+    setVerifyStatus(`Output checksum: ${hash.slice(0, 12)}`);
+  };
 
   const handleObfuscate = async () => {
     if (!code.trim()) { setError('Please enter some Lua code first'); return; }
-    setLoading(true); setError(null); setOutput('');
+    setLoading(true); setError(null); setOutput(''); setVerifyStatus(null);
     try {
       const res  = await fetch('/api/obfuscate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('adminToken') ?? ''}`,
+        },
         body: JSON.stringify({ code, version: luaVersion, preset }),
       });
       const data = await res.json();
@@ -167,6 +210,9 @@ export default function ObfuscatorPage() {
 
   const fetchDir = async (repo: any, path: string) => {
     if (!ghToken || !repo) return;
+    const cacheKey = `${repo.id}:${path}`;
+    const cached = directoryCache.current.get(cacheKey);
+    if (cached) { setDirItems(cached); return; }
     setLoadingDir(true);
     try {
       const owner = repo.full_name.split('/')[0];
@@ -174,7 +220,11 @@ export default function ObfuscatorPage() {
         headers: { Authorization: `Bearer ${ghToken}` },
       });
       const data  = await res.json();
-      if (res.ok) setDirItems(data.items || []);
+      if (res.ok) {
+        const items = data.items || [];
+        directoryCache.current.set(cacheKey, items);
+        setDirItems(items);
+      }
     } catch {}
     finally { setLoadingDir(false); }
   };
@@ -184,6 +234,26 @@ export default function ObfuscatorPage() {
     const parts  = dirPath.split('/');
     parts.pop();
     handleNavigate(parts.join('/'));
+  };
+
+  const searchRepository = async () => {
+    if (!ghToken || !ghRepo || !repoSearch.trim()) return;
+    setSearchingRepo(true);
+    try {
+      const cacheKey = String(ghRepo.id);
+      let files: any[];
+      const cached = repositoryTreeCache.current.get(cacheKey);
+      if (!cached) {
+        const owner = ghRepo.full_name.split('/')[0];
+        const res = await fetch(`/api/github/tree?owner=${owner}&repo=${ghRepo.name}&ref=${encodeURIComponent(ghRepo.default_branch || 'HEAD')}&recursive=true`, { headers: { Authorization: `Bearer ${ghToken}` } });
+        const data = await res.json();
+        if (!res.ok) return;
+        files = data.items || [];
+        repositoryTreeCache.current.set(cacheKey, files);
+      } else files = cached;
+      const query = repoSearch.trim().toLowerCase();
+      setSearchResults(files.filter(item => item.path.toLowerCase().includes(query)).slice(0, 100));
+    } finally { setSearchingRepo(false); }
   };
 
   const handlePush = async () => {
@@ -218,6 +288,17 @@ export default function ObfuscatorPage() {
       >
         {/* Left: logo + version + presets */}
         <div className="flex items-center gap-4">
+          <Link
+            href="/admin"
+            className="flex items-center gap-1.5 rounded px-1.5 py-1 text-[10px] font-semibold transition-colors"
+            style={{ color: 'var(--text-muted)' }}
+            title="Back to admin"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" /> Admin
+          </Link>
+
+          <div className="w-px h-4" style={{ backgroundColor: 'rgba(255,255,255,0.08)' }} />
+
           <div className="flex items-center gap-2">
             <Lock className="w-3.5 h-3.5" style={{ color: 'var(--accent)' }} />
             <span className="text-xs font-semibold text-white tracking-tight">Obfuscator</span>
@@ -255,6 +336,27 @@ export default function ObfuscatorPage() {
               </button>
             ))}
           </div>
+
+          <div className="hidden lg:flex items-center gap-1.5">
+            <select
+              aria-label="Saved obfuscator preset"
+              value=""
+              onChange={e => handleApplyPreset(e.target.value)}
+              className="max-w-28 rounded-md bg-white/[0.04] px-2 py-1 text-[10px] font-semibold outline-none"
+              style={{ color: 'var(--text-muted)', border: '1px solid rgba(255,255,255,0.08)' }}
+            >
+              <option value="">Saved presets</option>
+              {savedPresets.map(item => <option key={item.name} value={item.name}>{item.name}</option>)}
+            </select>
+            <button
+              onClick={handleSavePreset}
+              className="flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-bold transition-colors hover:bg-white/5"
+              style={{ color: 'var(--text-muted)' }}
+              title="Save current settings as a preset"
+            >
+              <BookmarkPlus className="h-3.5 w-3.5" /> Save
+            </button>
+          </div>
         </div>
 
         {/* Right: reset + protect */}
@@ -268,6 +370,16 @@ export default function ObfuscatorPage() {
           >
             <RotateCcw className="w-3 h-3" /> Reset
           </button>
+          <button
+            onClick={handleVerifyOutput}
+            disabled={!output}
+            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+            style={{ color: 'var(--text-muted)' }}
+            title="Create a SHA-256 checksum for the generated output"
+          >
+            <ShieldCheck className="w-3 h-3" /> Verify
+          </button>
+          {verifyStatus && <span className="hidden xl:block font-mono text-[10px] text-emerald-300">{verifyStatus}</span>}
           <Button size="sm" onClick={handleObfuscate} disabled={loading}>
             {loading ? <RefreshCw className="w-3 h-3 animate-spin" /> : <><Lock className="w-3 h-3" /> Protect</>}
           </Button>
@@ -479,20 +591,16 @@ export default function ObfuscatorPage() {
 
               {/* Repo select */}
               {ghRepos.length > 0 && (
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-mono uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Repository</label>
-                  <select onChange={e => setGhRepo(ghRepos.find(r => r.id === parseInt(e.target.value)))}
-                    className="w-full px-3 py-2 rounded-lg text-xs focus:outline-none"
-                    style={{ backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: 'white' }}>
-                    <option value="">Select repository…</option>
-                    {ghRepos.map(r => <option key={r.id} value={r.id}>{r.full_name}</option>)}
-                  </select>
+                <div className="relative space-y-1.5">              <label className="text-[10px] font-mono uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Repository</label>
+                  <button onClick={() => setRepoMenuOpen(open => !open)} className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-xs" style={{ backgroundColor: '#161616', border: '1px solid rgba(255,255,255,0.12)', color: ghRepo ? 'white' : 'var(--text-muted)' }}><span>{ghRepo?.full_name ?? 'Select repository…'}</span><ChevronLeft className={`h-3.5 w-3.5 -rotate-90 ${repoMenuOpen ? 'rotate-90' : ''}`} /></button>{repoMenuOpen && <div className="absolute left-0 top-full z-30 mt-1 max-h-40 w-full overflow-y-auto rounded-lg p-1 shadow-2xl" style={{ backgroundColor: '#161616', border: '1px solid rgba(255,255,255,0.12)' }}>{ghRepos.map(r => <button key={r.id} onClick={() => { setGhRepo(r); setRepoMenuOpen(false); setRepoSearch(''); setSearchResults([]); }} className="block w-full rounded px-2 py-2 text-left text-xs hover:bg-white/10" style={{ color: r.id === ghRepo?.id ? 'var(--accent)' : 'white' }}>{r.full_name}</button>)}</div>}
                 </div>
               )}
 
               {/* File browser */}
               {ghRepo && (
                 <div className="space-y-3">
+                  <div className="flex gap-2"><input value={repoSearch} onChange={e => setRepoSearch(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') searchRepository(); }} placeholder="Search files in this repository…" className="min-w-0 flex-1 rounded-lg px-3 py-2 text-xs focus:outline-none" style={{ backgroundColor: '#161616', border: '1px solid rgba(255,255,255,0.08)', color: 'white' }} /><button onClick={searchRepository} disabled={!repoSearch.trim() || searchingRepo} className="rounded-lg px-3 text-xs font-semibold disabled:opacity-50" style={{ backgroundColor: 'rgba(255,255,255,0.08)', color: 'white' }}>{searchingRepo ? '…' : 'Search'}</button></div>
+                  {repoSearch && <div className="max-h-24 overflow-y-auto rounded-lg p-1" style={{ backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>{searchResults.length ? searchResults.map(item => <button key={item.path} onClick={() => setGhPath(item.path)} className="block w-full truncate rounded px-2 py-1.5 text-left font-mono text-[10px] hover:bg-white/10" style={{ color: item.path === ghPath ? 'var(--accent)' : 'var(--text-secondary)' }}>{item.path}</button>) : <p className="px-2 py-1.5 text-[10px]" style={{ color: 'var(--text-muted)' }}>Press Search to find files across the repository.</p>}</div>}
                   <div className="rounded-lg overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.08)', height: 160 }}>
                     <div className="flex items-center gap-2 px-3 py-2 text-xs" style={{ backgroundColor: 'rgba(255,255,255,0.04)', borderBottom: '1px solid rgba(255,255,255,0.06)', color: 'var(--text-muted)' }}>
                       {dirPath && <button onClick={handleGoBack}><ChevronLeft className="w-3.5 h-3.5" /></button>}

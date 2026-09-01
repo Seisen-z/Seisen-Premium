@@ -6,6 +6,7 @@ import { sendDiscordWebhook } from '@/lib/server/discord';
 import { rateLimit, rateLimitResponse, getClientIp } from '@/lib/server/rate-limit';
 
 const MEGA_PLAN_CONFIG: Record<string, { amount: number; label: string; validityHours: number }> = {
+  monthly_plus: { amount: 12, label: 'Monthly Plus', validityHours: 720 },
   mega_1month: { amount: 40, label: '1 Month', validityHours: 720 },
   mega_2month: { amount: 70, label: '2 Months', validityHours: 1440 },
 };

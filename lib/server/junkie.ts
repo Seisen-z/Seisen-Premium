@@ -4,9 +4,12 @@ interface JunkieConfig {
   webhookUrl?: string;
   webhookUrlWeekly?: string;
   webhookUrlMonthly?: string;
+  webhookUrlAnnual?: string;
   webhookUrlLifetime?: string;
   hmacSecret?: string;
+  hmacSecretAnnual?: string;
   hmacHeader?: string;
+  hmacHeaderAnnual?: string;
   provider?: string;
   defaultService?: string;
 }
@@ -22,7 +25,9 @@ export interface JunkieResponse {
 export class JunkieKeySystem {
   private webhookUrls: Record<string, string | undefined>;
   private hmacSecret?: string;
+  private hmacSecrets: Record<string, string | undefined>;
   private hmacHeader: string;
+  private hmacHeaders: Record<string, string | undefined>;
   private provider: string;
   private defaultService: string;
 
@@ -30,21 +35,31 @@ export class JunkieKeySystem {
     this.webhookUrls = {
       weekly: config.webhookUrlWeekly || config.webhookUrl,
       monthly: config.webhookUrlMonthly || config.webhookUrl,
+      annual: config.webhookUrlAnnual || config.webhookUrl,
+      annual_weekly: config.webhookUrlAnnual || config.webhookUrl,
       lifetime: config.webhookUrlLifetime || config.webhookUrl
     };
     this.hmacSecret = config.hmacSecret ? config.hmacSecret.trim() : undefined;
+    this.hmacSecrets = {
+      annual: config.hmacSecretAnnual ? config.hmacSecretAnnual.trim() : undefined,
+      annual_weekly: config.hmacSecretAnnual ? config.hmacSecretAnnual.trim() : undefined,
+    };
     this.hmacHeader = config.hmacHeader || 'X-Webhook-Signature';
+    this.hmacHeaders = {
+      annual: config.hmacHeaderAnnual?.trim(),
+      annual_weekly: config.hmacHeaderAnnual?.trim(),
+    };
     this.provider = config.provider || 'seisenhub';
     this.defaultService = config.defaultService || 'Premium Key';
   }
 
-  generateHMAC(payload: any): string | null {
-    if (!this.hmacSecret) {
+  generateHMAC(payload: any, secret = this.hmacSecret): string | null {
+    if (!secret) {
       return null;
     }
     const payloadString = JSON.stringify(payload);
     return crypto
-      .createHmac('sha256', this.hmacSecret)
+      .createHmac('sha256', secret)
       .update(payloadString)
       .digest('hex');
   }
@@ -145,8 +160,10 @@ export class JunkieKeySystem {
     try {
       const headers: Record<string, string> = {};
 
-      if (this.hmacSecret) {
-        headers[this.hmacHeader] = this.generateHMAC(payload) ?? '';
+      const hmacSecret = this.hmacSecrets[tier] || this.hmacSecret;
+      if (hmacSecret) {
+        const hmacHeader = this.hmacHeaders[tier] || this.hmacHeader;
+        headers[hmacHeader] = this.generateHMAC(payload, hmacSecret) ?? '';
       }
 
       const webhookUrl = this.webhookUrls[tier] || this.webhookUrls.weekly;

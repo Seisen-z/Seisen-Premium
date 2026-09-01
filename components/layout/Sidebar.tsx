@@ -5,7 +5,6 @@ import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import {
   Home,
-  Lock,
   Code,
   Key,
   Crown,
@@ -22,7 +21,6 @@ import { Logo } from '@/components/ui/Logo';
 
 const navItems = [
   { href: '/', icon: Home, label: 'Home' },
-  { href: '/obfuscator', icon: Lock, label: 'Obfuscator' },
   { href: '/scripts', icon: Code, label: 'Scripts' },
   { href: '/getkey', icon: Key, label: 'Get Key' },
   { href: '/premium', icon: Crown, label: 'Premium' },

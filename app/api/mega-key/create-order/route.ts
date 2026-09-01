@@ -3,6 +3,7 @@ import { PayPalSDK } from '@/lib/server/paypal';
 import { rateLimit, rateLimitResponse, getClientIp } from '@/lib/server/rate-limit';
 
 const MEGA_PRICING: Record<string, { amount: number; label: string; validityHours: number }> = {
+  monthly_plus: { amount: 12, label: 'Monthly Plus — 100 HWID / Tabs', validityHours: 720 },
   mega_1month: { amount: 40, label: 'Mega Key — 1 Month (100 tabs)', validityHours: 720 },
   mega_2month: { amount: 70, label: 'Mega Key — 2 Months (100 tabs)', validityHours: 1440 },
 };
@@ -46,11 +47,11 @@ export async function POST(req: NextRequest) {
 
     const order = await paypal.createOrder({
       amount: planConfig.amount,
-      currency: 'USD',
+      currency: plan === 'monthly_plus' ? 'EUR' : 'USD',
       description: planConfig.label,
       tier: plan,
-      returnUrl: `${frontendUrl}/premium?megaSource=1`,
-      cancelUrl: `${frontendUrl}/premium?canceled=true`,
+      returnUrl: `${frontendUrl}/checkout?plan=${plan}&megaSource=1`,
+      cancelUrl: `${frontendUrl}/checkout?plan=${plan}&canceled=true`,
     });
 
     return NextResponse.json(order);

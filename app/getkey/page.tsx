@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ExternalLink, Crown, Copy, Check, Terminal, ArrowRight } from 'lucide-react';
+import { ExternalLink, Crown, Copy, Check, Terminal, ArrowRight, CheckCircle2 } from 'lucide-react';
 import Reveal from '@/components/ui/Reveal';
 import { copyToClipboard } from '@/lib/utils';
 import Link from 'next/link';
@@ -12,6 +12,7 @@ const LOOTLABS_URL = 'https://loot-reward.com/t?cc=eyJ0aXRsZSI6IkdldCBGcmVlIEtle
 
 export default function GetKeyPage() {
   const [copied, setCopied] = useState(false);
+  const [keyComplete, setKeyComplete] = useState(false);
 
   const handleCopy = async () => {
     await copyToClipboard(LOADER);
@@ -87,6 +88,13 @@ export default function GetKeyPage() {
           >
             Get Free Key <ExternalLink className="w-3.5 h-3.5 opacity-60" />
           </a>
+          <button
+            onClick={() => setKeyComplete(true)}
+            className="mt-4 flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold"
+            style={{ backgroundColor: keyComplete ? 'rgba(52,211,153,0.1)' : 'rgba(255,255,255,0.04)', color: keyComplete ? '#6ee7b7' : 'var(--text-secondary)', border: '1px solid rgba(255,255,255,0.08)' }}
+          >
+            <CheckCircle2 className="w-3.5 h-3.5" /> {keyComplete ? 'Key received — run the loader below' : 'I got my key'}
+          </button>
           <p className="text-[11px] mt-2.5" style={{ color: 'var(--text-muted)', opacity: 0.6 }}>
             Opens in a new tab — come back here once you've got your key.
           </p>
@@ -147,6 +155,20 @@ export default function GetKeyPage() {
 
       {/* ── Script Loader ── */}
       <Reveal delay={0.1}>
+      <div className="mb-8 grid gap-3 md:grid-cols-3">
+        {[
+          ['01', 'Open verification', 'Complete the free-key checkpoint in the new tab.'],
+          ['02', 'Copy your key', 'Keep the generated key ready in your executor.'],
+          ['03', 'Run the loader', 'Paste the loader below and follow the key prompt.'],
+        ].map(([number, title, text]) => (
+          <div key={number} className="rounded-lg p-4" style={{ backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+            <span className="font-mono text-[10px]" style={{ color: 'var(--accent)' }}>{number}</span>
+            <p className="mt-2 text-sm font-semibold text-white">{title}</p>
+            <p className="mt-1 text-xs" style={{ color: 'var(--text-muted)' }}>{text}</p>
+          </div>
+        ))}
+        <p className="md:col-span-3 text-xs" style={{ color: 'var(--text-muted)' }}>Key not working? Renew it through the free-key link, then run the loader again.</p>
+      </div>
       <div className="mt-16">
         <div className="flex items-center gap-3 mb-4">
           <Terminal className="w-3.5 h-3.5" style={{ color: 'var(--text-muted)' }} />

@@ -58,7 +58,6 @@ function SocialLink({ href, label, type, src, white }: typeof socialLinks[number
 const navLinks = [
   { href: '/', label: 'Home' },
   { href: '/scripts', label: 'Scripts' },
-  { href: '/obfuscator', label: 'Obfuscate' },
   { href: '/getkey', label: 'Get Key' },
   { href: '/premium', label: 'Premium' },
   { href: '/updates', label: 'Updates' },

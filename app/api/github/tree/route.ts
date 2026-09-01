@@ -13,6 +13,8 @@ export async function GET(req: NextRequest) {
     const owner = searchParams.get('owner');
     const repo = searchParams.get('repo');
     const path = searchParams.get('path') || '';
+    const query = searchParams.get('q')?.trim().toLowerCase();
+    const recursive = searchParams.get('recursive') === 'true';
 
     if (!owner || !repo) {
         return NextResponse.json({ error: 'Missing owner or repo param' }, { status: 400 });
@@ -21,6 +23,17 @@ export async function GET(req: NextRequest) {
     const octokit = new Octokit({ auth: token });
 
     try {
+        if (recursive) {
+            const { data } = await octokit.rest.git.getTree({
+                owner, repo, tree_sha: searchParams.get('ref') || 'HEAD', recursive: 'true',
+            });
+            const items = data.tree
+                .filter(item => item.type === 'blob' && item.path)
+                .filter(item => !query || item.path!.toLowerCase().includes(query))
+                .slice(0, 5000)
+                .map(item => ({ name: item.path!.split('/').pop(), path: item.path, type: 'file', sha: item.sha }));
+            return NextResponse.json({ items, truncated: data.truncated });
+        }
         const { data } = await octokit.rest.repos.getContent({
             owner,
             repo,

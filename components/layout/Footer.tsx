@@ -5,7 +5,6 @@ import { Logo } from '@/components/ui/Logo';
 import { useEffect, useState } from 'react';
 
 const productLinks = [
-  { href: '/obfuscator', label: 'Lua Obfuscator' },
   { href: '/scripts', label: 'Script Hub' },
   { href: '/videos', label: 'Tutorials' },
   { href: '/premium', label: 'Premium Access' },

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import {
-  LayoutDashboard, CreditCard, MessageSquare, FileCode,
+  LayoutDashboard, CreditCard, MessageSquare, FileCode, Lock,
   Package, LogOut, Shield, Search, Loader2, AlertCircle,
   Trash2, Eye, ShieldCheck, Copy, Check, Save, Plus, X,
   ChevronLeft, ChevronRight, ArrowRight, Clock, Send
@@ -409,6 +409,11 @@ export default function AdminPage() {
                 </button>
               );
             })}
+            <Link href="/admin/obfuscator"
+              className="relative flex items-center gap-2 px-4 py-2 rounded-lg text-[13px] font-medium transition-all"
+              style={{ color: '#383838' }}>
+              <Lock className="w-3.5 h-3.5" /> Obfuscator
+            </Link>
           </div>
           {/* Sign out */}
           <button onClick={logout}

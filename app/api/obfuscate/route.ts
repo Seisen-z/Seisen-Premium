@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { LuaFactory } from 'wasmoon';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { verifyAdminSession } from '@/lib/server/adminSession';
 
 const PROMETHEUS_DIR = path.join(process.cwd(), 'lib', 'prometheus');
 
@@ -39,6 +40,11 @@ async function getPrometheusFiles() {
 
 export async function POST(req: NextRequest) {
   try {
+    const token = req.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
+    if (!verifyAdminSession(token)) {
+      return NextResponse.json({ error: 'Admin authentication required' }, { status: 401 });
+    }
+
     const { code, version, preset } = await req.json();
 
     if (!code) {

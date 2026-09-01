@@ -34,7 +34,9 @@ const TAG_COLORS: Record<string, string> = {
   'Announcement': '#60a5fa',
 };
 
-function AlertsDisclosure({ updates }: { updates: { title: string; tag: string; game_name: string | null }[] }) {
+type SiteUpdate = { title: string; tag: string; game_name: string | null };
+
+function AlertsDisclosure({ updates }: { updates: SiteUpdate[] }) {
   const [open, setOpen] = useState(false);
   const [ref, bounds] = useMeasure({ offsetSize: true });
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -206,7 +208,7 @@ export default function HomeBento({
   scripts = [],
 }: Props) {
   const [hov, setHov] = useState<number | null>(null);
-  const [recentUpdates, setRecentUpdates] = useState<{ title: string; tag: string; game_name: string | null }[]>([]);
+  const [recentUpdates, setRecentUpdates] = useState<SiteUpdate[]>([]);
 
   // Live Discord member count — same invite endpoint TestimonialsMarquee uses,
   // fetched client-side so it reflects the real server instead of the SSR fallback.
@@ -223,9 +225,9 @@ export default function HomeBento({
   useEffect(() => {
     fetch('/api/site-updates')
       .then(r => r.json())
-      .then((data: any[]) => {
+      .then((data: unknown) => {
         if (Array.isArray(data) && data.length > 0) {
-          setRecentUpdates(data.slice(0, 5).map(u => ({ title: u.title, tag: u.tag, game_name: u.game_name })));
+          setRecentUpdates(data.slice(0, 5).map((u: SiteUpdate) => ({ title: u.title, tag: u.tag, game_name: u.game_name })));
         }
       })
       .catch(() => {});
@@ -233,7 +235,7 @@ export default function HomeBento({
   const [execStats, setExecStats] = useState<{
     free: number; premium: number; total: number; countryCount: number;
     topCountries: { code: string; count: number }[];
-    topScripts: { universeId: string; name: string; count: number; type: string }[];
+    topScripts: { universeId: string; name: string; count: number; freeCount: number; premiumCount: number; type: 'free' | 'premium' | 'both' }[];
   }>({ free: freeExecutions, premium: premiumExecutions, total: totalExecutions, countryCount: 28, topCountries: [], topScripts: [] });
 
   useEffect(() => {
@@ -283,10 +285,22 @@ export default function HomeBento({
   const [hubFilter, setHubFilter] = useState<'all' | 'free' | 'premium'>('all');
   const [hoveredBar, setHoveredBar] = useState<number | null>(null);
 
-  // Build bar chart data from real execution counts
-  const filteredTopScripts = execStats.topScripts.filter(s =>
-    hubFilter === 'all' || s.type === hubFilter
-  );
+  // Keep Free and Premium as separate bars, even when they belong to the same
+  // game. The All tab displays both bars; tier filters retain only their tier.
+  const filteredTopScripts = execStats.topScripts
+    .flatMap(s => {
+      const tiers = hubFilter === 'all'
+        ? [
+            { type: 'free' as const, count: s.freeCount },
+            { type: 'premium' as const, count: s.premiumCount },
+          ]
+        : [{ type: hubFilter, count: hubFilter === 'free' ? s.freeCount : s.premiumCount }];
+
+      return tiers
+        .filter(tier => tier.count > 0)
+        .map(tier => ({ ...s, ...tier }));
+    })
+    .sort((a, b) => b.count - a.count);
 
   const maxCount = filteredTopScripts.reduce((m, s) => Math.max(m, s.count), 1);
 

@@ -27,21 +27,20 @@ const plans = [
     price: 3,
     currency: '€',
     period: '/week',
-    billingNote: 'Billed once per week',
-    description: 'Try it risk-free for a week.',
+    billingNote: 'One-time payment · 12 months access',
+    description: 'Try premium for a week.',
     cardColor: '#b89060',
     features: ['All premium scripts', 'No key system', 'Priority support', 'Early access'],
   },
   {
     plan: 'lifetime',
     title: 'Lifetime',
-    badge: '28% OFF',
+    badge: '14% OFF',
     badgeVariant: 'best-value' as const,
-    price: 10,
-    originalPrice: 14,
+    price: 12,
     currency: '€',
     period: '',
-    billingNote: 'One-time payment',
+    billingNote: '30 days · one-time payment',
     description: 'Pay once. Access forever.',
     cardColor: '#c9a97a',
     featured: true,
@@ -80,6 +79,18 @@ const faqs = [
   { question: 'Refund Policy',          answer: 'All sales are final. We do not offer refunds, so please make sure you are certain before purchasing.' },
   { question: 'Need help?',             answer: 'Join our Discord server for support or open a ticket for payment assistance.' },
 ];
+
+const annualPlan = {
+  plan: 'annual', title: 'Annual', badge: '2 Months Free', price: 60, currency: '€', period: '/year',
+  billingNote: 'One-time payment · 12 months access', description: 'Pay for 10 months. Get 12.', cardColor: '#a08060',
+  features: ['All premium scripts', 'No key system', 'Priority support', 'Early access', '2 months free', '100 HWID'],
+};
+
+const annualWeeklyPlan = {
+  plan: 'annual_weekly', title: 'Weekly', badge: '2 Months Free', price: 30, currency: '€', period: '/year',
+  billingNote: 'One-time payment · 12 months access', description: 'Weekly access, billed yearly.', cardColor: '#b89060',
+  features: ['All premium scripts', 'No key system', 'Priority support', 'Early access', '2 months free', '100 HWID'],
+};
 
 // ── Mega Key Section ──────────────────────────────────────────────────────────
 function MegaKeySection() {
@@ -240,6 +251,7 @@ function getStockDisplay(methodStocks: StockMap, tier: string): { text: string; 
 // ── Main Content ──────────────────────────────────────────────────────────────
 function PremiumContent() {
   const router = useRouter();
+  const [subscriptionCycle, setSubscriptionCycle] = useState<'monthly' | 'annual'>('monthly');
 
   const [methodStocks, setMethodStocks] = useState<StockMap>({});
   useEffect(() => {
@@ -251,12 +263,16 @@ function PremiumContent() {
 
   const cardIcons: Record<string, React.ReactNode> = {
     weekly:   <Clock className="w-4 h-4" />,
+    annual:   <Clock className="w-4 h-4" />,
+    annual_weekly: <Clock className="w-4 h-4" />,
     lifetime: <Infinity className="w-4 h-4" />,
     monthly:  <Zap className="w-4 h-4" />,
   };
 
   const buttonLabels: Record<string, string> = {
     weekly:   'Start Weekly',
+    annual:   'Get Annual Access',
+    annual_weekly: 'Get Weekly Annual Access',
     lifetime: 'Get Lifetime Access',
     monthly:  'Start Monthly',
   };
@@ -299,13 +315,7 @@ function PremiumContent() {
         </section>
 
         {/* ── Mega Key ── */}
-        <section>
-          <div className="flex items-center gap-3 mb-6">
-            <p className="font-mono text-[10px] uppercase tracking-[0.25em]" style={{ color: 'rgba(255,255,255,0.25)' }}>Featured offer</p>
-            <div className="h-px flex-1" style={{ backgroundColor: 'rgba(255,255,255,0.06)' }} />
-          </div>
-          <MegaKeySection />
-        </section>
+
 
         {/* ── Pricing Cards ── */}
         <section>
@@ -331,31 +341,57 @@ function PremiumContent() {
           </div>
 
           {/* Cards */}
+          <div className="mb-5 flex flex-col items-center gap-2">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/35">Subscription billing</span>
+            <div
+              className="flex rounded-lg p-1"
+              style={{
+                backgroundColor: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.08)',
+              }}
+            >
+              {(['monthly', 'annual'] as const).map(cycle => (
+                <button
+                  key={cycle}
+                  onClick={() => setSubscriptionCycle(cycle)}
+                  className="rounded-md px-4 py-2 text-xs font-semibold transition-colors"
+                  style={{
+                    backgroundColor: subscriptionCycle === cycle ? C.accent : 'transparent',
+                    color: subscriptionCycle === cycle ? '#000' : 'rgba(255,255,255,0.5)',
+                  }}
+                >
+                  {cycle === 'monthly' ? 'Weekly & Monthly' : 'Yearly' }
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
-            {plans.map((plan, i) => {
-              const isCenter = i === 1;
-              const stock    = getStockDisplay(methodStocks, plan.plan);
+            {(subscriptionCycle === 'annual'
+              ? [annualWeeklyPlan, annualPlan, plans.find(item => item.plan === 'lifetime')!]
+              : plans.filter(item => item.plan !== 'lifetime').concat(plans.find(item => item.plan === 'lifetime')!)
+            ).map((displayPlan) => {
+              const stock    = getStockDisplay(methodStocks, displayPlan.plan);
 
               return (
-                <div key={plan.plan} className={isCenter ? 'relative' : 'md:mt-8'}>
+                <div key={displayPlan.plan}>
                   <PricingCard
-                    title={plan.title}
-                    description={plan.description}
-                    badge={plan.badge}
-                    badgeVariant={(plan as any).badgeVariant}
-                    price={plan.price}
-                    originalPrice={(plan as any).originalPrice}
-                    currency={plan.currency}
-                    period={plan.period}
-                    billingNote={plan.billingNote}
-                    cardColor={plan.cardColor}
-                    cardIcon={cardIcons[plan.plan]}
-                    features={plan.features}
-                    featured={(plan as any).featured}
+                    title={displayPlan.title}
+                    description={displayPlan.description}
+                    badge={displayPlan.badge}
+                    badgeVariant={(displayPlan as any).badgeVariant}
+                    price={displayPlan.price}
+                    originalPrice={(displayPlan as any).originalPrice}
+                    currency={displayPlan.currency}
+                    period={displayPlan.period}
+                    billingNote={displayPlan.billingNote}
+                    cardColor={displayPlan.cardColor}
+                    cardIcon={cardIcons[displayPlan.plan]}
+                    features={displayPlan.features}
+                    featured={displayPlan.plan === 'lifetime'}
                     stockStatusText={stock?.text}
                     stockStatusVariant={stock?.variant}
-                    buttonText={buttonLabels[plan.plan]}
-                    onButtonClick={() => router.push(`/checkout?plan=${plan.plan}`)}
+                    buttonText={buttonLabels[displayPlan.plan]}
+                    onButtonClick={() => router.push(`/checkout?plan=${displayPlan.plan}`)}
                   />
                 </div>
               );

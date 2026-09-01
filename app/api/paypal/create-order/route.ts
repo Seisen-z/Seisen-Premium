@@ -37,7 +37,9 @@ export async function POST(req: NextRequest) {
     const pricing: Record<string, number> = {
         weekly: 3,
         monthly: 6,
-        lifetime: 10
+        annual: 60,
+        annual_weekly: 30,
+        lifetime: 12
     };
 
     if (!tier || !pricing[tier]) {

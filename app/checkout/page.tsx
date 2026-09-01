@@ -76,7 +76,7 @@ const COUNTRY_QR_CONFIGS: Record<string, CountryQRConfig> = {
     currency: 'EUR',
     symbol: '€',
     qrTypeLabel: 'Wise Euro',
-    prices: { weekly: 3, monthly: 6, lifetime: 10 },
+    prices: { weekly: 3, monthly: 6, lifetime: 12 },
     qrImages: {
       weekly: '',
       monthly: '',
@@ -399,6 +399,29 @@ const PLAN_CONFIG: Record<string, PlanConfig> = {
       gcash:  { amount: 420, currency: '₱', label: '₱420',  period: '/month',    billingNote: 'Billed once per month' },
     },
   },
+  annual: {
+    title: 'Annual',
+    description: 'Twelve months of access for the price of ten.',
+    badge: '2 Months Free',
+    cardColor: '#c9a97a',
+    features: ['All premium scripts', 'No key system', 'Priority support', 'Early access', '2 months free', '100 HWID'],
+    methods: ['paypal'],
+    prices: { paypal: { amount: 60, currency: '€', label: '€60', period: '/year', billingNote: 'One-time payment · 12 months access' } },
+  },
+  annual_weekly: {
+    title: 'Weekly',
+    description: 'Weekly access, paid once for a full year.',
+    badge: '2 Months Free',
+    cardColor: '#b89060',
+    features: ['All premium scripts', 'No key system', 'Priority support', 'Early access', '2 months free', '100 HWID'],
+    methods: ['paypal'],
+    prices: { paypal: { amount: 30, currency: '€', label: '€30', period: '/year', billingNote: 'One-time payment · 12 months access' } },
+  },
+  monthly_plus: {
+    title: 'Monthly Plus', description: 'High-volume access with 100 HWID / tabs.', badge: '100 Tabs', cardColor: '#c9a97a', isMega: true,
+    features: ['All premium scripts', 'No key system', 'Super-priority support', '100 HWID / tabs'], methods: ['paypal'],
+    prices: { paypal: { amount: 12, currency: 'â‚¬', label: 'â‚¬12', period: '/month', billingNote: '30 days · one-time payment' } },
+  },
   lifetime: {
     title: 'Lifetime',
     description: 'Pay once. Access forever.',
@@ -407,7 +430,7 @@ const PLAN_CONFIG: Record<string, PlanConfig> = {
     features: ['All premium scripts', 'No key system', 'Priority support', 'Early access', 'Exclusive updates', 'Lifetime access'],
     methods: ['paypal', 'maya', 'gcash', 'local_qr'],
     prices: {
-      paypal: { amount: 10,  currency: '€', label: '€10',   originalLabel: '€14',    period: '',          billingNote: 'One-time payment' },
+      paypal: { amount: 12,  currency: '€', label: '€12',   originalLabel: '€14',    period: '',          billingNote: 'One-time payment' },
       maya:   { amount: 840, currency: '₱', label: '₱840',  originalLabel: '₱1,000', period: 'one-time',  billingNote: 'One-time payment' },
       gcash:  { amount: 840, currency: '₱', label: '₱840',  originalLabel: '₱1,000', period: 'one-time',  billingNote: 'One-time payment' },
     },
@@ -576,7 +599,7 @@ function CheckoutContent() {
   if (!plan) return null;
 
   // ── Live rate price helpers ──────────────────────────────────────────────
-  const BASE_EUR: Record<string, number> = { weekly: 3, monthly: 6, lifetime: 10 };
+  const BASE_EUR: Record<string, number> = { weekly: 3, monthly: 6, lifetime: 12 };
 
   function roundPrice(amount: number, currency: string): number {
     if (['IDR', 'VND', 'UGX'].includes(currency)) return Math.round(amount / 500) * 500;
