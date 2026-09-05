@@ -32,6 +32,17 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  // Replace any host-default policy that includes unsupported attribution-reporting.
+  // That directive produces the browser console warning: Unrecognized feature.
+  async headers() {
+    return [{
+      source: '/:path*',
+      headers: [{
+        key: 'Permissions-Policy',
+        value: 'camera=(), geolocation=(), microphone=()',
+      }],
+    }];
+  },
 };
 
 export default nextConfig;
