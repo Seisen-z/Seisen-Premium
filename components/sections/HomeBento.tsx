@@ -1,12 +1,11 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import { motion, AnimatePresence as AP, MotionConfig } from 'framer-motion';
-import { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence as AP } from 'framer-motion';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import useMeasure from 'react-use-measure';
-import { RefreshCw, Zap, Wrench, Settings, Megaphone, BellRing } from 'lucide-react';
+import { RefreshCw, Zap, Wrench, Settings, Megaphone } from 'lucide-react';
 
 const WorldExecutionMap = dynamic(() => import('@/components/WorldExecutionMap'), { ssr: false });
 
@@ -34,106 +33,305 @@ const TAG_COLORS: Record<string, string> = {
   'Announcement': '#60a5fa',
 };
 
-type SiteUpdate = { title: string; tag: string; game_name: string | null };
+type SiteUpdate = { title: string; tag: string; game_name: string | null; created_at?: string; thumbnail_url?: string | null };
 
-function AlertsDisclosure({ updates }: { updates: SiteUpdate[] }) {
+/* ── Script-activity grid helpers ───────────────────── */
+const GRID_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const CELL_OPACITIES: Record<0|1|2|3|4, number> = { 0: 0, 1: 0.28, 2: 0.52, 3: 0.76, 4: 1 };
+
+// Build a contribution grid from real update created_at dates.
+// Falls back to seeded decorative data when updates array is empty.
+function buildActivityGrid(updates: SiteUpdate[], totalWeeks: number) {
+  const today = new Date();
+  const start = new Date(today);
+  start.setUTCDate(today.getUTCDate() - today.getUTCDay() - (totalWeeks - 1) * 7);
+
+  if (updates.length > 0 && updates.some(u => u.created_at)) {
+    // Count updates per date from real data
+    const counts = new Map<string, number>();
+    for (const u of updates) {
+      if (!u.created_at) continue;
+      const d = u.created_at.slice(0, 10);
+      counts.set(d, (counts.get(d) ?? 0) + 1);
+    }
+    const maxCount = Math.max(...counts.values(), 1);
+
+    const weeks: Array<Array<{ date: string; level: 0|1|2|3|4; count: number }>> = [];
+    for (let w = 0; w < totalWeeks; w++) {
+      const week: Array<{ date: string; level: 0|1|2|3|4; count: number }> = [];
+      for (let d = 0; d < 7; d++) {
+        const cell = new Date(start);
+        cell.setUTCDate(start.getUTCDate() + w * 7 + d);
+        const date = cell.toISOString().slice(0, 10);
+        const n = counts.get(date) ?? 0;
+        const ratio = n / maxCount;
+        const level: 0|1|2|3|4 = n === 0 ? 0 : ratio < 0.25 ? 1 : ratio < 0.5 ? 2 : ratio < 0.75 ? 3 : 4;
+        week.push({ date, level, count: n });
+      }
+      weeks.push(week);
+    }
+    return weeks;
+  }
+
+  // Decorative seeded fallback — consistent per session
+  let seed = 0x9e3779b9;
+  const rand = () => { seed ^= seed << 13; seed ^= seed >> 17; seed ^= seed << 5; return (seed >>> 0) / 0xffffffff; };
+  const weeks: Array<Array<{ date: string; level: 0|1|2|3|4; count: number }>> = [];
+  for (let w = 0; w < totalWeeks; w++) {
+    const week: Array<{ date: string; level: 0|1|2|3|4; count: number }> = [];
+    for (let d = 0; d < 7; d++) {
+      const cell = new Date(start);
+      cell.setUTCDate(start.getUTCDate() + w * 7 + d);
+      const r = rand();
+      const level: 0|1|2|3|4 = r < 0.38 ? 0 : r < 0.57 ? 1 : r < 0.73 ? 2 : r < 0.88 ? 3 : 4;
+      const count = level === 0 ? 0 : level === 1 ? 1 : level === 2 ? 2 : level === 3 ? 3 : 5;
+      week.push({ date: cell.toISOString().slice(0, 10), level, count });
+    }
+    weeks.push(week);
+  }
+  return weeks;
+}
+
+function gridMonthLabels(weeks: Array<Array<{ date: string }>>) {
+  const labels: (string | null)[] = weeks.map(() => null);
+  const mo = (i: number) => weeks[i]?.[0]?.date.slice(5, 7);
+  let start = 0;
+  for (let i = 1; i <= weeks.length; i++) {
+    if (i < weeks.length && mo(i) === mo(start)) continue;
+    if (i - start >= 3) labels[start] = GRID_MONTHS[Number(mo(start)) - 1] ?? null;
+    start = i;
+  }
+  return labels;
+}
+
+/* ── Bento Alert-Activity card ───────────────────────── */
+// Show this many weeks — cells auto-size to fill card width exactly via CSS grid 1fr
+const SHOW_WEEKS = 26; // ≈ 6 months; bump to 39 for 9 months (smaller cells)
+
+const DATE_FMT = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+function AlertsActivity({ updates }: { updates: SiteUpdate[] }) {
   const [open, setOpen] = useState(false);
-  const [ref, bounds] = useMeasure({ offsetSize: true });
-  const wrapRef = useRef<HTMLDivElement>(null);
+  const tooltipRef = useRef<HTMLDivElement>(null);
+  const GAP = 2;
+  const SPRING_CFG = { type: 'spring', bounce: 0.2, duration: 0.62 } as const;
 
-  useEffect(() => {
-    if (!open) return;
-    const h = (e: MouseEvent) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener('mousedown', h);
-    return () => document.removeEventListener('mousedown', h);
-  }, [open]);
-
-  const fallback = [
-    { title: 'Script Updated', tag: 'Update', game_name: 'Anime Expedition' },
-    { title: 'New Script Added', tag: 'New Script', game_name: null },
+  const fallback: SiteUpdate[] = [
+    { title: 'Script Updated',   tag: 'Update',       game_name: 'Anime Expedition' },
+    { title: 'New Script',       tag: 'New Script',   game_name: 'Blox Fruits'      },
+    { title: 'Patch Applied',    tag: 'Patch',        game_name: 'Pet Simulator'    },
+    { title: 'Maintenance',      tag: 'Maintenance',  game_name: 'Anime Expedition' },
+    { title: 'Announcement',     tag: 'Announcement', game_name: null               },
   ];
-  const items = (updates.length > 0 ? updates : fallback).slice(0, 5);
+  const allItems = updates.length > 0 ? updates : fallback;
+
+  const weeks      = useMemo(() => buildActivityGrid(allItems, SHOW_WEEKS), [allItems]); // eslint-disable-line react-hooks/exhaustive-deps
+  const monthLabels = gridMonthLabels(weeks);
+
+  // Derive top-3 games by frequency across all updates, carrying the first thumbnail found
+  const topGames = useMemo(() => {
+    const counts = new Map<string, { tag: string; count: number; thumbnail_url?: string | null }>();
+    for (const u of allItems) {
+      const key = u.game_name ?? u.tag;
+      const prev = counts.get(key);
+      if (prev) {
+        prev.count++;
+        if (!prev.thumbnail_url && u.thumbnail_url) prev.thumbnail_url = u.thumbnail_url;
+      } else {
+        counts.set(key, { tag: u.tag, count: 1, thumbnail_url: u.thumbnail_url });
+      }
+    }
+    return [...counts.entries()]
+      .sort(([, a], [, b]) => b.count - a.count)
+      .slice(0, 3)
+      .map(([name, { tag, count, thumbnail_url }]) => ({ name, tag, count, thumbnail_url }));
+  }, [allItems]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Items shown in expanded panel (most recent 5)
+  const panelItems = allItems.slice(0, 5);
+
+  // CSS grid template — 1fr per week column fills the card width exactly, no math needed
+  const gridCols = `repeat(${SHOW_WEEKS}, 1fr)`;
 
   return (
-    <MotionConfig transition={{ type: 'spring', stiffness: 280, damping: 26 }}>
-      <div ref={wrapRef}>
-      <motion.div
-        className="flex items-center justify-center overflow-hidden rounded-3xl"
-        style={{ backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
-        animate={{
-          width: bounds.width > 0 ? bounds.width : 'auto',
-          height: bounds.height > 0 ? bounds.height : 'auto',
-        }}
-      >
-        <div ref={ref} className="p-2">
-          <AP mode="popLayout" initial={false}>
-            {!open ? (
-              <motion.button
-                key="closed"
-                className="flex shrink-0 cursor-pointer items-center gap-2 px-5 py-2"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                onClick={() => setOpen(true)}
-              >
-                <BellRing className="h-5 w-5" style={{ color: 'rgba(255,255,255,0.6)' }} />
-                {updates.length > 0 && (
-                  <span className="flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold text-black" style={{ backgroundColor: ACCENT }}>
-                    {Math.min(updates.length, 9)}
-                  </span>
-                )}
-              </motion.button>
-            ) : (
-              <motion.div key="open" className="flex shrink-0 flex-col gap-1.5 min-w-[230px]">
-                {/* Header */}
-                <motion.div
-                  className="px-1 pb-1"
-                  style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.08 }}
-                >
-                  <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.3)' }}>Recent Updates</span>
-                </motion.div>
+    <div className="w-full flex flex-col gap-3">
+      {/* Month labels — same 1fr grid so labels align with columns */}
+      <div className="grid w-full" style={{ gridTemplateColumns: gridCols, gap: GAP }}>
+        {monthLabels.map((month, i) => (
+          <div key={i} className="relative h-3">
+            {month && (
+              <span className="absolute left-0 top-0 text-[9px] leading-none select-none whitespace-nowrap" style={{ color: 'rgba(255,255,255,0.28)' }}>
+                {month}
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
 
-                {/* Update rows */}
-                {items.map((item, i) => {
-                  const Icon = TAG_ICONS[item.tag] ?? RefreshCw;
-                  const color = TAG_COLORS[item.tag] ?? ACCENT;
+      {/* Contribution grid — CSS grid 1fr fills container width perfectly, no overflow */}
+      <div className="grid w-full" style={{ gridTemplateColumns: gridCols, gap: GAP }}>
+        {weeks.map((week, wi) => (
+          <div key={wi} className="flex flex-col" style={{ gap: GAP }}>
+            {week.map((day) => {
+              const dateObj = new Date(day.date + 'T12:00:00Z');
+              const label = day.count === 0
+                ? `No updates on ${DATE_FMT.format(dateObj)}`
+                : `${day.count} update${day.count !== 1 ? 's' : ''} on ${DATE_FMT.format(dateObj)}`;
+              return (
+                <motion.div
+                  key={day.date}
+                  className="w-full rounded-[2px] cursor-default"
+                  style={{ aspectRatio: '1', backgroundColor: 'rgba(255,255,255,0.07)' }}
+                  initial={{ opacity: 0, scale: 0.4 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.18, delay: wi * 0.01, ease: [0.22, 1, 0.36, 1] }}
+                  onPointerEnter={(e) => {
+                    const tip = tooltipRef.current;
+                    if (!tip) return;
+                    const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                    tip.style.left = `${r.left + r.width / 2}px`;
+                    tip.style.top = `${r.top - 6}px`;
+                    tip.textContent = label;
+                    tip.hidden = false;
+                  }}
+                  onPointerLeave={() => { if (tooltipRef.current) tooltipRef.current.hidden = true; }}
+                >
+                  <div
+                    className="h-full w-full rounded-[2px]"
+                    style={{ backgroundColor: ACCENT, opacity: CELL_OPACITIES[day.level] }}
+                  />
+                </motion.div>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+
+      {/* "Top updates in:" panel — normal-flow, layout-animated height */}
+      <motion.div
+        layout
+        className="overflow-hidden"
+        style={{
+          backgroundColor: 'rgba(12,12,12,0.93)',
+          backdropFilter: 'blur(14px)',
+          borderRadius: 16,
+          border: '1px solid rgba(255,255,255,0.08)',
+        }}
+        transition={SPRING_CFG}
+      >
+        {/* Header row */}
+        <motion.div layout="position" transition={SPRING_CFG} className="flex items-center justify-between gap-3 py-3 px-4">
+          <span className="truncate text-sm" style={{ color: 'rgba(255,255,255,0.65)' }}>Top updates in:</span>
+
+          <div className="flex items-center gap-3">
+            {!open && (
+              <div className="flex items-center">
+                {topGames.map((g, i) => {
+                  const color = TAG_COLORS[g.tag] ?? ACCENT;
+                  const initial = g.name.charAt(0).toUpperCase();
                   return (
-                    <motion.div
+                    <span
                       key={i}
-                      className="flex flex-1 shrink-0 items-center gap-2.5 rounded-xl p-2"
-                      style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}
-                      initial={{ opacity: 0, filter: 'blur(4px)', y: 16 }}
-                      animate={{ opacity: 1, filter: 'blur(0px)', y: 0 }}
-                      exit={{ opacity: 0, filter: 'blur(4px)', transition: { duration: 0.15 } }}
-                      transition={{ delay: 0.1 + i * 0.05, type: 'spring', stiffness: 200, damping: 20 }}
-                      onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.06)')}
-                      onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.03)')}
+                      className={cn(
+                        'grid size-7 shrink-0 place-items-center overflow-hidden rounded-full',
+                        'text-[11px] font-semibold',
+                        i > 0 && '-ml-2',
+                      )}
+                      style={g.thumbnail_url ? { outline: '2px solid rgba(12,12,12,0.93)' } : { backgroundColor: `${color}28`, color, outline: '2px solid rgba(12,12,12,0.93)' }}
                     >
-                      <div className="shrink-0 flex h-7 w-7 items-center justify-center rounded-lg" style={{ backgroundColor: `${color}18`, border: `1px solid ${color}28` }}>
-                        <Icon className="h-3.5 w-3.5" style={{ color }} />
-                      </div>
-                      <div className="flex min-w-0 flex-col leading-none">
-                        <p className="truncate text-[12px] font-semibold text-white">{item.title}</p>
-                        <span className="text-[10px] mt-0.5 truncate" style={{ color: 'rgba(255,255,255,0.35)' }}>
-                          {item.game_name ?? item.tag}
-                        </span>
-                      </div>
-                    </motion.div>
+                      {g.thumbnail_url
+                        ? <img src={g.thumbnail_url} alt={g.name} className="size-full object-cover" />
+                        : initial}
+                    </span>
                   );
                 })}
-              </motion.div>
+              </div>
             )}
-          </AP>
-        </div>
+
+            <button
+              type="button"
+              onClick={() => setOpen(v => !v)}
+              aria-expanded={open}
+              aria-label={open ? 'Hide top updates' : 'Show top updates'}
+              className="grid size-7 shrink-0 place-items-center rounded-full"
+            >
+              <motion.svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+                className="size-7"
+                style={{ color: 'rgba(255,255,255,0.22)' }}
+                initial={false}
+                animate={{ rotate: open ? 180 : 0 }}
+                transition={SPRING_CFG}
+              >
+                <circle cx="12" cy="12" r="10" />
+                <path d="m16 10-4 4-4-4" />
+              </motion.svg>
+            </button>
+          </div>
+        </motion.div>
+
+        {/* Expanded list */}
+        <AP initial={false} mode="popLayout">
+          {open && (
+            <motion.ul
+              key="list"
+              layout="position"
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ ...SPRING_CFG, bounce: 0.26, delay: 0.06 }}
+              className="px-0.5 pb-1"
+            >
+              {panelItems.map((item, i) => {
+                const Icon  = TAG_ICONS[item.tag]  ?? RefreshCw;
+                const color = TAG_COLORS[item.tag] ?? ACCENT;
+                return (
+                  <li key={i}>
+                    <div
+                      className="flex items-center gap-3 rounded-xl mx-2 px-2 py-2 cursor-default"
+                      onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)')}
+                      onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}
+                    >
+                      <span
+                        className="grid size-7 shrink-0 place-items-center overflow-hidden rounded-full"
+                        style={item.thumbnail_url ? {} : { backgroundColor: `${color}22` }}
+                      >
+                        {item.thumbnail_url
+                          ? <img src={item.thumbnail_url} alt={item.game_name ?? item.tag} className="size-full object-cover rounded-full" />
+                          : <Icon className="h-3.5 w-3.5" style={{ color }} />}
+                      </span>
+                      <span className="flex-1 truncate text-sm text-white">{item.title}</span>
+                      <span className="text-xs tabular-nums" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                        {item.game_name ?? item.tag}
+                      </span>
+                    </div>
+                  </li>
+                );
+              })}
+            </motion.ul>
+          )}
+        </AP>
       </motion.div>
-      </div>
-    </MotionConfig>
+
+      {/* Tooltip — driven by DOM ref so hover never triggers a React re-render */}
+      <div
+        ref={tooltipRef}
+        hidden
+        className="pointer-events-none fixed z-[9999] -translate-x-1/2 -translate-y-full rounded-md px-2 py-1 text-[11px] font-medium text-white whitespace-nowrap"
+        style={{
+          backgroundColor: 'rgba(20,20,20,0.95)',
+          border: '1px solid rgba(255,255,255,0.12)',
+          backdropFilter: 'blur(8px)',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+        }}
+      />
+    </div>
   );
 }
 
@@ -227,7 +425,13 @@ export default function HomeBento({
       .then(r => r.json())
       .then((data: unknown) => {
         if (Array.isArray(data) && data.length > 0) {
-          setRecentUpdates(data.slice(0, 5).map((u: SiteUpdate) => ({ title: u.title, tag: u.tag, game_name: u.game_name })));
+          setRecentUpdates(data.slice(0, 50).map((u: SiteUpdate) => ({
+            title: u.title,
+            tag: u.tag,
+            game_name: u.game_name,
+            created_at: u.created_at,
+            thumbnail_url: u.thumbnail_url,
+          })));
         }
       })
       .catch(() => {});
@@ -584,20 +788,20 @@ export default function HomeBento({
 
         {/* ── Card 3: Script Alerts (1-col) ── */}
         <div
-          className={cn(card, 'min-h-[300px] flex-col justify-end md:col-span-1')}
+          className={cn(card, 'flex-col justify-start gap-4 md:col-span-1')}
           style={{ backgroundColor: CARD_BG }}
           onMouseEnter={() => setHov(3)}
           onMouseLeave={() => setHov(null)}
         >
-          <div className="relative z-10 flex w-full flex-1 items-start justify-center pt-6">
-            <AlertsDisclosure updates={recentUpdates} />
-          </div>
-
-          <div className="relative z-10 flex flex-col gap-1.5 pt-5">
+          <div className="relative z-10 flex flex-col gap-1">
             <h3 className="text-white text-lg font-semibold">Instant Alerts</h3>
             <p className="text-sm max-w-[180px]" style={{ color: 'rgba(255,255,255,0.4)' }}>
               Latest script updates and patches from the hub.
             </p>
+          </div>
+
+          <div className="relative z-10 w-full">
+            <AlertsActivity updates={recentUpdates} />
           </div>
         </div>
 
