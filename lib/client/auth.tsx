@@ -94,6 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('client_auth');
     // Also clear discord session cookie
     document.cookie = 'discord_session=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    fetch('/api/auth/discord/logout', { method: 'POST' }).catch(() => {});
     router.push('/client/login');
   };
 

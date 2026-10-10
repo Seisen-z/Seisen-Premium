@@ -24,8 +24,8 @@ interface Stats {
   totalPurchases: number; paypalPurchases: number; robloxPurchases: number;
   paypalRevenue: number; robloxRevenue: number;
 }
-type PremiumTier   = 'weekly' | 'monthly' | 'lifetime';
-type PaymentMethod = 'robux' | 'paypal' | 'gcash' | 'card' | 'local_qr';
+type PremiumTier   = 'monthly' | 'lifetime';
+type PaymentMethod = 'robux' | 'paypal';
 type Tab = 'overview' | 'payments' | 'tickets' | 'scripts' | 'store';
 
 const TABS: { id: Tab; icon: React.ElementType; label: string }[] = [
@@ -39,25 +39,20 @@ const TABS: { id: Tab; icon: React.ElementType; label: string }[] = [
 const METHODS: { id: PaymentMethod; label: string; color: string }[] = [
   { id: 'robux',  label: 'Robux',  color: '#fbbf24' },
   { id: 'paypal', label: 'PayPal', color: '#38bdf8' },
-  { id: 'gcash',  label: 'GCash',  color: '#34d399' },
-  { id: 'card',   label: 'Card',   color: '#a78bfa' },
-  { id: 'local_qr', label: 'Wise', color: '#f47fff' },
 ];
-const TIERS: PremiumTier[] = ['weekly', 'monthly', 'lifetime'];
-const TIER_COLOR: Record<string, string> = { weekly: '#38bdf8', monthly: '#a78bfa', lifetime: '#34d399' };
+const TIERS: PremiumTier[] = ['monthly', 'lifetime'];
+const TIER_COLOR: Record<string, string> = { monthly: '#a78bfa', lifetime: '#34d399' };
 
 function initStock(): Record<PremiumTier, Record<PaymentMethod, number>> {
   return { 
-    weekly:{robux:0,paypal:0,gcash:0,card:0,local_qr:0}, 
-    monthly:{robux:0,paypal:0,gcash:0,card:0,local_qr:0}, 
-    lifetime:{robux:0,paypal:0,gcash:0,card:0,local_qr:0} 
+    monthly:{robux:0,paypal:0}, 
+    lifetime:{robux:0,paypal:0} 
   };
 }
 function initDraft(): Record<PremiumTier, Record<PaymentMethod, string>> {
   return { 
-    weekly:{robux:'0',paypal:'0',gcash:'0',card:'0',local_qr:'0'}, 
-    monthly:{robux:'0',paypal:'0',gcash:'0',card:'0',local_qr:'0'}, 
-    lifetime:{robux:'0',paypal:'0',gcash:'0',card:'0',local_qr:'0'} 
+    monthly:{robux:'0',paypal:'0'}, 
+    lifetime:{robux:'0',paypal:'0'} 
   };
 }
 
@@ -150,7 +145,7 @@ export default function AdminPage() {
       if (r.ok) {
         const ms = (await r.json())?.methodStocks || {};
         const s = initStock(); const d = initDraft();
-        for (const t of TIERS) for (const m of ['robux','paypal','gcash','card','local_qr'] as PaymentMethod[]) { const v = Number(ms[t]?.[m] || 0); s[t][m] = v; d[t][m] = String(v); }
+        for (const t of TIERS) for (const m of ['robux','paypal'] as PaymentMethod[]) { const v = Number(ms[t]?.[m] || 0); s[t][m] = v; d[t][m] = String(v); }
         setStock(s); setDraft(d);
       }
     } finally { setStockLoad(false); }
@@ -185,7 +180,7 @@ export default function AdminPage() {
     
     for (const t of TIERS) {
       updates[t] = {};
-      for (const m of ['robux','paypal','gcash','card','local_qr'] as PaymentMethod[]) {
+      for (const m of ['robux','paypal'] as PaymentMethod[]) {
         const v = Number(draft[t][m]);
         if (!Number.isInteger(v) || v < 0) {
           showToast('Non-negative integers only', 'error');
@@ -211,7 +206,7 @@ export default function AdminPage() {
       const s = initStock();
       const d = initDraft();
       for (const t of TIERS) {
-        for (const m of ['robux','paypal','gcash','card','local_qr'] as PaymentMethod[]) {
+        for (const m of ['robux','paypal'] as PaymentMethod[]) {
           const val = Number(ms[t]?.[m] || 0);
           s[t][m] = val;
           d[t][m] = String(val);
@@ -783,7 +778,7 @@ export default function AdminPage() {
                     <p className="text-[13px] font-bold text-white">Stock matrix</p>
                     {stockLoad && <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: '#333' }} />}
                   </div>
-                  {TIERS.some(t => (['robux','paypal','gcash','card','local_qr'] as PaymentMethod[]).some(m => draft[t][m] !== String(stock[t][m]))) && (
+                  {TIERS.some(t => (['robux','paypal'] as PaymentMethod[]).some(m => draft[t][m] !== String(stock[t][m]))) && (
                     <button onClick={saveAllStock} disabled={savingStock}
                       className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold text-white transition-all disabled:opacity-50"
                       style={{

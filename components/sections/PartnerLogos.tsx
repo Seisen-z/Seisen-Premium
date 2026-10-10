@@ -3,11 +3,8 @@
 import { useState } from 'react';
 
 const partners = [
-  { name: 'Work.ink',    url: 'https://work.ink',                         image: '/images/partners/workink.webp' },
-  { name: 'Lockr.so',   url: 'https://lockr.so',                          image: '/images/partners/lockr.webp'  },
   { name: 'PayPal',     url: 'https://www.paypal.com',                    image: '/images/partners/paypal.png'   },
   { name: 'Junkie',     url: 'https://junkie-development.de/',            image: '/images/partners/junkie.webp'  },
-  { name: 'Prometheus', url: 'https://github.com/levno-710/Prometheus',   icon:  '🔥'                            },
   { name: 'VSPhone',    url: 'https://www.vsphone.com/',                  image: '/images/partners/vsphone.png', fallbackIcon: '🎮' },
 ];
 
@@ -37,7 +34,7 @@ function PartnerItem({ partner }: { partner: typeof partners[number] }) {
         <div className="flex items-center gap-2 font-bold text-white" style={{ fontSize: '1.1rem' }}>
           {'fallbackIcon' in partner && partner.fallbackIcon
             ? <><span className="text-xl">{partner.fallbackIcon}</span><span>{partner.name}</span></>
-            : <><span className="text-xl">{'icon' in partner ? partner.icon : ''}</span><span>{partner.name}</span></>
+            : <span>{partner.name}</span>
           }
         </div>
       )}

@@ -624,7 +624,7 @@ export default async function HomePage() {
                 Ready to unlock everything?
               </h2>
               <p className="text-base mb-10 max-w-lg mx-auto" style={{ color: 'rgba(255,255,255,0.45)', lineHeight: 1.7 }}>
-                Instant access to all {premiumCount} premium scripts, priority support, and exclusive features — with the Mega Key or a subscription.
+                Instant access to all {premiumCount} premium scripts, priority support, and exclusive features — with a monthly or lifetime plan.
               </p>
 
               <div className="flex flex-wrap items-center justify-center gap-3 mb-10">

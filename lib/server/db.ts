@@ -243,6 +243,23 @@ export class TicketDatabase {
     return true;
   }
   
+  // The Discord account that first claimed a purchase for this Roblox account. A Roblox account is locked to it.
+  async getRobloxLinkedDiscordId(robloxUserId: number): Promise<string | null> {
+    const { data, error } = await this.client
+      .from('payments')
+      .select('discord_id')
+      .eq('payer_id', `ROBLOX_${robloxUserId}`)
+      .not('discord_id', 'is', null)
+      .order('created_at', { ascending: true })
+      .limit(1);
+    if (error) {
+      // Fail closed: if we can't tell who owns this Roblox account, don't let a claim through
+      console.error('Error reading Roblox link:', error);
+      throw error;
+    }
+    return data?.[0]?.discord_id ?? null;
+  }
+
   async getPayment(transactionId: string) {
     const { data: payment, error } = await this.client
       .from('payments')
@@ -322,7 +339,7 @@ export class TicketDatabase {
     return this.premiumTiers.includes(normalized) ? normalized : null;
   }
 
-  private readonly paymentMethods = ['robux', 'paypal', 'card', 'gcash', 'maya', 'local_qr'];
+  private readonly paymentMethods = ['robux', 'paypal'];
 
   private normalizeMethod(method: string) {
     const m = (method || '').toLowerCase();
@@ -338,7 +355,7 @@ export class TicketDatabase {
     const result: Record<string, Record<string, number>> = {};
 
     for (const tier of this.premiumTiers) {
-      result[tier] = { robux: 0, paypal: 0, gcash: 0, maya: 0, card: 0, local_qr: 0 };
+      result[tier] = { robux: 0, paypal: 0 };
     }
 
     if (error) {
@@ -368,13 +385,6 @@ export class TicketDatabase {
       }
     }
 
-    // GCash and Maya share the same QR-payment stock — always keep them in sync
-    for (const tier of this.premiumTiers) {
-      const qrStock = Math.max(result[tier].gcash ?? 0, result[tier].maya ?? 0);
-      result[tier].gcash = qrStock;
-      result[tier].maya  = qrStock;
-    }
-
     return result;
   }
 
@@ -388,15 +398,10 @@ export class TicketDatabase {
     const safeStock = Number.isFinite(stock) ? Math.max(0, Math.floor(stock)) : 0;
     const now = new Date().toISOString();
 
-    // GCash and Maya share the same QR-payment stock — always write both together
-    const methodsToWrite = (normalizedMethod === 'gcash' || normalizedMethod === 'maya')
-      ? ['gcash', 'maya']
-      : [normalizedMethod];
-
     const { error } = await this.client
       .from('premium_stock')
       .upsert(
-        methodsToWrite.map(m => ({ tier: normalizedTier, payment_method: m, stock: safeStock, updated_at: now })),
+        [{ tier: normalizedTier, payment_method: normalizedMethod, stock: safeStock, updated_at: now }],
         { onConflict: 'tier,payment_method' }
       );
 
@@ -413,15 +418,12 @@ export class TicketDatabase {
     const normalizedMethod = this.normalizeMethod(method);
     if (!normalizedTier || !normalizedMethod) return false;
 
-    // GCash and Maya share stock — always read/write the canonical 'gcash' row
-    const canonicalMethod = (normalizedMethod === 'gcash' || normalizedMethod === 'maya') ? 'gcash' : normalizedMethod;
-
     for (let attempt = 0; attempt < 3; attempt++) {
       const { data: current, error: readError } = await this.client
         .from('premium_stock')
         .select('stock')
         .eq('tier', normalizedTier)
-        .eq('payment_method', canonicalMethod)
+        .eq('payment_method', normalizedMethod)
         .single();
 
       if (readError) {
@@ -434,12 +436,12 @@ export class TicketDatabase {
 
       const now = new Date().toISOString();
 
-      // Decrement both gcash and maya together (optimistic lock on gcash row)
+      // Optimistic lock: only update if the stock hasn't changed since we read it
       const { data: updated, error: updateError } = await this.client
         .from('premium_stock')
         .update({ stock: currentStock - 1, updated_at: now })
         .eq('tier', normalizedTier)
-        .eq('payment_method', canonicalMethod)
+        .eq('payment_method', normalizedMethod)
         .eq('stock', currentStock)
         .select('tier')
         .maybeSingle();
@@ -450,12 +452,6 @@ export class TicketDatabase {
       }
 
       if (updated) {
-        // Keep maya row in sync
-        await this.client
-          .from('premium_stock')
-          .update({ stock: currentStock - 1, updated_at: now })
-          .eq('tier', normalizedTier)
-          .eq('payment_method', 'maya');
         if (!skipNotify) void this.notifyDiscordBotOfStockChange();
         return true;
       }
@@ -689,13 +685,26 @@ export class TicketDatabase {
       await fetch(`${botApiUrl}/api/internal/restock`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ methodStocks, secret }),
+        body: JSON.stringify({ methodStocks: botStockPayload(methodStocks), secret }),
         signal: controller.signal,
       }).finally(() => clearTimeout(timeout));
     } catch (err: any) {
       console.warn('⚠️ Failed to notify Discord Bot of stock change:', err.message);
     }
   }
+}
+
+// What the Discord bot is told about: only the plans and payment methods we still sell.
+export const BOT_STOCK_TIERS = ['monthly', 'lifetime'];
+export const BOT_STOCK_METHODS = ['robux', 'paypal'];
+
+export function botStockPayload(methodStocks: Record<string, Record<string, number>>) {
+  const payload: Record<string, Record<string, number>> = {};
+  for (const tier of BOT_STOCK_TIERS) {
+    payload[tier] = {};
+    for (const method of BOT_STOCK_METHODS) payload[tier][method] = methodStocks[tier]?.[method] ?? 0;
+  }
+  return payload;
 }
 
 export const db = new TicketDatabase();

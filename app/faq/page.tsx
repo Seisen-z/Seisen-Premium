@@ -45,7 +45,7 @@ const faqItems = [
     questions: [
       {
         q: 'What payment methods are accepted?',
-        a: 'We accept PayPal, Maya, and GCash. All methods process instantly.',
+        a: 'We accept PayPal and Robux. All methods process instantly.',
       },
       {
         q: 'Can I get a refund?',

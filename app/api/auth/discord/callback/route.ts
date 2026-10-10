@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { DISCORD_AUTH_COOKIE, DISCORD_AUTH_TTL_SECONDS, signValue } from '@/lib/server/clientSession';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
@@ -87,6 +88,20 @@ export async function GET(req: NextRequest) {
       maxAge:   60 * 60 * 24 * 7, // 7 days
       path:     '/',
     });
+
+    // Signed, httpOnly copy of the identity: this is the one the server trusts for access decisions
+    response.cookies.set(
+      DISCORD_AUTH_COOKIE,
+      signValue({
+        id: session.id,
+        tag: session.tag,
+        username: session.username,
+        avatar: session.avatar,
+        email: session.email,
+        exp: Math.floor(Date.now() / 1000) + DISCORD_AUTH_TTL_SECONDS,
+      }),
+      { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', maxAge: DISCORD_AUTH_TTL_SECONDS, path: '/' }
+    );
 
     return response;
   } catch (err: any) {

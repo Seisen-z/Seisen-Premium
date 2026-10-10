@@ -1,10 +1,9 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { Clock, Zap, Infinity, Key, Shield, Unlock, Monitor, Globe, Ban, RefreshCw, Crown, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import PremiumSkeleton from '@/components/ui/PremiumSkeleton';
-import PricingCard from '@/components/ui/PricingCard';
 import CommunityVoices from '@/components/sections/CommunityVoices';
 import PurchaseCounter from '@/components/ui/PurchaseCounter';
 
@@ -19,19 +18,20 @@ const C = {
 } as const;
 
 // ── Plan data ─────────────────────────────────────────────────────────────────
+const freePlan = {
+  plan: 'free',
+  title: 'Free',
+  badge: 'Ad-supported',
+  price: 'Free',
+  currency: '',
+  period: '',
+  billingNote: 'No payment needed',
+  description: 'Get started at no cost.',
+  cardColor: '#8a8a8a',
+  features: ['Free scripts', 'Checkpoint key system', 'Ads supported', 'Discord community'],
+};
+
 const plans = [
-  {
-    plan: 'weekly',
-    title: 'Weekly',
-    badge: '7 Days',
-    price: 3,
-    currency: '€',
-    period: '/week',
-    billingNote: 'One-time payment · 12 months access',
-    description: 'Try premium for a week.',
-    cardColor: '#b89060',
-    features: ['All premium scripts', 'No key system', 'Priority support', 'Early access'],
-  },
   {
     plan: 'lifetime',
     title: 'Lifetime',
@@ -40,13 +40,14 @@ const plans = [
     price: 12,
     currency: '€',
     period: '',
-    billingNote: '30 days · one-time payment',
+    billingNote: 'One-time payment',
     description: 'Pay once. Access forever.',
     cardColor: '#c9a97a',
     featured: true,
     features: [
       'All premium scripts',
       'No key system',
+      'Ad-free · ready to use',
       'Priority support',
       'Early access',
       'Exclusive updates',
@@ -66,6 +67,7 @@ const plans = [
     features: [
       'All premium scripts',
       'No key system',
+      'Ad-free · ready to use',
       'Priority support',
       'Early access',
       'Exclusive updates',
@@ -86,158 +88,6 @@ const annualPlan = {
   features: ['All premium scripts', 'No key system', 'Priority support', 'Early access', '2 months free', '50 HWID'],
 };
 
-const annualWeeklyPlan = {
-  plan: 'annual_weekly', title: 'Weekly', badge: '2 Months Free', price: 30, currency: '€', period: '/year',
-  billingNote: 'One-time payment · 12 months access', description: 'Weekly access, billed yearly.', cardColor: '#b89060',
-  features: ['All premium scripts', 'No key system', 'Priority support', 'Early access', '2 months free', '20 HWID'],
-};
-
-// ── Mega Key Section ──────────────────────────────────────────────────────────
-function MegaKeySection() {
-  const router = useRouter();
-  const [selected, setSelected] = useState<'mega_1month' | 'mega_2month'>('mega_2month');
-
-  const options = [
-    { key: 'mega_2month' as const, label: '2 Months', price: 70, currency: '$', badge: 'Best Value', perMonth: '$35/mo' },
-    { key: 'mega_1month' as const, label: '1 Month',  price: 40, currency: '$', badge: null,         perMonth: '$40/mo' },
-  ];
-
-  const selectedOption = options.find(o => o.key === selected)!;
-
-  const features: { icon: React.ElementType; text: string }[] = [
-    { icon: Zap,     text: '1 key — up to 100 simultaneous tabs' },
-    { icon: Unlock,  text: 'No Hardware ID check, any device' },
-    { icon: Monitor, text: 'Any executor, anywhere' },
-    { icon: Key,     text: 'Equivalent to 10 normal keys combined' },
-    { icon: Shield,  text: 'Hardware ID bypass built-in' },
-    { icon: Globe,   text: 'Zero device binding restrictions' },
-  ];
-
-  return (
-    <div
-      className="rounded-2xl overflow-hidden relative"
-      style={{
-        background: 'linear-gradient(135deg, rgba(20,16,10,0.98) 0%, rgba(12,10,6,0.99) 100%)',
-        border: `1px solid ${C.accentBdr2}`,
-        boxShadow: `0 0 60px rgba(201,169,122,0.07)`,
-      }}
-    >
-      {/* Top accent line */}
-      <div className="h-px w-full" style={{ background: `linear-gradient(90deg, transparent 0%, ${C.accent} 50%, transparent 100%)` }} />
-
-      <div className="px-8 py-10 md:px-12 md:py-12">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-3">
-            <span
-              className="text-[10px] font-mono uppercase tracking-[0.2em] px-2.5 py-1 rounded"
-              style={{ backgroundColor: C.accentBg, color: C.accent, border: `1px solid ${C.accentBdr}` }}
-            >
-              Big Account Farmer Offer
-            </span>
-            <span className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wide px-2.5 py-1 rounded-full" style={{ backgroundColor: 'rgba(245,158,11,0.1)', color: '#fbbf24', border: '1px solid rgba(245,158,11,0.2)' }}>
-              Limited stock
-            </span>
-          </div>
-          <h2 className="text-white font-bold mb-2" style={{ fontSize: 'clamp(1.5rem, 3vw, 2.1rem)', letterSpacing: '-0.03em' }}>
-            Mega Key — 100 Tabs. One Key.
-          </h2>
-          <p className="text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>
-            Built for large-scale account farming. No restrictions, no limits.
-          </p>
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-10 items-start">
-          {/* Features */}
-          <div className="space-y-3">
-            {features.map((f, i) => {
-              const Icon = f.icon;
-              return (
-                <div key={i} className="flex items-center gap-3">
-                  <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: C.accentBg, border: `1px solid ${C.accentBdr}` }}>
-                    <Icon className="w-3.5 h-3.5" style={{ color: C.accent }} />
-                  </div>
-                  <span className="text-sm" style={{ color: 'rgba(255,255,255,0.6)' }}>{f.text}</span>
-                </div>
-              );
-            })}
-
-            <div className="mt-5 rounded-xl p-4" style={{ backgroundColor: C.accentBg, border: `1px solid ${C.accentBdr}` }}>
-              <p className="text-xs font-mono uppercase tracking-widest mb-1.5" style={{ color: C.accentDim }}>Why Mega Key?</p>
-              <p className="text-sm leading-relaxed" style={{ color: 'rgba(255,255,255,0.5)' }}>
-                Instead of buying 10 individual keys at €10 each (€100), get one Mega Key that covers up to 100 tabs — with zero hardware binding.
-              </p>
-            </div>
-          </div>
-
-          {/* Plan selector + CTA */}
-          <div className="space-y-3">
-            {options.map(opt => (
-              <button
-                key={opt.key}
-                onClick={() => setSelected(opt.key)}
-                className="w-full rounded-xl p-4 text-left transition-all duration-150"
-                style={{
-                  backgroundColor: selected === opt.key ? C.accentBg : 'rgba(255,255,255,0.03)',
-                  border: selected === opt.key ? `1.5px solid ${C.accentBdr2}` : '1px solid rgba(255,255,255,0.08)',
-                }}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all"
-                      style={{
-                        borderColor: selected === opt.key ? C.accent : 'rgba(255,255,255,0.2)',
-                        backgroundColor: selected === opt.key ? C.accent : 'transparent',
-                      }}
-                    >
-                      {selected === opt.key && <div className="w-1.5 h-1.5 rounded-full bg-[#1a1008]" />}
-                    </div>
-                    <div>
-                      <p className="text-white font-semibold text-sm">{opt.label}</p>
-                      <p className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>{opt.perMonth}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-white font-bold text-xl">{opt.currency}{opt.price}</p>
-                    {opt.badge && (
-                      <span className="text-[10px] font-mono uppercase tracking-wide px-1.5 py-0.5 rounded" style={{ backgroundColor: C.accentBg, color: C.accent }}>
-                        {opt.badge}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </button>
-            ))}
-
-            <button
-              onClick={() => router.push(`/checkout?plan=${selected}`)}
-              className="w-full py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2.5 transition-all duration-150 hover:brightness-110 active:scale-[0.98]"
-              style={{ backgroundColor: C.accent, color: '#1a1008' }}
-            >
-              <img src="/images/paypal.png" alt="PayPal" className="w-4 h-4 object-contain" />
-              Get Mega Key — ${selectedOption.price}
-            </button>
-
-            <a
-              href="https://discord.gg/F4sAf6z8Ph"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center gap-1.5 text-xs transition-opacity hover:opacity-60"
-              style={{ color: 'rgba(255,255,255,0.25)' }}
-            >
-              <svg viewBox="0 0 24 24" fill="currentColor" className="w-3 h-3">
-                <path d="M20.317 4.492c-1.53-.69-3.17-1.2-4.885-1.49a.075.075 0 0 0-.079.036c-.21.369-.444.85-.608 1.23a18.566 18.566 0 0 0-5.487 0 12.36 12.36 0 0 0-.617-1.23A.077.077 0 0 0 8.562 3c-1.714.29-3.354.8-4.885 1.491a.07.07 0 0 0-.032.027C.533 9.093-.32 13.555.099 17.961a.08.08 0 0 0 .031.055 20.03 20.03 0 0 0 5.993 2.98.078.078 0 0 0 .084-.026c.462-.62.874-1.275 1.226-1.963.021-.04.001-.088-.041-.104a13.201 13.201 0 0 1-1.872-.878.075.075 0 0 1-.008-.125c.126-.093.252-.19.372-.287a.075.075 0 0 1 .078-.01c3.927 1.764 8.18 1.764 12.061 0a.075.075 0 0 1 .079.009c.12.098.245.195.372.288a.075.075 0 0 1-.006.125c-.598.344-1.22.635-1.873.877a.075.075 0 0 0-.041.105c.36.687.772 1.341 1.225 1.962a.077.077 0 0 0 .084.028 19.963 19.963 0 0 0 6.002-2.981.076.076 0 0 0 .032-.054c.5-5.094-.838-9.52-3.549-13.442a.06.06 0 0 0-.031-.028z" />
-              </svg>
-              Or contact us on Discord instead
-            </a>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 type StockMap = Record<string, Record<string, number>>;
 
 function getStockDisplay(methodStocks: StockMap, tier: string): { text: string; variant: 'in-stock' | 'low-stock' | 'out-of-stock' } | null {
@@ -246,6 +96,95 @@ function getStockDisplay(methodStocks: StockMap, tier: string): { text: string; 
   const total = Object.values(tierStock).reduce((a, b) => a + b, 0);
   if (total === 0) return { text: 'Out of stock', variant: 'out-of-stock' };
   return null;
+}
+
+// ── Plan tile ─────────────────────────────────────────────────────────────────
+// The "path to a key" strip is the point of the row: Free costs time (ads + checkpoints),
+// paid plans cost money and skip all of it.
+const KEY_PATH: Record<string, string[]> = {
+  free: ['Watch ads', 'Finish checkpoints', 'Get key'],
+  paid: ['Pay', 'Key ready'],
+};
+
+type TilePlan = {
+  plan: string; title: string; badge?: string; price: string | number; currency: string;
+  period: string; billingNote: string; description: string; features: string[]; originalPrice?: string | number;
+};
+
+function PlanTile({ p, hero, stockText, outOfStock, cta, onClick }: {
+  p: TilePlan; hero?: boolean; stockText?: string; outOfStock?: boolean; cta: string; onClick: () => void;
+}) {
+  const isFree = p.plan === 'free';
+  const path = KEY_PATH[isFree ? 'free' : 'paid'];
+  const ink = hero ? C.accent : isFree ? 'rgba(255,255,255,0.55)' : C.accentSoft;
+  const border = hero ? `1.5px solid ${C.accentBdr2}` : '1px solid rgba(255,255,255,0.08)';
+
+  return (
+    <div className="flex flex-col h-full rounded-xl p-6 md:p-7" style={{ backgroundColor: '#0f0f0f', border }}>
+      <div className="flex items-baseline justify-between gap-3 mb-1">
+        <h3 className="text-lg font-bold text-white">{p.title}</h3>
+        {hero ? (
+          <span className="font-mono text-[10px] uppercase tracking-[0.2em]" style={{ color: C.accent }}>Most popular</span>
+        ) : p.badge ? (
+          <span className="font-mono text-[10px] uppercase tracking-[0.2em]" style={{ color: 'rgba(255,255,255,0.35)' }}>{p.badge}</span>
+        ) : null}
+      </div>
+      <p className="text-xs mb-6" style={{ color: 'rgba(255,255,255,0.4)' }}>{p.description}</p>
+
+      <div className="mb-1 flex items-end gap-1.5">
+        {p.originalPrice && (
+          <span className="relative mb-2 text-sm" style={{ color: 'rgba(255,255,255,0.25)' }}>
+            {p.currency}{p.originalPrice}
+            <span className="absolute inset-y-[45%] left-0 w-full h-px bg-red-500/60 -rotate-6" />
+          </span>
+        )}
+        <span className="font-black text-white" style={{ fontSize: hero ? '4rem' : '3rem', letterSpacing: '-0.04em', lineHeight: 1 }}>
+          {p.currency}{p.price}
+        </span>
+        {p.period && <span className="text-sm mb-1.5" style={{ color: 'rgba(255,255,255,0.35)' }}>{p.period}</span>}
+      </div>
+      <p className="text-xs mb-6" style={{ color: 'rgba(255,255,255,0.28)' }}>{p.billingNote}</p>
+
+      {/* Path to a key */}
+      <div className="mb-6 pt-5" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+        <p className="font-mono text-[10px] uppercase tracking-[0.2em] mb-3" style={{ color: 'rgba(255,255,255,0.28)' }}>How you get your key</p>
+        <ol className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+          {path.map((step, i) => (
+            <li key={step} className="flex items-center gap-2 text-xs" style={{ color: isFree ? 'rgba(255,255,255,0.55)' : 'rgba(255,255,255,0.85)' }}>
+              <span className="font-mono text-[10px]" style={{ color: ink }}>{i + 1}</span>
+              {step}
+              {i < path.length - 1 && <span style={{ color: 'rgba(255,255,255,0.2)' }}>→</span>}
+            </li>
+          ))}
+        </ol>
+      </div>
+
+      <ul className={`mb-7 flex-1 grid gap-x-6 gap-y-2.5 ${hero ? 'sm:grid-cols-2' : ''}`}>
+        {p.features.map(f => (
+          <li key={f} className="flex items-center gap-2.5 text-sm" style={{ color: 'rgba(255,255,255,0.65)' }}>
+            <CheckCircle2 className="w-3.5 h-3.5 shrink-0" style={{ color: ink }} />
+            {f}
+          </li>
+        ))}
+      </ul>
+
+      {stockText && (
+        <p className="mb-3 text-xs text-center" style={{ color: '#f87171' }}>{stockText}</p>
+      )}
+      <button
+        onClick={onClick}
+        disabled={outOfStock}
+        className="w-full py-3.5 rounded-lg text-sm font-bold transition-[filter,background-color] duration-150 disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-offset-2"
+        style={hero
+          ? { backgroundColor: C.accent, color: '#000', outlineColor: C.accent }
+          : { backgroundColor: 'transparent', color: isFree ? 'rgba(255,255,255,0.75)' : C.accentSoft, border: `1px solid ${isFree ? 'rgba(255,255,255,0.15)' : C.accentBdr}`, outlineColor: C.accent }}
+        onMouseEnter={e => { if (!outOfStock) (e.currentTarget as HTMLElement).style.filter = hero ? 'brightness(0.9)' : 'brightness(1.3)'; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.filter = 'none'; }}
+      >
+        {cta}
+      </button>
+    </div>
+  );
 }
 
 // ── Main Content ──────────────────────────────────────────────────────────────
@@ -261,18 +200,9 @@ function PremiumContent() {
       .catch(() => {});
   }, []);
 
-  const cardIcons: Record<string, React.ReactNode> = {
-    weekly:   <Clock className="w-4 h-4" />,
-    annual:   <Clock className="w-4 h-4" />,
-    annual_weekly: <Clock className="w-4 h-4" />,
-    lifetime: <Infinity className="w-4 h-4" />,
-    monthly:  <Zap className="w-4 h-4" />,
-  };
-
   const buttonLabels: Record<string, string> = {
-    weekly:   'Start Weekly',
+    free:     'Get Free Key',
     annual:   'Get Annual Access',
-    annual_weekly: 'Get Weekly Annual Access',
     lifetime: 'Get Lifetime Access',
     monthly:  'Start Monthly',
   };
@@ -310,39 +240,14 @@ function PremiumContent() {
             <PurchaseCounter />
           </div>
           <p className="text-sm mt-2" style={{ color: 'rgba(255,255,255,0.35)' }}>
-            One purchase. Every script. Instant access — PayPal, GCash, or Maya.
+            One purchase. Every script. Instant access — PayPal or Robux.
           </p>
         </section>
 
-        {/* ── Mega Key ── */}
-
-
         {/* ── Pricing Cards ── */}
         <section>
-          <div className="flex items-center gap-3 mb-8">
-            <p className="font-mono text-[10px] uppercase tracking-[0.25em]" style={{ color: 'rgba(255,255,255,0.25)' }}>Or choose a subscription</p>
-            <div className="h-px flex-1" style={{ backgroundColor: 'rgba(255,255,255,0.06)' }} />
-          </div>
-
-          {/* Value props */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
-            {[
-              { Icon: Ban,       title: 'No Key System',    desc: 'Scripts run instantly, no key needed' },
-              { Icon: Zap,       title: 'Instant Delivery', desc: 'Your key is ready the moment you pay' },
-              { Icon: RefreshCw, title: 'Always Updated',   desc: 'New scripts added regularly, free' },
-              { Icon: Shield,    title: 'Priority Support', desc: 'Jump the queue in Discord tickets' },
-            ].map(v => (
-              <div key={v.title} className="rounded-xl p-4" style={{ backgroundColor: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.07)' }}>
-                <v.Icon className="w-4 h-4 mb-3" style={{ color: C.accentDim }} />
-                <p className="text-white text-xs font-semibold mb-1">{v.title}</p>
-                <p className="text-[11px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.3)' }}>{v.desc}</p>
-              </div>
-            ))}
-          </div>
-
           {/* Cards */}
-          <div className="mb-5 flex flex-col items-center gap-2">
-            <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/35">Subscription billing</span>
+          <div className="mb-5 flex">
             <div
               className="flex rounded-lg p-1"
               style={{
@@ -360,56 +265,31 @@ function PremiumContent() {
                     color: subscriptionCycle === cycle ? '#000' : 'rgba(255,255,255,0.5)',
                   }}
                 >
-                  {cycle === 'monthly' ? 'Weekly & Monthly' : 'Yearly' }
+                  {cycle === 'monthly' ? 'Monthly' : 'Yearly' }
                 </button>
               ))}
             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr_1.5fr] gap-4 items-stretch">
             {(subscriptionCycle === 'annual'
-              ? [annualWeeklyPlan, annualPlan, plans.find(item => item.plan === 'lifetime')!]
-              : plans.filter(item => item.plan !== 'lifetime').concat(plans.find(item => item.plan === 'lifetime')!)
+              ? [freePlan, annualPlan, plans.find(item => item.plan === 'lifetime')!]
+              : [freePlan, ...plans.filter(item => item.plan !== 'lifetime'), plans.find(item => item.plan === 'lifetime')!]
             ).map((displayPlan) => {
-              const stock    = getStockDisplay(methodStocks, displayPlan.plan);
-
+              const stock = getStockDisplay(methodStocks, displayPlan.plan);
               return (
-                <div key={displayPlan.plan}>
-                  <PricingCard
-                    title={displayPlan.title}
-                    description={displayPlan.description}
-                    badge={displayPlan.badge}
-                    badgeVariant={(displayPlan as any).badgeVariant}
-                    price={displayPlan.price}
-                    originalPrice={(displayPlan as any).originalPrice}
-                    currency={displayPlan.currency}
-                    period={displayPlan.period}
-                    billingNote={displayPlan.billingNote}
-                    cardColor={displayPlan.cardColor}
-                    cardIcon={cardIcons[displayPlan.plan]}
-                    features={displayPlan.features}
-                    featured={displayPlan.plan === 'lifetime'}
-                    stockStatusText={stock?.text}
-                    stockStatusVariant={stock?.variant}
-                    buttonText={buttonLabels[displayPlan.plan]}
-                    onButtonClick={() => router.push(`/checkout?plan=${displayPlan.plan}`)}
-                  />
-                </div>
+                <PlanTile
+                  key={displayPlan.plan}
+                  p={displayPlan as TilePlan}
+                  hero={displayPlan.plan === 'lifetime'}
+                  stockText={stock?.text}
+                  outOfStock={stock?.variant === 'out-of-stock'}
+                  cta={buttonLabels[displayPlan.plan]}
+                  onClick={() => router.push(displayPlan.plan === 'free' ? '/getkey' : `/checkout?plan=${displayPlan.plan}`)}
+                />
               );
             })}
           </div>
 
-          {/* Trust line */}
-          <div className="flex flex-wrap items-center gap-2 mt-8">
-            {['Instant Delivery', 'No Key System', 'All Scripts Included', 'Priority Support'].map((label, i) => (
-              <div key={label} className="flex items-center gap-2">
-                {i > 0 && <span style={{ color: 'rgba(255,255,255,0.1)' }}>·</span>}
-                <span className="flex items-center gap-1.5 text-xs" style={{ color: 'rgba(255,255,255,0.25)' }}>
-                  <CheckCircle2 className="w-3 h-3" style={{ color: C.accentDim }} />
-                  {label}
-                </span>
-              </div>
-            ))}
-          </div>
         </section>
 
         {/* ── FAQ ── */}
@@ -420,10 +300,7 @@ function PremiumContent() {
           </div>
           <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
             {faqs.map((faq, index) => (
-              <div key={index} className="flex gap-8 py-7" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                <span className="font-mono text-xs pt-0.5 w-6 shrink-0" style={{ color: 'rgba(255,255,255,0.18)' }}>
-                  {String(index + 1).padStart(2, '0')}
-                </span>
+              <div key={index} className="flex py-7" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                 <div className="flex-1 flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-16">
                   <h3 className="font-semibold text-white text-sm sm:w-44 shrink-0">{faq.question}</h3>
                   <p className="text-sm leading-relaxed flex-1" style={{ color: 'rgba(255,255,255,0.4)' }}>{faq.answer}</p>

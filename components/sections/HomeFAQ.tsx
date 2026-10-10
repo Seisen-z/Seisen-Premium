@@ -11,7 +11,7 @@ const FAQS = [
   },
   {
     q: 'What does Premium include?',
-    a: 'Full access to every script (free and premium), no key system ever, priority support, and early access to new releases. Available weekly, monthly, or lifetime.',
+    a: 'Full access to every script (free and premium), no key system ever, priority support, and early access to new releases. Available monthly or lifetime.',
   },
   {
     q: 'How does the key system work?',
@@ -19,7 +19,7 @@ const FAQS = [
   },
   {
     q: 'What payment methods are accepted?',
-    a: 'We accept PayPal, Maya, GCash, and card payments. All methods process instantly and keys are delivered automatically.',
+    a: 'We accept PayPal and Robux. All methods process instantly and keys are delivered automatically.',
   },
   {
     q: 'Is it safe to use Seisen scripts?',

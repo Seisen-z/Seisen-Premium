@@ -1,31 +1,13 @@
 'use client';
 
-import { useState, useEffect, useRef, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Check, ArrowLeft, Loader2, AlertCircle, CheckCircle, AlertTriangle, X, ChevronDown } from 'lucide-react';
+import { Check, ArrowLeft, Loader2, AlertCircle, CheckCircle, AlertTriangle, X } from 'lucide-react';
 import { getApiUrl } from '@/lib/utils';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type PaymentMethod = 'paypal' | 'maya' | 'gcash' | 'local_qr';
-
-type CountryQRConfig = {
-  code: string;
-  name: string;
-  currency: string;
-  symbol: string;
-  qrTypeLabel: string;
-  prices: {
-    weekly: number;
-    monthly: number;
-    lifetime: number;
-  };
-  qrImages: {
-    weekly: string;
-    monthly: string;
-    lifetime: string;
-  };
-};
+type PaymentMethod = 'paypal' | 'robux';
 
 type PriceInfo = {
   amount: number;
@@ -44,7 +26,6 @@ type PlanConfig = {
   features: string[];
   methods: PaymentMethod[];
   prices: Partial<Record<PaymentMethod, PriceInfo>>;
-  isMega?: boolean;
 };
 
 type DiscordSession = {
@@ -56,347 +37,23 @@ type DiscordSession = {
   tag: string;
 };
 
-const COUNTRY_QR_CONFIGS: Record<string, CountryQRConfig> = {
-  usd: {
-    code: 'usd',
-    name: 'United States (USD)',
-    currency: 'USD',
-    symbol: '$',
-    qrTypeLabel: 'Wise USD',
-    prices: { weekly: 3.5, monthly: 7, lifetime: 11.50 },
-    qrImages: {
-      weekly: '',
-      monthly: '',
-      lifetime: '/images/wise-qr/lifetime/Wise USD Lifetime.png'
-    }
-  },
-  eur: {
-    code: 'eur',
-    name: 'Europe (EUR)',
-    currency: 'EUR',
-    symbol: '€',
-    qrTypeLabel: 'Wise Euro',
-    prices: { weekly: 3, monthly: 6, lifetime: 12 },
-    qrImages: {
-      weekly: '',
-      monthly: '',
-      lifetime: '/images/wise-qr/lifetime/Wise Euro Lifetime.png'
-    }
-  },
-  gbp: {
-    code: 'gbp',
-    name: 'United Kingdom (GBP)',
-    currency: 'GBP',
-    symbol: '£',
-    qrTypeLabel: 'Wise GBP',
-    prices: { weekly: 2.5, monthly: 5, lifetime: 8.50 },
-    qrImages: {
-      weekly: '',
-      monthly: '',
-      lifetime: '/images/wise-qr/lifetime/Wise GBP Lifetime.png'
-    }
-  },
-  aud: {
-    code: 'aud',
-    name: 'Australia (AUD)',
-    currency: 'AUD',
-    symbol: 'A$',
-    qrTypeLabel: 'Wise AUD',
-    prices: { weekly: 5, monthly: 10, lifetime: 16.30 },
-    qrImages: {
-      weekly: '',
-      monthly: '',
-      lifetime: '/images/wise-qr/lifetime/Wise AUD Lifetime.png'
-    }
-  },
-  cad: {
-    code: 'cad',
-    name: 'Canada (CAD)',
-    currency: 'CAD',
-    symbol: 'C$',
-    qrTypeLabel: 'Wise CAD',
-    prices: { weekly: 5, monthly: 10, lifetime: 16.10 },
-    qrImages: {
-      weekly: '',
-      monthly: '',
-      lifetime: '/images/wise-qr/lifetime/Wise CAD Lifetime.png'
-    }
-  },
-  sgd: {
-    code: 'sgd',
-    name: 'Singapore (SGD)',
-    currency: 'SGD',
-    symbol: 'S$',
-    qrTypeLabel: 'Wise SGD',
-    prices: { weekly: 4.5, monthly: 9, lifetime: 15.20 },
-    qrImages: {
-      weekly: '',
-      monthly: '',
-      lifetime: '/images/wise-qr/lifetime/Wise SGD Lifetime.png'
-    }
-  },
-  php: {
-    code: 'php',
-    name: 'Philippines (PHP)',
-    currency: 'PHP',
-    symbol: '₱',
-    qrTypeLabel: 'Wise PHP',
-    prices: { weekly: 215, monthly: 430, lifetime: 710 },
-    qrImages: {
-      weekly: '',
-      monthly: '',
-      lifetime: '/images/wise-qr/lifetime/Wise Php Lifetime.png'
-    }
-  },
-  idr: {
-    code: 'idr',
-    name: 'Indonesia (IDR)',
-    currency: 'IDR',
-    symbol: 'Rp',
-    qrTypeLabel: 'Wise IDR',
-    prices: { weekly: 55000, monthly: 110000, lifetime: 184000 },
-    qrImages: {
-      weekly: '',
-      monthly: '',
-      lifetime: '/images/wise-qr/lifetime/Wise IDR Lifetime.png'
-    }
-  },
-  vnd: {
-    code: 'vnd',
-    name: 'Vietnam (VND)',
-    currency: 'VND',
-    symbol: '₫',
-    qrTypeLabel: 'Wise VND',
-    prices: { weekly: 88000, monthly: 176000, lifetime: 295000 },
-    qrImages: {
-      weekly: '',
-      monthly: '',
-      lifetime: '/images/wise-qr/lifetime/Wise VND Lifetime.png'
-    }
-  },
-  hkd: {
-    code: 'hkd',
-    name: 'Hong Kong (HKD)',
-    currency: 'HKD',
-    symbol: 'HK$',
-    qrTypeLabel: 'Wise HKD',
-    prices: { weekly: 27, monthly: 54, lifetime: 90 },
-    qrImages: {
-      weekly: '',
-      monthly: '',
-      lifetime: '/images/wise-qr/lifetime/Wise HKD Lifetime.png'
-    }
-  },
-  jpy: {
-    code: 'jpy',
-    name: 'Japan (JPY)',
-    currency: 'JPY',
-    symbol: '¥',
-    qrTypeLabel: 'Wise JPY',
-    prices: { weekly: 475, monthly: 950, lifetime: 1580 },
-    qrImages: {
-      weekly: '',
-      monthly: '',
-      lifetime: '/images/wise-qr/lifetime/Wise JPS Lifetime.png'
-    }
-  },
-  cny: {
-    code: 'cny',
-    name: 'China (CNY)',
-    currency: 'CNY',
-    symbol: '¥',
-    qrTypeLabel: 'Wise CNY',
-    prices: { weekly: 25, monthly: 50, lifetime: 83 },
-    qrImages: {
-      weekly: '',
-      monthly: '',
-      lifetime: '/images/wise-qr/lifetime/Wise CNY Lifetime.png'
-    }
-  },
-  chf: {
-    code: 'chf',
-    name: 'Switzerland (CHF)',
-    currency: 'CHF',
-    symbol: 'CHF',
-    qrTypeLabel: 'Wise CHF',
-    prices: { weekly: 2.8, monthly: 5.6, lifetime: 9.40 },
-    qrImages: {
-      weekly: '',
-      monthly: '',
-      lifetime: '/images/wise-qr/lifetime/Wise CHF Lifetime.png'
-    }
-  },
-  czk: {
-    code: 'czk',
-    name: 'Czech Republic (CZK)',
-    currency: 'CZK',
-    symbol: 'Kč',
-    qrTypeLabel: 'Wise CZK',
-    prices: { weekly: 81, monthly: 162, lifetime: 270 },
-    qrImages: {
-      weekly: '',
-      monthly: '',
-      lifetime: '/images/wise-qr/lifetime/Wise CZK Lifetime.png'
-    }
-  },
-  dkk: {
-    code: 'dkk',
-    name: 'Denmark (DKK)',
-    currency: 'DKK',
-    symbol: 'kr.',
-    qrTypeLabel: 'Wise DKK',
-    prices: { weekly: 22, monthly: 45, lifetime: 75 },
-    qrImages: {
-      weekly: '',
-      monthly: '',
-      lifetime: '/images/wise-qr/lifetime/Wise DKK Lifetime.png'
-    }
-  },
-  huf: {
-    code: 'huf',
-    name: 'Hungary (HUF)',
-    currency: 'HUF',
-    symbol: 'Ft',
-    qrTypeLabel: 'Wise HUF',
-    prices: { weekly: 1265, monthly: 2530, lifetime: 4220 },
-    qrImages: {
-      weekly: '',
-      monthly: '',
-      lifetime: '/images/wise-qr/lifetime/Wise HUF Lifetime.png'
-    }
-  },
-  ils: {
-    code: 'ils',
-    name: 'Israel (ILS)',
-    currency: 'ILS',
-    symbol: '₪',
-    qrTypeLabel: 'Wise ILS',
-    prices: { weekly: 13, monthly: 26, lifetime: 43.50 },
-    qrImages: {
-      weekly: '',
-      monthly: '',
-      lifetime: '/images/wise-qr/lifetime/Wise ILS Lifetime.png'
-    }
-  },
-  nok: {
-    code: 'nok',
-    name: 'Norway (NOK)',
-    currency: 'NOK',
-    symbol: 'kr',
-    qrTypeLabel: 'Wise NOK',
-    prices: { weekly: 38, monthly: 76, lifetime: 127 },
-    qrImages: {
-      weekly: '',
-      monthly: '',
-      lifetime: '/images/wise-qr/lifetime/Wise NOR Lifetime.png'
-    }
-  },
-  nzd: {
-    code: 'nzd',
-    name: 'New Zealand (NZD)',
-    currency: 'NZD',
-    symbol: 'NZ$',
-    qrTypeLabel: 'Wise NZD',
-    prices: { weekly: 5.5, monthly: 11, lifetime: 17.80 },
-    qrImages: {
-      weekly: '',
-      monthly: '',
-      lifetime: '/images/wise-qr/lifetime/Wise NZD Lifetime.png'
-    }
-  },
-  pln: {
-    code: 'pln',
-    name: 'Poland (PLN)',
-    currency: 'PLN',
-    symbol: 'zł',
-    qrTypeLabel: 'Wise PLN',
-    prices: { weekly: 14, monthly: 28, lifetime: 46 },
-    qrImages: {
-      weekly: '',
-      monthly: '',
-      lifetime: '/images/wise-qr/lifetime/Wise PLN Lifetime.png'
-    }
-  },
-  sek: {
-    code: 'sek',
-    name: 'Sweden (SEK)',
-    currency: 'SEK',
-    symbol: 'kr',
-    qrTypeLabel: 'Wise SEK',
-    prices: { weekly: 36, monthly: 73, lifetime: 121 },
-    qrImages: {
-      weekly: '',
-      monthly: '',
-      lifetime: '/images/wise-qr/lifetime/Wise SEK Lifetime.png'
-    }
-  },
-  ugx: {
-    code: 'ugx',
-    name: 'Uganda (UGX)',
-    currency: 'UGX',
-    symbol: 'USh',
-    qrTypeLabel: 'Wise UGX',
-    prices: { weekly: 13000, monthly: 26000, lifetime: 43500 },
-    qrImages: {
-      weekly: '',
-      monthly: '',
-      lifetime: '/images/wise-qr/lifetime/Wise UGX Lifetime.png'
-    }
-  },
-  zar: {
-    code: 'zar',
-    name: 'South Africa (ZAR)',
-    currency: 'ZAR',
-    symbol: 'R',
-    qrTypeLabel: 'Wise ZAR',
-    prices: { weekly: 65, monthly: 130, lifetime: 215 },
-    qrImages: {
-      weekly: '',
-      monthly: '',
-      lifetime: '/images/wise-qr/lifetime/Wise ZAR Lifetiem.png'
-    }
-  },
-  aed: {
-    code: 'aed',
-    name: 'United Arab Emirates (AED)',
-    currency: 'AED',
-    symbol: 'د.إ',
-    qrTypeLabel: 'Wise AED',
-    prices: { weekly: 13, monthly: 26, lifetime: 42.50 },
-    qrImages: {
-      weekly: '',
-      monthly: '',
-      lifetime: '/images/wise-qr/lifetime/Wise AED Lifetime.png'
-    }
-  }
+const ROBUX_ITEM_URLS: Record<string, string> = {
+  monthly:  'https://www.roblox.com/catalog/16902308978/Seisen-Hub-Monthly',
+  lifetime: 'https://www.roblox.com/catalog/16906166414/Seisen-Hub-Perm',
 };
 
 // ─── Plan Config ──────────────────────────────────────────────────────────────
 const PLAN_CONFIG: Record<string, PlanConfig> = {
-  weekly: {
-    title: 'Weekly',
-    description: 'Try it risk-free for a week.',
-    badge: '7 Days',
-    cardColor: '#b89060',
-    features: ['All premium scripts', 'No key system', 'Priority support', 'Early access'],
-    methods: ['paypal', 'maya', 'gcash'],
-    prices: {
-      paypal: { amount: 3,   currency: '€', label: '€3',   period: '/week', billingNote: 'Billed once per week' },
-      maya:   { amount: 210, currency: '₱', label: '₱210', period: '/week', billingNote: 'Billed once per week · QR payment via Discord ticket' },
-      gcash:  { amount: 210, currency: '₱', label: '₱210', period: '/week', billingNote: 'Billed once per week · QR payment via Discord ticket' },
-    },
-  },
   monthly: {
     title: 'Monthly',
     description: 'Best for regular script users.',
     badge: '30 Days',
     cardColor: '#a08060',
     features: ['All premium scripts', 'No key system', 'Priority support', 'Early access', 'Exclusive updates'],
-    methods: ['paypal', 'maya', 'gcash'],
+    methods: ['paypal', 'robux'],
     prices: {
-      paypal: { amount: 6,   currency: '€', label: '€6',    period: '/month',    billingNote: 'Billed once per month' },
-      maya:   { amount: 420, currency: '₱', label: '₱420',  period: '/month',    billingNote: 'Billed once per month' },
-      gcash:  { amount: 420, currency: '₱', label: '₱420',  period: '/month',    billingNote: 'Billed once per month' },
+      paypal: { amount: 6,    currency: '€',  label: '€6',       period: '/month', billingNote: 'Billed once per month' },
+      robux:  { amount: 1900, currency: 'R$', label: '1,900 R$', period: '/month', billingNote: '30 days · buy the item on Roblox, then verify' },
     },
   },
   annual: {
@@ -417,45 +74,16 @@ const PLAN_CONFIG: Record<string, PlanConfig> = {
     methods: ['paypal'],
     prices: { paypal: { amount: 30, currency: '€', label: '€30', period: '/year', billingNote: 'One-time payment · 12 months access' } },
   },
-  monthly_plus: {
-    title: 'Monthly Plus', description: 'High-volume access with 100 HWID / tabs.', badge: '100 Tabs', cardColor: '#c9a97a', isMega: true,
-    features: ['All premium scripts', 'No key system', 'Super-priority support', '100 HWID / tabs'], methods: ['paypal'],
-    prices: { paypal: { amount: 12, currency: 'â‚¬', label: 'â‚¬12', period: '/month', billingNote: '30 days · one-time payment' } },
-  },
   lifetime: {
     title: 'Lifetime',
     description: 'Pay once. Access forever.',
     badge: '28% OFF',
     cardColor: '#c9a97a',
     features: ['All premium scripts', 'No key system', 'Priority support', 'Early access', 'Exclusive updates', 'Lifetime access'],
-    methods: ['paypal', 'maya', 'gcash', 'local_qr'],
+    methods: ['paypal', 'robux'],
     prices: {
-      paypal: { amount: 12,  currency: '€', label: '€12',   originalLabel: '€14',    period: '',          billingNote: 'One-time payment' },
-      maya:   { amount: 840, currency: '₱', label: '₱840',  originalLabel: '₱1,000', period: 'one-time',  billingNote: 'One-time payment' },
-      gcash:  { amount: 840, currency: '₱', label: '₱840',  originalLabel: '₱1,000', period: 'one-time',  billingNote: 'One-time payment' },
-    },
-  },
-  mega_1month: {
-    title: 'Mega Key — 1 Month',
-    description: 'For large-scale account farming.',
-    cardColor: '#c9a97a',
-    isMega: true,
-    features: ['1 key — up to 100 tabs', 'No Hardware ID check', 'Any executor, anywhere', 'Equivalent to 10 normal keys', 'Hardware ID bypass built-in', 'Zero device binding restrictions'],
-    methods: ['paypal'],
-    prices: {
-      paypal: { amount: 40, currency: '$', label: '$40', period: '', billingNote: '$40/month' },
-    },
-  },
-  mega_2month: {
-    title: 'Mega Key — 2 Months',
-    description: 'Best value for large-scale farming.',
-    badge: 'Best Value',
-    cardColor: '#c9a97a',
-    isMega: true,
-    features: ['1 key — up to 100 tabs', 'No Hardware ID check', 'Any executor, anywhere', 'Equivalent to 10 normal keys', 'Hardware ID bypass built-in', 'Zero device binding restrictions'],
-    methods: ['paypal'],
-    prices: {
-      paypal: { amount: 70, currency: '$', label: '$70', period: '', billingNote: '$35/month — save $10' },
+      paypal: { amount: 12,   currency: '€',  label: '€12',      originalLabel: '€14', period: '', billingNote: 'One-time payment' },
+      robux:  { amount: 2600, currency: 'R$', label: '2,600 R$',                       period: '', billingNote: 'One-time · buy the item on Roblox, then verify' },
     },
   },
 };
@@ -467,23 +95,8 @@ const DiscordIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-const MayaIcon = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
-    <rect width="60" height="60" rx="13" fill="#00B14F"/>
-    <g transform="translate(7.5, 15)">
-      <path d="M32.4509 0C29.0563 0 25.6029 1.41908 23.3998 3.66813L24.65 6.15245L24.1215 6.57215C21.7858 2.57089 17.4914 0 12.9204 0C5.77684 0 0.00102172 6.21079 0.00102172 13.4868V29.1625C-0.00516045 29.2962 0.0167642 29.4297 0.0653878 29.5545C0.114011 29.6793 0.18827 29.7927 0.283437 29.8874C0.378604 29.9822 0.492584 30.0562 0.618124 30.1047C0.743665 30.1532 0.878017 30.1753 1.0126 30.1694H6.19359C6.44479 30.1694 6.68571 30.0702 6.86333 29.8938C7.04096 29.7173 7.14075 29.4779 7.14075 29.2284V13.3683C7.14075 9.76035 9.34386 6.80364 13.0946 6.80364C16.6067 6.80364 19.1072 9.40464 19.1072 13.2497V26.2641C19.0984 26.393 19.1163 26.5223 19.16 26.6439C19.2036 26.7656 19.272 26.877 19.3608 26.9713C19.4497 27.0656 19.5571 27.1407 19.6764 27.1919C19.7958 27.2431 19.9244 27.2694 20.0544 27.2691H25.0062C25.1362 27.2694 25.2648 27.2431 25.3842 27.1919C25.5035 27.1407 25.6109 27.0656 25.6998 26.9713C25.7886 26.877 25.857 26.7656 25.9006 26.6439C25.9442 26.5223 25.9622 26.393 25.9533 26.2641V13.2497C25.9533 9.40464 28.5732 6.80364 32.0853 6.80364C35.8361 6.80364 37.9198 9.76035 37.9198 13.3683V29.2227C37.9316 29.4796 38.044 29.7218 38.233 29.8976C38.422 30.0734 38.6726 30.1689 38.9314 30.1637H44.0461C44.1808 30.1699 44.3154 30.1481 44.4412 30.0996C44.5669 30.0512 44.6811 29.9773 44.7765 29.8825C44.8719 29.7878 44.9463 29.6743 44.9951 29.5493C45.0438 29.4244 45.0658 29.2907 45.0596 29.1568V13.4868C45.0596 6.21079 39.5224 0 32.4376 0" fill="white"/>
-    </g>
-  </svg>
-);
-
-const GCashIcon = ({ className }: { className?: string }) => (
-  <img src="/images/gcash.png" alt="GCash" className={className} style={{ objectFit: 'contain' }} />
-);
-
-const WiseIcon = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 24 24" fill="currentColor" className={className} style={{ color: '#9FE870' }}>
-    <path d="M6.488 7.469L0 15.05h11.585l1.301-3.576H7.922l3.033-3.507.01-.092L8.993 4.48h8.873L10.988 23.405h4.706L24 .595H2.543z"/>
-  </svg>
+const RobuxIcon = ({ className }: { className?: string }) => (
+  <img src="https://upload.wikimedia.org/wikipedia/commons/c/c7/Robux_2019_Logo_gold.svg" alt="Robux" className={className} style={{ objectFit: 'contain' }} />
 );
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -496,9 +109,7 @@ function readDiscordSession(): DiscordSession | null {
 
 const METHOD_LABELS: Record<PaymentMethod, string> = {
   paypal: 'PayPal',
-  maya:   'Maya',
-  gcash:  'GCash',
-  local_qr: 'Wise/Local QR',
+  robux:  'Robux',
 };
 
 // ─── Checkout Content ─────────────────────────────────────────────────────────
@@ -513,28 +124,83 @@ function CheckoutContent() {
   const [paymentMethod, setPaymentMethod]     = useState<PaymentMethod>(
     plan?.methods.includes(methodParam) ? methodParam : 'paypal'
   );
-  const [selectedCountry, setSelectedCountry] = useState<string>('usd');
   const [methodStocks, setMethodStocks]       = useState<Record<string, Record<string, number>>>({});
   const [discordSession, setDiscordSession]   = useState<DiscordSession | null>(null);
   const [tosAccepted, setTosAccepted]         = useState(false);
   const [noRefundAccepted, setNoRefundAccepted] = useState(false);
   const [tosTimer, setTosTimer]               = useState(5);
   const [isProcessing, setIsProcessing]       = useState(false);
-  const [showQRModal, setShowQRModal]         = useState(false);
-  const [qrZoomed, setQrZoomed]               = useState(false);
+  const [showRobuxModal, setShowRobuxModal]   = useState(false);
+  const [robloxName, setRobloxName]         = useState('');
+  const [robuxStarted, setRobuxStarted]       = useState(false);
+  const [robuxState, setRobuxState]           = useState<string | null>(null);
+  const [robuxCheckMsg, setRobuxCheckMsg]     = useState('');
+  const [robuxChecking, setRobuxChecking]     = useState(false);
+  const [robuxEmail, setRobuxEmail]           = useState('');
   const [statusModal, setStatusModal]         = useState<{
     isOpen: boolean; type: 'success' | 'error'; title: string; message: string; details?: string;
   }>({ isOpen: false, type: 'success', title: '', message: '' });
-  const [liveRates, setLiveRates]             = useState<Record<string, number> | null>(null);
-  const [countryDropdownOpen, setCountryDropdownOpen] = useState(false);
-  const [countrySearch, setCountrySearch]     = useState('');
-  const countryDropdownRef                    = useRef<HTMLDivElement>(null);
 
   // Redirect invalid plan
   useEffect(() => { if (!plan) router.replace('/premium'); }, []);
 
   // Load discord session
-  useEffect(() => { setDiscordSession(readDiscordSession()); }, []);
+  useEffect(() => {
+    const session = readDiscordSession();
+    setDiscordSession(session);
+    if (session?.email) setRobuxEmail(session.email);
+  }, []);
+
+  const robloxNameValid = /^[A-Za-z0-9_]{3,20}$/.test(robloxName.trim());
+
+  // The signed Discord cookie is gone/expired: send the buyer back through Discord login
+  const handleNeedsDiscordLogin = (message?: string) => {
+    document.cookie = 'discord_session=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    setDiscordSession(null);
+    setRobuxStarted(false);
+    setRobuxState(null);
+    setRobuxCheckMsg(message || 'Please log in with Discord again to continue.');
+  };
+
+  const callRobux = async (payload: Record<string, unknown>) => {
+    const res  = await fetch(`${getApiUrl()}/api/roblox/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tier: planKey, ...payload }),
+    });
+    return { res, data: await res.json() };
+  };
+
+  // Step 1: choose the Roblox account. The server takes a snapshot of the copies it already owns.
+  const startRobux = async () => {
+    if (!robloxNameValid) return;
+    setRobuxChecking(true);
+    setRobuxCheckMsg('');
+    try {
+      const { res, data } = await callRobux({ action: 'start', username: robloxName.trim() });
+      if (data.needsLogin) handleNeedsDiscordLogin(data.error);
+      else if (res.ok && data.success) { setRobuxStarted(true); setRobuxState(data.state); setRobuxCheckMsg(data.message || ''); }
+      else { setRobuxStarted(false); setRobuxState(null); setRobuxCheckMsg(data.error || 'Could not check your inventory.'); }
+    } catch {
+      setRobuxCheckMsg('Connection error. Please try again.');
+    }
+    setRobuxChecking(false);
+  };
+
+  // Re-check after buying the item
+  const recheckRobux = async () => {
+    setRobuxChecking(true);
+    try {
+      const { res, data } = await callRobux({ action: 'check' });
+      if (data.needsLogin) handleNeedsDiscordLogin(data.error);
+      else if (data.needsStart) { setRobuxStarted(false); setRobuxState(null); setRobuxCheckMsg(data.error || ''); }
+      else if (res.ok && data.success) { setRobuxState(data.state); setRobuxCheckMsg(data.message || ''); }
+      else setRobuxCheckMsg(data.error || 'Could not check your inventory.');
+    } catch {
+      setRobuxCheckMsg('Connection error. Please try again.');
+    }
+    setRobuxChecking(false);
+  };
 
   // Load stock
   useEffect(() => {
@@ -542,25 +208,6 @@ function CheckoutContent() {
       .then(r => r.json())
       .then(d => { if (d.methodStocks) setMethodStocks(d.methodStocks); })
       .catch(() => {});
-  }, []);
-
-  // Load live exchange rates (free API, no key needed)
-  useEffect(() => {
-    fetch('/api/exchange-rates')
-      .then(r => r.json())
-      .then(d => { setLiveRates(d.rates); })
-      .catch(() => {});
-  }, []);
-
-  // Close country dropdown on outside click
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (countryDropdownRef.current && !countryDropdownRef.current.contains(e.target as Node)) {
-        setCountryDropdownOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
   }, []);
 
   // Handle discord_error return
@@ -581,11 +228,9 @@ function CheckoutContent() {
   // Handle return from PayPal
   useEffect(() => {
     const token      = searchParams.get('token');
-    const megaSource = searchParams.get('megaSource');
     if (token && !isProcessing) {
       router.replace(`/checkout?plan=${planKey}`, { scroll: false });
-      if (megaSource === '1') { captureMegaKeyOrder(token); }
-      else                    { capturePayPalOrder(token); }
+      capturePayPalOrder(token);
     }
   }, [searchParams]);
 
@@ -598,35 +243,7 @@ function CheckoutContent() {
 
   if (!plan) return null;
 
-  // ── Live rate price helpers ──────────────────────────────────────────────
-  const BASE_EUR: Record<string, number> = { weekly: 3, monthly: 6, lifetime: 12 };
-
-  function roundPrice(amount: number, currency: string): number {
-    if (['IDR', 'VND', 'UGX'].includes(currency)) return Math.round(amount / 500) * 500;
-    if (['JPY', 'HUF', 'PHP', 'CZK', 'NOK', 'SEK', 'DKK', 'ZAR', 'ILS', 'PLN', 'HKD', 'CNY'].includes(currency))
-      return Math.round(amount);
-    return Math.round(amount * 100) / 100;
-  }
-
-  function getLivePrice(cfg: typeof countryConfig, plan: string): number {
-    const baseEUR = BASE_EUR[plan] ?? BASE_EUR.lifetime;
-    if (liveRates && liveRates[cfg.currency]) {
-      return roundPrice(baseEUR * liveRates[cfg.currency], cfg.currency);
-    }
-    return cfg.prices[plan as 'weekly' | 'monthly' | 'lifetime'] || 0;
-  }
-
-  const countryConfig = COUNTRY_QR_CONFIGS[selectedCountry] || COUNTRY_QR_CONFIGS.usd;
-  const liveAmount    = getLivePrice(countryConfig, planKey);
-  const priceInfo = paymentMethod === 'local_qr' && countryConfig
-    ? {
-        amount: liveAmount,
-        currency: countryConfig.currency,
-        label: `${countryConfig.symbol}${liveAmount.toLocaleString()}`,
-        period: plan.prices.paypal!.period,
-        billingNote: `One-time payment · QR payment via Discord ticket`
-      }
-    : (plan.prices[paymentMethod] ?? plan.prices.paypal!);
+  const priceInfo = plan.prices[paymentMethod] ?? plan.prices.paypal!;
   const r            = parseInt(plan.cardColor.slice(1, 3), 16);
   const g            = parseInt(plan.cardColor.slice(3, 5), 16);
   const b            = parseInt(plan.cardColor.slice(5, 7), 16);
@@ -635,11 +252,10 @@ function CheckoutContent() {
   // Stock for current plan + payment method
   const currentStock = methodStocks[planKey]?.[paymentMethod] ?? null;
   const isOutOfStock = currentStock === 0;
-  const canPay       = !!discordSession && tosAccepted && noRefundAccepted && tosTimer === 0 && !isProcessing && !isOutOfStock;
-  const isInfinite   = paymentMethod === 'gcash' || paymentMethod === 'maya' || paymentMethod === 'local_qr';
+  const robuxReady    = paymentMethod !== 'robux' || robuxStarted;
+  const canPay       = !!discordSession && robuxReady && tosAccepted && noRefundAccepted && tosTimer === 0 && !isProcessing && !isOutOfStock;
   const stockDisplay = currentStock === null ? null
     : currentStock === 0  ? { text: 'Out of stock',               color: '#f87171', bg: 'rgba(239,68,68,0.1)',    border: 'rgba(239,68,68,0.2)' }
-    : isInfinite          ? { text: 'Unlimited stock',            color: '#86efac', bg: 'rgba(74,222,128,0.08)', border: 'rgba(74,222,128,0.15)' }
     : currentStock <= 10  ? { text: 'Low stock',                  color: '#fbbf24', bg: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.15)' }
     :                       { text: 'In stock',                   color: '#86efac', bg: 'rgba(74,222,128,0.08)', border: 'rgba(74,222,128,0.15)' };
 
@@ -682,44 +298,6 @@ function CheckoutContent() {
     }
   };
 
-  const captureMegaKeyOrder = async (orderId: string) => {
-    setIsProcessing(true);
-    try {
-      const res  = await fetch(`${getApiUrl()}/api/mega-key/capture-order`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderID: orderId }),
-      });
-      const data = await res.json();
-      if (data.success && data.keys?.length > 0) {
-        localStorage.setItem('client_email', data.payerEmail || '');
-        localStorage.setItem('client_auth', 'true');
-        setStatusModal({ isOpen: true, type: 'success', title: 'Mega Key Purchased!', message: 'Your Mega Key has been generated. Redirecting to receipt...' });
-        setTimeout(() => {
-          router.push(`/success?${new URLSearchParams({
-            orderId: data.transactionId || 'PAYPAL',
-            tier: data.tier,
-            amount: String(data.amount),
-            currency: 'USD',
-            key: JSON.stringify(data.keys),
-            email: data.payerEmail || '',
-            payerId: data.payerId || '',
-            method: 'paypal',
-            date: new Date().toISOString(),
-          })}`);
-        }, 1200);
-      } else {
-        let msg = data.junkieError || data.error || 'No key returned.';
-        if (typeof msg === 'string' && msg.trim().startsWith('<')) msg = 'The key service is unavailable. Contact support with your PayPal transaction ID.';
-        setStatusModal({ isOpen: true, type: 'error', title: 'Activation Failed', message: msg });
-        setIsProcessing(false);
-      }
-    } catch (err: any) {
-      setStatusModal({ isOpen: true, type: 'error', title: 'System Error', message: err.message || 'Unexpected error.' });
-      setIsProcessing(false);
-    }
-  };
-
   const handlePayPalPay = async () => {
     setIsProcessing(true);
     try {
@@ -746,42 +324,55 @@ function CheckoutContent() {
     }
   };
 
-  const handleMegaPay = async () => {
+  const verifyRobuxPurchase = async () => {
+    const email = robuxEmail.trim();
+    if (!robuxStarted || !email.includes('@')) return;
+    setShowRobuxModal(false);
     setIsProcessing(true);
     try {
-      const res  = await fetch(`${getApiUrl()}/api/mega-key/create-order`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan: planKey }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setStatusModal({ isOpen: true, type: 'error', title: 'Checkout Blocked', message: data.error || 'Unable to start checkout.' });
-        setIsProcessing(false);
-        return;
-      }
-      const approvalLink = data.links?.find((l: any) => l.rel === 'approve');
-      if (approvalLink) { window.location.href = approvalLink.href; }
-      else {
-        setStatusModal({ isOpen: true, type: 'error', title: 'PayPal Error', message: 'Failed to create PayPal order.' });
+      const { data } = await callRobux({ action: 'claim', email });
+      if (data.success && data.keys?.length > 0) {
+        localStorage.setItem('client_email', email);
+        localStorage.setItem('client_auth', 'true');
+        setStatusModal({ isOpen: true, type: 'success', title: 'Purchase Verified!', message: 'Your key has been generated. Redirecting to receipt...' });
+        setTimeout(() => {
+          router.push(`/success?${new URLSearchParams({
+            orderId: data.transactionId || `ROBLOX-${data.userId}-${data.tier}`,
+            tier: data.tier,
+            amount: String(priceInfo.amount),
+            currency: 'ROBUX',
+            key: JSON.stringify(data.keys),
+            email,
+            payerId: `ROBLOX_${data.userId}`,
+            method: 'robux',
+            date: new Date().toISOString(),
+          })}`);
+        }, 1200);
+      } else {
+        if (data.needsLogin) handleNeedsDiscordLogin(data.error);
+        if (data.needsStart) setRobuxStarted(false);
+        if (data.state) setRobuxState(data.state);
+        setStatusModal({ isOpen: true, type: 'error', title: 'Verification Failed', message: data.error || 'Could not verify your purchase.' });
         setIsProcessing(false);
       }
     } catch (err: any) {
-      setStatusModal({ isOpen: true, type: 'error', title: 'Connection Error', message: err.message || 'Failed to initiate payment.' });
+      setStatusModal({ isOpen: true, type: 'error', title: 'Connection Error', message: err.message || 'Failed to verify purchase.' });
       setIsProcessing(false);
     }
   };
 
   const handlePay = () => {
     if (!canPay) return;
-    if (plan.isMega)             { handleMegaPay();          return; }
-    if (paymentMethod === 'paypal') { handlePayPalPay();     return; }
-    setShowQRModal(true);
+    if (paymentMethod === 'paypal') { handlePayPalPay();       return; }
+    setShowRobuxModal(true);
   };
 
   const handleDiscordLogout = () => {
     document.cookie = 'discord_session=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    fetch('/api/auth/discord/logout', { method: 'POST' }).catch(() => {});
     setDiscordSession(null);
+    setRobuxStarted(false);
+    setRobuxState(null);
   };
 
   const payButtonLabel = () => {
@@ -869,7 +460,7 @@ function CheckoutContent() {
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ backgroundColor: stockDisplay.color }} />
                   <span className="relative inline-flex rounded-full h-1.5 w-1.5" style={{ backgroundColor: stockDisplay.color }} />
                 </span>
-                {stockDisplay.text} via {paymentMethod === 'paypal' ? 'PayPal' : paymentMethod === 'maya' ? 'Maya' : 'GCash'}
+                {stockDisplay.text} via {METHOD_LABELS[paymentMethod]}
               </div>
             )}
 
@@ -921,99 +512,16 @@ function CheckoutContent() {
                       }}
                     >
                       {method === 'paypal' && <img src="/images/paypal.png" alt="PayPal" className="w-4 h-4 object-contain" />}
-                      {method === 'maya'   && <MayaIcon className="w-4 h-4 rounded-sm" />}
-                      {method === 'gcash'  && <GCashIcon className="w-4 h-4 rounded-sm" />}
-                      {method === 'local_qr' && <WiseIcon className="w-4 h-4" />}
+                      {method === 'robux'  && <RobuxIcon className="w-4 h-4" />}
                       {METHOD_LABELS[method]}
                     </button>
                   );
                 })}
               </div>
-              {paymentMethod !== 'paypal' && paymentMethod !== 'local_qr' && plan.prices[paymentMethod] && (
+              {paymentMethod === 'robux' && (
                 <p className="text-xs mt-3 pt-3 border-t" style={{ color: 'rgba(255,255,255,0.3)', borderColor: 'rgba(255,255,255,0.06)' }}>
-                  Price in PHP: <strong className="text-white">{plan.prices[paymentMethod]!.label}</strong> · Payment via QR code, Discord ticket required
+                  Price: <strong className="text-white">{plan.prices.robux!.label}</strong> · Buy the item on Roblox, then verify your username here
                 </p>
-              )}
-              {paymentMethod === 'local_qr' && (
-                <div className="mt-4 pt-4 border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
-                  <label className="text-xs font-semibold text-white block mb-2">Select your Country</label>
-                  {(() => {
-                    const FLAGS: Record<string, string> = {
-                      usd: '🇺🇸', eur: '🇪🇺', gbp: '🇬🇧', aud: '🇦🇺', cad: '🇨🇦',
-                      sgd: '🇸🇬', php: '🇵🇭', idr: '🇮🇩', vnd: '🇻🇳', hkd: '🇭🇰',
-                      jpy: '🇯🇵', cny: '🇨🇳', chf: '🇨🇭', czk: '🇨🇿', dkk: '🇩🇰',
-                      huf: '🇭🇺', ils: '🇮🇱', nok: '🇳🇴', nzd: '🇳🇿', pln: '🇵🇱',
-                      sek: '🇸🇪', ugx: '🇺🇬', zar: '🇿🇦', aed: '🇦🇪',
-                    };
-                    const all = Object.values(COUNTRY_QR_CONFIGS);
-                    const filtered = countrySearch
-                      ? all.filter(c => c.name.toLowerCase().includes(countrySearch.toLowerCase()) || c.currency.toLowerCase().includes(countrySearch.toLowerCase()))
-                      : all;
-                    const sel = COUNTRY_QR_CONFIGS[selectedCountry];
-                    return (
-                      <div ref={countryDropdownRef} className="relative">
-                        <button
-                          type="button"
-                          onClick={() => { setCountryDropdownOpen(o => !o); setCountrySearch(''); }}
-                          className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl text-sm text-white transition-all duration-150"
-                          style={{
-                            backgroundColor: countryDropdownOpen ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.04)',
-                            border: countryDropdownOpen ? '1px solid rgba(255,255,255,0.18)' : '1px solid rgba(255,255,255,0.09)',
-                          }}
-                        >
-                          <span className="flex items-center gap-2.5">
-                            <span className="text-base leading-none">{FLAGS[selectedCountry] ?? '🌐'}</span>
-                            <span className="font-medium">{sel?.name ?? 'Select country'}</span>
-                          </span>
-                          <span className="flex items-center gap-2 shrink-0">
-                            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded" style={{ backgroundColor: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.45)' }}>{sel?.currency}</span>
-                            <ChevronDown className="w-3.5 h-3.5 transition-transform duration-200" style={{ color: 'rgba(255,255,255,0.35)', transform: countryDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)' }} />
-                          </span>
-                        </button>
-                        {countryDropdownOpen && (
-                          <div className="absolute z-50 w-full mt-1.5 rounded-xl overflow-hidden" style={{ backgroundColor: '#111', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 20px 60px rgba(0,0,0,0.75)' }}>
-                            <div className="flex items-center gap-2 px-3 py-2.5" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                              <svg className="w-3.5 h-3.5 shrink-0" style={{ color: 'rgba(255,255,255,0.3)' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-                              <input autoFocus type="text" placeholder="Search country or currency..." value={countrySearch} onChange={e => setCountrySearch(e.target.value)} className="w-full bg-transparent text-sm text-white placeholder:text-white/25 outline-none" />
-                              {countrySearch && <button type="button" onClick={() => setCountrySearch('')} style={{ color: 'rgba(255,255,255,0.3)' }}><X className="w-3.5 h-3.5" /></button>}
-                            </div>
-                            <ul className="max-h-60 overflow-y-auto py-1" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.1) transparent' }}>
-                              {filtered.length === 0 && <li className="px-4 py-4 text-xs text-center" style={{ color: 'rgba(255,255,255,0.3)' }}>No countries found</li>}
-                              {filtered.map(c => {
-                                const active = selectedCountry === c.code;
-                                return (
-                                  <li key={c.code}>
-                                    <button
-                                      type="button"
-                                      onClick={() => { setSelectedCountry(c.code); setCountryDropdownOpen(false); setCountrySearch(''); }}
-                                      className="w-full flex items-center justify-between px-3 py-2.5 text-sm transition-colors duration-100"
-                                      style={{ backgroundColor: active ? 'rgba(255,255,255,0.07)' : 'transparent', color: active ? 'white' : 'rgba(255,255,255,0.65)' }}
-                                      onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(255,255,255,0.04)'; }}
-                                      onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; }}
-                                    >
-                                      <span className="flex items-center gap-2.5">
-                                        <span className="text-base leading-none w-5 text-center">{FLAGS[c.code] ?? '🌐'}</span>
-                                        <span className="font-medium text-left">{c.name}</span>
-                                      </span>
-                                      <span className="flex items-center gap-1.5 shrink-0 ml-2">
-                                        <span className="text-xs font-mono" style={{ color: 'rgba(255,255,255,0.4)' }}>{c.symbol}</span>
-                                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded" style={{ backgroundColor: active ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.4)' }}>{c.currency}</span>
-                                        {active && <span className="w-1.5 h-1.5 rounded-full bg-white/50 shrink-0" />}
-                                      </span>
-                                    </button>
-                                  </li>
-                                );
-                              })}
-                            </ul>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })()}
-                  <p className="text-xs mt-3 text-white/50">
-                    Price: <strong className="text-white">{priceInfo.label}</strong> · Local QR payment via {countryConfig.qrTypeLabel}
-                  </p>
-                </div>
               )}
             </div>
           )}
@@ -1065,6 +573,63 @@ function CheckoutContent() {
               </div>
             )}
           </div>
+
+          {/* Roblox Gate */}
+          {paymentMethod === 'robux' && (
+            <div className="rounded-2xl p-5" style={{ backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}>
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs font-semibold text-white">Roblox Username</p>
+                <span className="text-[10px] font-mono uppercase tracking-wide px-2 py-0.5 rounded" style={{ backgroundColor: 'rgba(239,68,68,0.1)', color: '#f87171', border: '1px solid rgba(239,68,68,0.2)' }}>
+                  Required
+                </span>
+              </div>
+              <p className="text-xs mb-3" style={{ color: 'var(--text-muted)' }}>
+                {discordSession
+                  ? 'Enter the Roblox account you will buy the item with. It becomes linked to your account here, and each purchase can only be claimed once.'
+                  : 'Log in with Discord above first. Your Roblox account is linked to your account here.'}
+              </p>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={robloxName}
+                  onChange={e => { setRobloxName(e.target.value); setRobuxStarted(false); setRobuxState(null); setRobuxCheckMsg(''); }}
+                  onKeyDown={e => { if (e.key === 'Enter' && discordSession) startRobux(); }}
+                  placeholder="Roblox username"
+                  maxLength={20}
+                  autoComplete="off"
+                  disabled={!discordSession}
+                  className="flex-1 min-w-0 px-3 py-2.5 rounded-xl text-sm text-white outline-none disabled:opacity-40"
+                  style={{ backgroundColor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}
+                />
+                <button
+                  onClick={startRobux}
+                  disabled={!discordSession || robuxChecking || !robloxNameValid}
+                  className="px-4 py-2.5 rounded-xl text-sm font-semibold text-black disabled:opacity-40 disabled:cursor-not-allowed"
+                  style={{ backgroundColor: '#fbbf24' }}
+                >
+                  {robuxChecking ? '...' : robuxStarted ? 'Update' : 'Continue'}
+                </button>
+              </div>
+              {(robuxChecking || robuxStarted || robuxCheckMsg) && (
+                <div
+                  className="mt-3 flex items-center justify-between gap-2 text-xs rounded-lg px-3 py-2"
+                  style={robuxState === 'claimable' || robuxState === 'retry'
+                    ? { backgroundColor: 'rgba(74,222,128,0.08)', color: '#86efac', border: '1px solid rgba(74,222,128,0.15)' }
+                    : { backgroundColor: 'rgba(255,255,255,0.03)', color: 'rgba(255,255,255,0.55)', border: '1px solid rgba(255,255,255,0.07)' }}
+                >
+                  <span>
+                    {robuxChecking ? 'Checking your inventory...'
+                      : robuxCheckMsg ? robuxCheckMsg
+                      : robuxState === 'claimable' ? `You own a new ${plan.title} item. Press Pay to claim your key.`
+                      : `You don't own the ${plan.title} item yet. Press Pay to buy it on Roblox, then verify.`}
+                  </span>
+                  {robuxStarted && !robuxChecking && (
+                    <button onClick={recheckRobux} className="underline shrink-0">Recheck</button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Terms of Service */}
           <div className="rounded-2xl p-5 space-y-3" style={{ backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', opacity: isOutOfStock ? 0.4 : 1, pointerEvents: isOutOfStock ? 'none' : 'auto' }}>
@@ -1134,21 +699,21 @@ function CheckoutContent() {
               `Please wait ${tosTimer}s...`
             ) : !discordSession ? (
               'Connect Discord to continue'
+            ) : paymentMethod === 'robux' && !robuxStarted ? (
+              'Enter your Roblox username to continue'
             ) : !tosAccepted || !noRefundAccepted ? (
               'Accept terms to continue'
             ) : (
               <>
                 {paymentMethod === 'paypal' && <img src="/images/paypal.png" alt="" className="w-4 h-4 object-contain" />}
-                {paymentMethod === 'maya'   && <MayaIcon className="w-4 h-4 rounded-sm" />}
-                {paymentMethod === 'gcash'  && <GCashIcon className="w-4 h-4 rounded-sm" />}
-                {paymentMethod === 'local_qr' && <WiseIcon className="w-4 h-4" />}
+                {paymentMethod === 'robux'  && <RobuxIcon className="w-4 h-4" />}
                 {payButtonLabel()}
               </>
             )}
           </button>
 
           <p className="text-center text-xs" style={{ color: 'rgba(255,255,255,0.2)' }}>
-            Secured by PayPal · Protected by Discord verification
+            Secured by PayPal & Roblox · Protected by Discord verification
           </p>
         </div>
       </div>
@@ -1198,69 +763,24 @@ function CheckoutContent() {
         </div>
       )}
 
-      {/* ── QR Payment Modal (Maya / GCash) ── */}
-      {showQRModal && (
+      {/* ── Robux Verification Modal ── */}
+      {showRobuxModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
           <div className="w-full max-w-sm rounded-2xl overflow-hidden" style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.09)' }}>
             <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
               <div>
-                <p className="font-mono text-[10px] uppercase tracking-[0.2em] mb-0.5" style={{ color: 'var(--text-muted)' }}>
-                  {paymentMethod === 'gcash' ? 'GCash' : paymentMethod === 'maya' ? 'Maya' : countryConfig.qrTypeLabel}
-                </p>
-                <h2 className="font-bold text-white text-base capitalize">{plan.title}</h2>
+                <p className="font-mono text-[10px] uppercase tracking-[0.2em] mb-0.5" style={{ color: 'var(--text-muted)' }}>Robux · {priceInfo.label}</p>
+                <h2 className="font-bold text-white text-base">{plan.title}</h2>
               </div>
-              <button
-                onClick={() => setShowQRModal(false)}
-                className="w-8 h-8 flex items-center justify-center rounded-lg transition-colors"
-                style={{ color: 'var(--text-muted)' }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'white'; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'; }}
-              >
+              <button onClick={() => setShowRobuxModal(false)} className="w-8 h-8 flex items-center justify-center rounded-lg" style={{ color: 'var(--text-muted)' }}>
                 <X className="w-4 h-4" />
               </button>
             </div>
-
-            <div className="px-5 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', backgroundColor: `rgba(${r},${g},${b},0.04)` }}>
-              <p className="text-xs mb-1" style={{ color: 'var(--text-muted)' }}>Amount to send</p>
-              <p className="text-3xl font-bold text-white" style={{ letterSpacing: '-0.03em' }}>
-                {priceInfo.label}
-              </p>
-            </div>
-
-            <div className="px-5 py-6 flex flex-col items-center gap-4">
-              <div
-                className="w-52 h-52 rounded-xl overflow-hidden cursor-zoom-in relative group"
-                style={{ backgroundColor: 'white' }}
-                onClick={() => setQrZoomed(true)}
-                title="Tap to enlarge"
-              >
-                <img
-                  src={
-                    paymentMethod === 'gcash'
-                      ? `/images/gcash-qr-${planKey}.jpg`
-                      : paymentMethod === 'maya'
-                      ? `/images/maya-qr-${planKey}.jpg`
-                      : countryConfig.qrImages[planKey as 'weekly' | 'monthly' | 'lifetime']
-                  }
-                  alt="QR Code"
-                  className="w-full h-full object-contain"
-                />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-end justify-center pb-2 opacity-0 group-hover:opacity-100">
-                  <span className="text-[10px] font-mono bg-black/60 text-white px-2 py-0.5 rounded">tap to enlarge</span>
-                </div>
-              </div>
-
-              <div className="w-full space-y-2">
+            <div className="px-5 py-5 space-y-4">
+              <div className="space-y-2">
                 {[
-                  `Scan the QR with your ${
-                    paymentMethod === 'gcash'
-                      ? 'GCash'
-                      : paymentMethod === 'maya'
-                      ? 'Maya'
-                      : countryConfig.qrTypeLabel
-                  } app and send exactly ${priceInfo.label}`,
-                  'Screenshot your payment receipt',
-                  'Open a ticket in Discord with the screenshot and your Discord ID',
+                  `Buy the item on Roblox with the account @${robloxName.trim()}`,
+                  'Come back here and press Verify Purchase',
                 ].map((step, i) => (
                   <div key={i} className="flex items-start gap-3 rounded-lg px-3 py-2.5" style={{ backgroundColor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
                     <span className="font-mono text-[10px] pt-0.5 shrink-0" style={{ color: 'var(--text-muted)' }}>0{i + 1}</span>
@@ -1268,54 +788,47 @@ function CheckoutContent() {
                   </div>
                 ))}
               </div>
-            </div>
-
-            <div className="px-5 pb-5">
               <a
-                href="https://discord.gg/F4sAf6z8Ph"
+                href={ROBUX_ITEM_URLS[planKey]}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2.5 w-full py-3 rounded-xl text-sm font-semibold text-white transition-all"
-                style={{ backgroundColor: '#5865F2' }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = '#4752C4'; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = '#5865F2'; }}
+                className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-semibold text-black"
+                style={{ backgroundColor: '#fbbf24' }}
               >
-                <DiscordIcon className="w-4 h-4" />
-                Open a ticket on Discord
+                <RobuxIcon className="w-4 h-4" /> Buy on Roblox ({priceInfo.label})
               </a>
+              <p className="text-[11px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                Your Roblox inventory must be public so we can see the item. To renew, delete the item from your inventory and buy it again. The item creator and staff accounts cannot claim keys.
+              </p>
+              <div>
+                <label className="block text-xs font-semibold text-white mb-1.5">Email (for your receipt)</label>
+                <input
+                  type="email"
+                  value={robuxEmail}
+                  onChange={e => setRobuxEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
+                  style={{ backgroundColor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}
+                />
+              </div>
+            </div>
+            <div className="px-5 pb-5 flex gap-2">
+              <button onClick={() => setShowRobuxModal(false)} className="flex-1 py-3 rounded-xl text-sm font-semibold text-white" style={{ backgroundColor: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                Cancel
+              </button>
+              <button
+                onClick={verifyRobuxPurchase}
+                disabled={!robuxStarted || !robuxEmail.includes('@')}
+                className="flex-1 py-3 rounded-xl text-sm font-bold text-black disabled:opacity-40 disabled:cursor-not-allowed"
+                style={{ backgroundColor: plan.cardColor }}
+              >
+                Verify Purchase
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* QR Fullscreen Zoom */}
-      {qrZoomed && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black p-4 cursor-zoom-out" onClick={() => setQrZoomed(false)}>
-          <div className="flex flex-col items-center gap-3 w-full h-full justify-center">
-            <p className="font-mono text-[10px] uppercase tracking-[0.2em]" style={{ color: 'var(--text-muted)' }}>
-              {paymentMethod === 'gcash'
-                ? 'GCash'
-                : paymentMethod === 'maya'
-                ? 'Maya'
-                : countryConfig.qrTypeLabel} — Scan with your app
-            </p>
-            <div className="rounded-2xl overflow-hidden shadow-2xl" style={{ backgroundColor: 'white', width: 'min(92vw, 92vh)', height: 'min(92vw, 92vh)' }}>
-              <img
-                src={
-                  paymentMethod === 'gcash'
-                    ? `/images/gcash-qr-${planKey}.jpg`
-                    : paymentMethod === 'maya'
-                    ? `/images/maya-qr-${planKey}.jpg`
-                    : countryConfig.qrImages[planKey as 'weekly' | 'monthly' | 'lifetime']
-                }
-                alt="QR Code"
-                className="w-full h-full object-contain"
-              />
-            </div>
-            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Tap anywhere to close</p>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

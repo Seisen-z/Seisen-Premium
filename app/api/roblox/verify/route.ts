@@ -1,7 +1,15 @@
 import { NextResponse } from 'next/server';
-import { RobloxIntegration } from '@/lib/server/roblox';
+import { RobloxIntegration, ROBUX_PRICES } from '@/lib/server/roblox';
 import { JunkieKeySystem } from '@/lib/server/junkie';
 import { TicketDatabase } from '@/lib/server/db';
+import {
+    DiscordAuth,
+    ROBUX_ORDER_COOKIE,
+    ROBUX_ORDER_TTL_SECONDS,
+    readDiscordAuth,
+    readRobuxOrder,
+    signValue,
+} from '@/lib/server/clientSession';
 
 const robloxIntegration = new RobloxIntegration();
 const db = new TicketDatabase();
@@ -20,230 +28,254 @@ const junkieSystem = new JunkieKeySystem({
     defaultService: process.env.JUNKIE_SERVICE
 });
 
+const VALIDITY_HOURS: Record<string, number> = { monthly: 720, lifetime: 0 };
+const USERNAME_PATTERN = /^[A-Za-z0-9_]{3,20}$/;
+
+// Best-effort per-IP throttle (per server instance) so the endpoint can't be used to hammer Roblox
+const WINDOW_MS = 10 * 60 * 1000;
+const MAX_REQUESTS = 40;
+const hits = new Map<string, number[]>();
+
+function rateLimited(ip: string): boolean {
+    const now = Date.now();
+    const recent = (hits.get(ip) || []).filter(t => now - t < WINDOW_MS);
+    recent.push(now);
+    hits.set(ip, recent);
+    if (hits.size > 5000) {
+        for (const [key, times] of hits) if (times.every(t => now - t >= WINDOW_MS)) hits.delete(key);
+    }
+    return recent.length > MAX_REQUESTS;
+}
+
+type OwnershipState =
+    | { state: 'private' | 'not_owned' | 'owned_before' | 'used' | 'claimed_by_other'; message?: string }
+    | { state: 'claimable'; uaid: number; transactionId: string }
+    | { state: 'retry'; uaid: number; transactionId: string };
+
+const USED_MESSAGE = 'This item already received a key. To get a new key, delete it from your Roblox inventory and buy it again.';
+
+/**
+ * Decide what this Roblox account can do with the item right now.
+ *  - A copy that already received a key is used up: it is ignored. The buyer has to delete the item and
+ *    buy it again, which creates a new copy with a new unique ID.
+ *  - A copy that existed before checkout started (baseline) can't be claimed here, which stops anyone
+ *    from claiming an old purchase of a stranger. Those go through a support ticket.
+ *  - A copy bought after checkout started, and not yet claimed, is claimable.
+ */
+async function evaluateOwnership(userId: number, tier: string, discordId: string, baseline: number[]): Promise<OwnershipState> {
+    const productId = robloxIntegration.getProductId(tier)!;
+    const owned = await robloxIntegration.listOwnedUaids(userId, productId);
+    if (owned.error) return { state: 'private', message: owned.error };
+    if (owned.uaids.length === 0) return { state: 'not_owned' };
+
+    let retry: OwnershipState | null = null;
+    let sawUsed = false;
+    let sawClaimedByOther = false;
+    let sawPreExisting = false;
+
+    for (const uaid of [...owned.uaids].sort((a, b) => b - a)) {
+        const transactionId = robloxIntegration.generateTransactionId(userId, productId, uaid);
+        const existing = await db.getPayment(transactionId);
+        if (existing) {
+            if (existing.generated_keys?.length > 0) { sawUsed = true; continue; }
+            // Claimed earlier but key generation failed: only that Discord account may retry
+            if (existing.discord_id && existing.discord_id !== discordId) { sawClaimedByOther = true; continue; }
+            if (!retry) retry = { state: 'retry', uaid, transactionId };
+            continue;
+        }
+        if (baseline.includes(uaid)) { sawPreExisting = true; continue; }
+        return { state: 'claimable', uaid, transactionId };
+    }
+
+    if (retry) return retry;
+    if (sawPreExisting) {
+        return {
+            state: 'owned_before',
+            message: 'You already owned this item before starting checkout. To claim it, open a support ticket on our Discord.'
+        };
+    }
+    if (sawUsed) return { state: 'used', message: USED_MESSAGE };
+    if (sawClaimedByOther) {
+        return { state: 'claimed_by_other', message: 'This purchase was already claimed by another account. If it is yours, open a support ticket.' };
+    }
+    return { state: 'not_owned' };
+}
+
+function describe(result: OwnershipState) {
+    return { state: result.state, message: 'message' in result ? result.message : undefined };
+}
+
 export async function POST(req: Request) {
     try {
+        const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+        if (rateLimited(ip)) {
+            return NextResponse.json({ error: 'Too many attempts. Please wait a few minutes and try again.' }, { status: 429 });
+        }
+
         const body = await req.json();
-        const { username, email, tier: requestedTier } = body;
+        const action = String(body.action || '');
+        const tier = String(body.tier || '').toLowerCase();
 
-        // Read Discord session from cookie
-        let discordUser: { id: string; tag: string; username: string; email: string | null; avatar?: string } | null = null;
-        try {
-            const rawSession = req.headers.get('cookie')?.match(/(?:^|;\s*)discord_session=([^;]+)/)?.[1];
-            if (rawSession) {
-                discordUser = JSON.parse(Buffer.from(rawSession, 'base64').toString('utf-8'));
+        if (!['start', 'check', 'claim'].includes(action)) {
+            return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
+        }
+        if (!['monthly', 'lifetime'].includes(tier)) {
+            return NextResponse.json({ error: 'A valid plan (monthly or lifetime) is required' }, { status: 400 });
+        }
+
+        // The client account is the signed Discord login. The browser-readable cookie is never trusted here.
+        const discord: DiscordAuth | null = readDiscordAuth(req.headers.get('cookie'));
+        if (!discord) {
+            return NextResponse.json({ error: 'Please log in with Discord again to continue.', needsLogin: true }, { status: 401 });
+        }
+
+        // ── START: pick the Roblox account and take a snapshot of the copies it already owns ──
+        if (action === 'start') {
+            const username = typeof body.username === 'string' ? body.username.trim() : '';
+            if (!USERNAME_PATTERN.test(username)) {
+                return NextResponse.json({ error: 'Enter a valid Roblox username (3-20 letters, numbers or underscores)' }, { status: 400 });
             }
-        } catch { /* non-fatal */ }
 
-        // Basic verification
-        if (!email || !email.includes('@')) {
-             return NextResponse.json({ error: 'Valid email is required for backup' }, { status: 400 });
-        }
+            let userId: number;
+            try {
+                userId = await robloxIntegration.getUserIdFromUsername(username);
+            } catch {
+                return NextResponse.json({ error: 'Roblox user not found' }, { status: 404 });
+            }
 
-        if (!username || typeof username !== 'string' || username.trim() === '') {
-            return NextResponse.json({ error: 'Roblox username is required' }, { status: 400 });
-        }
+            const blocked = await robloxIntegration.getBlockedUserIds();
+            if (blocked.has(userId)) {
+                return NextResponse.json({ error: 'This Roblox account belongs to the item creator or staff and cannot be used to claim a key.' }, { status: 403 });
+            }
 
-        if (requestedTier && ['weekly', 'monthly', 'lifetime'].includes(String(requestedTier).toLowerCase())) {
-            const tier = String(requestedTier).toLowerCase();
-            const methodStocks = await db.getPaymentMethodStocks();
-            if ((methodStocks[tier]?.robux ?? 0) <= 0) {
+            // A Roblox account is locked to the first client account that claimed with it
+            const linkedDiscordId = await db.getRobloxLinkedDiscordId(userId);
+            if (linkedDiscordId && linkedDiscordId !== discord.id) {
                 return NextResponse.json({
-                    success: false,
-                    error: 'This premium plan is out of stock'
+                    error: 'This Roblox account is already linked to another client account. If it is yours, open a support ticket.'
                 }, { status: 409 });
             }
+
+            const productId = robloxIntegration.getProductId(tier)!;
+            const owned = await robloxIntegration.listOwnedUaids(userId, productId);
+            if (owned.error) return NextResponse.json({ success: true, state: 'private', message: owned.error });
+
+            const res = NextResponse.json({ success: true, ...describe(await evaluateOwnership(userId, tier, discord.id, owned.uaids)) });
+            res.cookies.set(
+                ROBUX_ORDER_COOKIE,
+                signValue({ discordId: discord.id, userId, username, tier, baseline: owned.uaids, exp: Math.floor(Date.now() / 1000) + ROBUX_ORDER_TTL_SECONDS }),
+                { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', maxAge: ROBUX_ORDER_TTL_SECONDS, path: '/' }
+            );
+            return res;
         }
 
-        console.log(`🎮 Verifying Roblox purchase for username: ${username}, Target Tier: ${requestedTier || 'Any'}`);
-
-        // Verify the user owns the product
-        const verification = await robloxIntegration.verifyPurchase(username.trim(), requestedTier);
-
-        if (!verification.success || !verification.userId) {
-            console.error('❌ Verification failed:', verification.error);
-            return NextResponse.json({
-                success: false,
-                error: verification.error || 'Failed to verify purchase'
-            }, { status: 400 });
+        // ── CHECK / CLAIM need the order created by START, for this Discord account and plan ──
+        const order = readRobuxOrder(req.headers.get('cookie'));
+        if (!order || order.discordId !== discord.id || order.tier !== tier) {
+            return NextResponse.json({ error: 'Please enter your Roblox username and press Continue first.', needsStart: true }, { status: 400 });
         }
 
-        console.log('✅ User owns product:', verification);
+        const blocked = await robloxIntegration.getBlockedUserIds();
+        if (blocked.has(order.userId)) {
+            return NextResponse.json({ error: 'This Roblox account belongs to the item creator or staff and cannot be used to claim a key.' }, { status: 403 });
+        }
+        const linkedDiscordId = await db.getRobloxLinkedDiscordId(order.userId);
+        if (linkedDiscordId && linkedDiscordId !== discord.id) {
+            return NextResponse.json({ error: 'This Roblox account is already linked to another client account. If it is yours, open a support ticket.' }, { status: 409 });
+        }
 
-        // Generate transaction ID: ROBLOX-USERID-PRODUCTID
-        const transactionId = robloxIntegration.generateTransactionId(verification.userId, verification.productId!);
-        
-        // --- RENEWAL / EXISTENCE LOGIC ---
-        const currentUaid = verification.uaid;
-        const tier = verification.tier || robloxIntegration.getTierForProduct(verification.productId || 0);
-        
-        const validityMap: Record<string, number> = {
-            weekly: 168,
-            monthly: 720,
-            lifetime: 0
-        };
-        const validityHours = validityMap[tier] || 0;
+        const ownership = await evaluateOwnership(order.userId, tier, discord.id, order.baseline);
 
-        // Check if transaction exists
-        const isDuplicate = await db.transactionExists(transactionId);
-        let isRenewal = false;
+        if (action === 'check') {
+            return NextResponse.json({ success: true, ...describe(ownership) });
+        }
 
-        if (isDuplicate) {
-            console.log(`ℹ️ User ${verification.username} already verified. Checking status...`);
-            const existingPayment = await db.getPayment(transactionId);
-            const storedUaid = existingPayment.roblox_uaid;
+        // ── CLAIM ──
+        const email = typeof body.email === 'string' ? body.email.trim() : '';
+        if (!email.includes('@')) {
+            return NextResponse.json({ error: 'Valid email is required for backup' }, { status: 400 });
+        }
 
-            // Check if re-purchased (New Asset created AFTER old payment)
-            const assetCreatedTime = verification.created ? new Date(verification.created).getTime() : 0;
-            const paymentCreatedTime = new Date(existingPayment.created_at).getTime();
-            
-            // If the Roblox Asset is newer than our DB record (by at least 5 mins), it's a re-purchase
-            const isNewerPurchase = assetCreatedTime > (paymentCreatedTime + 300000);
-            
-            // Also keep UAID check as valid signal
-            const isUaidChanged = (currentUaid && storedUaid && String(currentUaid) !== String(storedUaid));
+        const validityHours = VALIDITY_HOURS[tier] ?? 0;
 
-            if (isNewerPurchase || isUaidChanged) {
-                console.log(`✨ RENEWAL DETECTED!`);
-                isRenewal = true;
-            } else {
-                // SAME ITEM logic
-                const lastUpdate = new Date(existingPayment.updated_at);
-                const now = new Date();
-                const purchaseTime = isNaN(lastUpdate.getTime()) ? new Date(existingPayment.created_at) : lastUpdate;
+        if (ownership.state !== 'claimable' && ownership.state !== 'retry') {
+            const messages: Record<string, string> = {
+                not_owned: `We can't see the item in your inventory yet. Buy it on Roblox first, then press Verify.`,
+                private: ('message' in ownership && ownership.message) || 'Your Roblox inventory is private.',
+                owned_before: ('message' in ownership && ownership.message) || 'Open a support ticket to claim this purchase.',
+                used: USED_MESSAGE,
+                claimed_by_other: ('message' in ownership && ownership.message) || 'This purchase was already claimed.',
+            };
+            return NextResponse.json({ success: false, error: messages[ownership.state], state: ownership.state }, { status: 400 });
+        }
 
-                if (validityHours > 0) {
-                     const expiryDate = new Date(purchaseTime.getTime() + (validityHours * 60 * 60 * 1000));
-                     
-                     if (now < expiryDate) {
-                        // STILL ACTIVE
-                        return NextResponse.json({
-                            success: true,
-                            keys: existingPayment.generated_keys,
-                            tier,
-                            transactionId,
-                            message: 'Your key is still active',
-                            alreadyClaimed: true,
-                            isActive: true,
-                            expiryDate: expiryDate.toISOString(),
-                            userId: verification.userId,
-                            username: verification.username
-                        });
-                     } else {
-                        // EXPIRED
-                        return NextResponse.json({
-                             success: false,
-                             error: 'Your key has expired. To get a new key, please DELETE the item from your Roblox inventory and BUY it again.',
-                             isExpired: true,
-                             tier
-                        }, { status: 400 });
-                     }
-                } else {
-                    // Lifetime
-                     return NextResponse.json({
-                        success: true,
-                        keys: existingPayment.generated_keys,
-                        tier,
-                        transactionId,
-                        message: 'You own a Lifetime key',
-                        alreadyClaimed: true,
-                        isActive: true,
-                        expiryDate: null,
-                        userId: verification.userId,
-                        username: verification.username
-                    });
+        const transactionId = ownership.transactionId;
+        const uaid = ownership.uaid;
+        let isNewClaim = false;
+
+        if (ownership.state === 'claimable') {
+            const methodStocks = await db.getPaymentMethodStocks();
+            if ((methodStocks[tier]?.robux ?? 0) <= 0) {
+                return NextResponse.json({ success: false, error: 'This premium plan is out of stock' }, { status: 409 });
+            }
+
+            // Claim the purchase. transaction_id is UNIQUE and contains the UAID, so only one request can win.
+            try {
+                await db.savePayment({
+                    transactionId,
+                    payerEmail: email,
+                    payerId: `ROBLOX_${order.userId}`,
+                    robloxUsername: order.username,
+                    robloxUaid: uaid,
+                    tier,
+                    amount: ROBUX_PRICES[tier] ?? 0,
+                    currency: 'ROBUX',
+                    status: 'processing',
+                    keys: null,
+                    discordId: discord.id,
+                    discordTag: discord.tag,
+                    discordAvatar: discord.avatar
+                });
+                isNewClaim = true;
+            } catch (err: any) {
+                if (err?.code === '23505') {
+                    return NextResponse.json({ success: false, error: 'This purchase is already being processed. Please try again in a few seconds.' }, { status: 409 });
                 }
+                throw err;
             }
         }
+        // (retry: an earlier attempt claimed this copy but key generation failed, so try again without taking stock twice)
 
-        // Robux prices per tier (in Robux)
-        const robuxPriceMap: Record<string, number> = {
-            weekly: 750,
-            monthly: 1400,
-            lifetime: 2600
-        };
-        const robuxAmount = robuxPriceMap[tier] ?? 0;
-
-        // Processing New Purchase OR Renewal
-        const stockDecremented = await db.decrementPaymentMethodStock(tier, 'robux');
-        if (!stockDecremented) {
-            return NextResponse.json({
-                success: false,
-                error: 'This premium plan is out of stock'
-            }, { status: 409 });
-        }
-        
-        // 1. Save / Update Payment Record
-        if (!isRenewal && !isDuplicate) {
-            await db.savePayment({
-                transactionId,
-                payerEmail: email,
-                payerId: `ROBLOX_${verification.userId}`,
-                robloxUsername: verification.username,
-                robloxUaid: currentUaid,
-                tier,
-                amount: robuxAmount,
-                currency: 'ROBUX',
-                status: 'COMPLETED',
-                keys: null,
-                discordId: discordUser?.id,
-                discordTag: discordUser?.tag,
-                discordAvatar: discordUser?.avatar
-            });
-        } else if (isRenewal && currentUaid) {
-             await db.updateRobloxPurchase(transactionId, currentUaid);
-        }
-
-        // 2. Generate Key
-        console.log(`🔑 Generating ${isRenewal ? 'RENEWAL' : 'NEW'} key...`);
         const keyResult = await junkieSystem.generateKey({
             tier,
             validity: validityHours,
             quantity: 1,
-            userInfo: {
-                email: email,
-                payerId: `ROBLOX_${verification.userId}`,
-                robloxUsername: verification.username
-            },
-            paymentInfo: {
-                amount: 0,
-                currency: 'ROBUX',
-                transactionId
-            }
+            userInfo: { email, payerId: `ROBLOX_${order.userId}`, robloxUsername: order.username },
+            paymentInfo: { amount: 0, currency: 'ROBUX', transactionId }
         });
 
-        if (keyResult.success && keyResult.keys && keyResult.keys.length > 0) {
-            // 3. Update DB with keys
-            await db.updatePaymentKeys(transactionId, keyResult.keys);
- 
-            let newExpiryDate: string | null = null;
-            if (validityHours > 0) {
-                newExpiryDate = new Date(Date.now() + (validityHours * 60 * 60 * 1000)).toISOString();
-            }
-
-            // Discord webhook is sent after the user completes game selection (see /api/orders/[id]/game-selection)
-
-             return NextResponse.json({
-                success: true,
-                keys: keyResult.keys,
-                tier,
-                transactionId,
-                userId: verification.userId,
-                username: verification.username,
-                isRenewal,
-                expiryDate: newExpiryDate,
-                message: isRenewal ? 'Key renewed successfully!' : 'Purchase verified!'
-             });
-
-        } else {
-             console.error('❌ Key generation failed:', keyResult.error);
-             return NextResponse.json({
-                success: false,
-                error: 'Key generation failed. Please contact support.'
-             }, { status: 500 });
+        if (!keyResult.success || !keyResult.keys || keyResult.keys.length === 0) {
+            console.error('❌ Key generation failed:', keyResult.error);
+            return NextResponse.json({ success: false, error: 'Key generation failed. Please try again or contact support.' }, { status: 500 });
         }
+
+        await db.updatePaymentKeys(transactionId, keyResult.keys);
+        if (isNewClaim) await db.decrementPaymentMethodStock(tier, 'robux');
+
+        // Discord webhook is sent after the user completes game selection (see /api/orders/[id]/game-selection)
+        return NextResponse.json({
+            success: true,
+            keys: keyResult.keys,
+            tier,
+            transactionId,
+            userId: order.userId,
+            username: order.username,
+            expiryDate: validityHours > 0 ? new Date(Date.now() + validityHours * 3600000).toISOString() : null,
+            message: 'Purchase verified!'
+        });
 
     } catch (error: any) {
         console.error('❌ Error verifying Roblox purchase:', error);
-        return NextResponse.json({ error: 'Failed to verify purchase', details: error.message }, { status: 500 });
+        return NextResponse.json({ error: 'Failed to verify purchase' }, { status: 500 });
     }
 }

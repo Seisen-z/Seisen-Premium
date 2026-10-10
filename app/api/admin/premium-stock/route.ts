@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { TicketDatabase } from '@/lib/server/db';
+import { TicketDatabase, botStockPayload } from '@/lib/server/db';
 import { verifyAdminSession } from '@/lib/server/adminSession';
 
 function getErrorMessage(error: unknown) {
@@ -7,7 +7,7 @@ function getErrorMessage(error: unknown) {
   return 'Failed to update premium stock';
 }
 
-async function notifyBot(methodStocks: unknown) {
+async function notifyBot(methodStocks: Record<string, Record<string, number>>) {
   const botApiUrl = process.env.DISCORD_BOT_API_URL;
   const secret = process.env.VERIFICATION_INTERNAL_SECRET;
   if (!botApiUrl || !secret) {
@@ -20,7 +20,7 @@ async function notifyBot(methodStocks: unknown) {
     const res = await fetch(`${botApiUrl}/api/internal/restock`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ methodStocks, secret }),
+      body: JSON.stringify({ methodStocks: botStockPayload(methodStocks), secret }),
       signal: controller.signal,
     });
     if (!res.ok) console.warn(`⚠️ Failed to notify bot: HTTP ${res.status}`);
@@ -75,7 +75,7 @@ export async function PUT(req: NextRequest) {
         if (!tierUpdates || typeof tierUpdates !== 'object') continue;
 
         for (const method of Object.keys(tierUpdates)) {
-          if (!['robux', 'paypal', 'gcash', 'card', 'local_qr'].includes(method)) continue;
+          if (!['robux', 'paypal'].includes(method)) continue;
           const stock = Number(tierUpdates[method]);
           if (!Number.isFinite(stock) || stock < 0 || !Number.isInteger(stock)) {
             skipped.push(`${tier}.${method} (invalid value: ${tierUpdates[method]})`);
@@ -100,7 +100,7 @@ export async function PUT(req: NextRequest) {
       if (!Number.isFinite(stock) || stock < 0 || !Number.isInteger(stock)) {
         return NextResponse.json({ error: 'Stock must be a non-negative integer' }, { status: 400 });
       }
-      if (!method || !['robux', 'paypal', 'gcash', 'card', 'local_qr'].includes(method)) {
+      if (!method || !['robux', 'paypal'].includes(method)) {
         return NextResponse.json({ error: 'Invalid or missing payment method' }, { status: 400 });
       }
 

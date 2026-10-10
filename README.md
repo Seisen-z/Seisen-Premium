@@ -22,6 +22,6 @@ The application will be available at `http://localhost:3000`.
 
 - **Lua Obfuscation**: Supports Lua 5.1 and LuaU with multiple presets.
 - **Script Hub**: Browse and search free and premium scripts.
-- **Premium System**: PayPal, Robux, and GCash payment integration.
+- **Premium System**: PayPal and Robux payment integration.
 - **Ticket System**: Discord-integrated support ticket system.
 - **Admin Dashboard**: Manage users, keys, and tickets.
