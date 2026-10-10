@@ -174,19 +174,3 @@ body::after {
 .animate-slide-up        { animation: slideUp 0.4s ease-out both; }
 .animate-float           { animation: float 4s ease-in-out infinite; }
 
-/* ─── Loading Screen ────────────────────────────────────────── */
-.loading-screen {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--bg-primary);
-  transition: opacity 0.5s ease;
-}
-.loading-screen.fade-out {
-  opacity: 0;
-  pointer-events: none;
-}
-

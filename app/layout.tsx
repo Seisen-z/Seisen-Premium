@@ -3,7 +3,6 @@ import { Inter, Fira_Code } from 'next/font/google';
 import './globals.css';
 import Dock from '@/components/layout/Dock';
 import Footer from '@/components/layout/Footer';
-import LoadingScreen from '@/components/layout/LoadingScreen';
 import VisitorTracker from '@/components/layout/VisitorTracker';
 import CustomCursor from '@/components/ui/CustomCursor';
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
@@ -55,7 +54,6 @@ export default function RootLayout({
 <ThemeProvider>
           <div className="min-h-screen flex flex-col">
             <TabTitleAnimation />
-            <LoadingScreen />
             <VisitorTracker />
             <CustomCursor />
 
