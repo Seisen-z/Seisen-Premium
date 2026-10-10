@@ -1,5 +1,7 @@
 import Link from 'next/link';
-import { Crown, ArrowRight, CheckCircle2, Users } from 'lucide-react';
+import Image from 'next/image';
+import heroStyles from './home-hero.module.css';
+import { Crown, ArrowRight, CheckCircle2 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { fetchScripts } from '@/lib/scripts';
 import { fetchVideos } from '@/lib/videos';
@@ -38,7 +40,7 @@ async function fetchDiscordStats(): Promise<DiscordStats> {
     ]);
     const memberCount = inviteRes.ok ? ((await inviteRes.json()).approximate_member_count ?? 0) : 0;
     const members: DiscordMember[] = widgetRes.ok
-      ? ((await widgetRes.json()).members ?? []).slice(0, 5).map((m: any) => ({ id: m.id, username: m.username, avatar_url: m.avatar_url }))
+      ? ((await widgetRes.json()).members ?? []).slice(0, 5).map((m: DiscordMember) => ({ id: m.id, username: m.username, avatar_url: m.avatar_url }))
       : [];
     return { memberCount, members };
   } catch { return { memberCount: 0, members: [] }; }
@@ -102,60 +104,22 @@ export default async function HomePage() {
       {/* ══════════════════════════════════════════════════════════
           HERO  —  dark left │ cream right split
       ══════════════════════════════════════════════════════════ */}
-      <section
-        className="relative overflow-hidden"
-        style={{ minHeight: 'calc(100vh - 56px)' }}
-      >
-        {/* ── Split background ── */}
-        <div className="absolute inset-0 pointer-events-none flex">
-          {/* Dark left */}
-          <div className="flex-1 h-full" style={{ backgroundColor: '#080808' }} />
-          {/* Cream right (desktop only) */}
-          <div
-            className="hidden md:block h-full"
-            style={{
-              width: '44%',
-              backgroundColor: C.creamBg,
-              backgroundImage: [
-                'radial-gradient(ellipse 80% 60% at 70% 40%, rgba(201,169,122,0.18) 0%, transparent 65%)',
-                `repeating-linear-gradient(
-                  -45deg,
-                  transparent,
-                  transparent 22px,
-                  rgba(0,0,0,0.028) 22px,
-                  rgba(0,0,0,0.028) 23px
-                )`,
-              ].join(','),
-            }}
+      <section className={heroStyles.hero} aria-label="Seisen Script Hub" data-testid="homepage-hero">
+        <div className={heroStyles.art}>
+          <Image
+            src="/script-hub-hero.png"
+            alt="A panoramic Roblox-style adventure combining Seisen Hub game heroes, pets, gardens, mines and floating worlds"
+            fill
+            sizes="100vw"
+            priority
+            className={heroStyles.image}
           />
+          <div className={heroStyles.badge}>
+            <span aria-hidden="true" />{workingCount} scripts working
+          </div>
         </div>
-
-        {/* Dark-left accent glow */}
-        <div
-          className="absolute pointer-events-none hidden md:block"
-          style={{
-            top: '0', left: '0', width: '56%', height: '100%',
-            background: 'radial-gradient(ellipse 70% 60% at 20% 40%, rgba(201,169,122,0.07) 0%, transparent 65%)',
-          }}
-        />
-
-        {/* Vertical divider line (desktop) */}
-        <div
-          className="absolute hidden md:block pointer-events-none"
-          style={{
-            top: 0, bottom: 0,
-            left: '56%',
-            width: '1px',
-            background: 'linear-gradient(to bottom, transparent, rgba(0,0,0,0.15) 20%, rgba(0,0,0,0.15) 80%, transparent)',
-          }}
-        />
-
-        {/* ── Content ── */}
-        <div className="relative z-10 flex items-center min-h-[calc(100vh-56px)] px-6 md:pl-24 md:pr-0 lg:pl-28">
-          <div className="w-full grid md:grid-cols-[56fr_44fr] items-center">
-
-            {/* Left — copy (dark bg) */}
-            <div className="py-20 pr-10 lg:pr-16">
+        <div className={heroStyles.shade} aria-hidden="true" />
+        <div className={heroStyles.content}>
               {/* Status pill */}
               <a
                 href="https://discord.gg/F4sAf6z8Ph"
@@ -268,129 +232,6 @@ export default async function HomePage() {
                 </div>
               </div>
             </div>
-
-            {/* Right — product card (cream bg) */}
-            <div
-              className="relative flex items-center justify-center py-16 px-8 md:px-10 lg:px-14"
-              style={{ minHeight: 'calc(100vh - 56px)' }}
-            >
-              {/* Warm glow behind card */}
-              <div
-                className="absolute pointer-events-none"
-                style={{
-                  inset: '10%',
-                  background: `radial-gradient(ellipse, rgba(201,169,122,0.3) 0%, transparent 70%)`,
-                  filter: 'blur(32px)',
-                }}
-              />
-
-              {/* Floating badge — top */}
-              <div
-                className="absolute top-[18%] right-8 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold shadow-md"
-                style={{
-                  backgroundColor: '#1c1c1c',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  color: 'rgba(255,255,255,0.8)',
-                }}
-              >
-                <span className="relative flex h-1.5 w-1.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
-                </span>
-                {workingCount} scripts working
-              </div>
-
-              {/* Code card */}
-              <div
-                className="relative w-full max-w-sm animate-fade-in"
-                style={{
-                  animationDelay: '0.12s',
-                  animationFillMode: 'backwards',
-                  boxShadow: '0 40px 100px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.06)',
-                  borderRadius: '16px',
-                  overflow: 'hidden',
-                }}
-              >
-                {/* Chrome bar */}
-                <div
-                  className="flex items-center gap-1.5 px-4 py-3.5"
-                  style={{
-                    backgroundColor: '#161616',
-                    borderBottom: '1px solid rgba(255,255,255,0.07)',
-                  }}
-                >
-                  <span className="w-3 h-3 rounded-full" style={{ backgroundColor: 'rgba(239,68,68,0.55)' }} />
-                  <span className="w-3 h-3 rounded-full" style={{ backgroundColor: 'rgba(234,179,8,0.55)' }} />
-                  <span className="w-3 h-3 rounded-full" style={{ backgroundColor: 'rgba(34,197,94,0.55)' }} />
-                  <span className="ml-auto font-mono text-xs" style={{ color: 'rgba(255,255,255,0.28)' }}>seisen_loader.lua</span>
-                </div>
-
-                {/* Code body */}
-                <div
-                  className="p-6 font-mono text-sm leading-7"
-                  style={{ backgroundColor: '#0e0e0e' }}
-                >
-                  <p style={{ color: 'rgba(255,255,255,0.22)' }}>{`-- Seisen Script Hub v2`}</p>
-                  <p style={{ color: 'rgba(255,255,255,0.22)' }}>{`-- Free & Premium access`}</p>
-                  <p>&nbsp;</p>
-                  <p>
-                    <span style={{ color: '#c678dd' }}>loadstring</span>
-                    <span style={{ color: 'rgba(255,255,255,0.55)' }}>(</span>
-                  </p>
-                  <p className="pl-5">
-                    <span style={{ color: '#56b6c2' }}>game</span>
-                    <span style={{ color: 'rgba(255,255,255,0.4)' }}>:</span>
-                    <span style={{ color: '#61afef' }}>HttpGet</span>
-                    <span style={{ color: 'rgba(255,255,255,0.4)' }}>(</span>
-                  </p>
-                  <p className="pl-10">
-                    <span style={{ color: '#e8d5b5' }}>&quot;https://seisen.vercel.app/api/load&quot;</span>
-                  </p>
-                  <p className="pl-5"><span style={{ color: 'rgba(255,255,255,0.4)' }}>)</span></p>
-                  <p className="mb-4"><span style={{ color: 'rgba(255,255,255,0.4)' }}>)()</span></p>
-                  <div className="flex items-center gap-2">
-                    <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-                    </span>
-                    <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.75rem' }}>
-                      Loaded — <span style={{ color: C.accentSoft }}>{premiumCount} premium scripts</span> unlocked
-                    </span>
-                  </div>
-                </div>
-
-                {/* Footer */}
-                <div
-                  className="flex items-center justify-between px-5 py-3.5"
-                  style={{
-                    backgroundColor: '#111111',
-                    borderTop: '1px solid rgba(255,255,255,0.06)',
-                  }}
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs font-semibold text-white">{scripts.length} scripts</span>
-                    <span className="w-0.5 h-0.5 rounded-full" style={{ backgroundColor: 'rgba(255,255,255,0.25)' }} />
-                    <span className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>{freeCount} free</span>
-                  </div>
-                  <span className="text-xs font-semibold" style={{ color: C.accent }}>{premiumCount} premium</span>
-                </div>
-              </div>
-
-              {/* Floating badge — bottom */}
-              <div
-                className="absolute bottom-[18%] left-8 z-20 flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs shadow-md"
-                style={{
-                  backgroundColor: '#1c1c1c',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                }}
-              >
-                <Users className="w-3.5 h-3.5" style={{ color: C.accent }} />
-                <span className="font-bold text-white">500K+</span>
-                <span style={{ color: 'rgba(255,255,255,0.4)' }}>executions</span>
-              </div>
-            </div>
-          </div>
-        </div>
       </section>
 
       {/* ══════════════════════════════════════════════════════════
