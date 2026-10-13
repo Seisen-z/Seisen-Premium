@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback, useDeferredValue } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { Lock, FileCode, CheckCircle, AlertCircle, Copy, Download, RefreshCw, Upload, RotateCcw, Github, X, Folder, ChevronLeft, File, Check, ArrowLeft, BookmarkPlus, ShieldCheck } from 'lucide-react';
 import Button from '@/components/ui/Button';
@@ -22,6 +22,20 @@ const PRESETS: { id: Preset; label: string; desc: string }[] = [
 ];
 
 const MAX_HL = 20_000; // disable highlighting above this char count
+// Counting with indexOf and drawing the gutter as ONE text node keeps 30k+ line scripts from freezing the tab
+const countLines = (s: string) => {
+  let n = 1;
+  for (let i = s.indexOf('\n'); i !== -1; i = s.indexOf('\n', i + 1)) n++;
+  return n;
+};
+const gutterText = (lines: number) => {
+  const total = Math.max(lines, 30);
+  const out = new Array<number>(total);
+  for (let i = 0; i < total; i++) out[i] = i + 1;
+  return out.join('\n');
+};
+const GUTTER_STYLE = { backgroundColor: '#1e1e1e', color: '#555', fontFamily: '"Fira Code", monospace', fontSize: 12, lineHeight: '20px', whiteSpace: 'pre' } as const;
+const EDITOR_FONT = { fontFamily: '"Fira Code", monospace', fontSize: 13, lineHeight: '20px', backgroundColor: '#1e1e1e', color: '#d4d4d4' } as const;
 const WATERMARK = '--[[ Seisen Obfuscator v1.0 | Protected by Seisen ]]\n';
 
 // Inject editor syntax colours once
@@ -71,18 +85,18 @@ export default function ObfuscatorPage() {
   /* Refs */
   const inputWrapRef  = useRef<HTMLDivElement>(null);
   const inputGutRef   = useRef<HTMLDivElement>(null);
+  const outputGutRef  = useRef<HTMLDivElement>(null);
   const outputAreaRef = useRef<HTMLTextAreaElement>(null);
   const directoryCache = useRef(new Map<string, any[]>());
   const repositoryTreeCache = useRef(new Map<string, any[]>());
 
   /* ── Performance: defer syntax highlighting so typing never lags ── */
-  const deferredCode = useDeferredValue(code);
-  const highlight = useCallback((src: string) =>
-    src.length < MAX_HL ? Prism.highlight(src, Prism.languages.lua, 'lua') : src,
-  []);
+  const highlight = useCallback((src: string) => Prism.highlight(src, Prism.languages.lua, 'lua'), []);
+  const bigInput = code.length > MAX_HL; // big scripts use a plain textarea instead of the highlighter
 
-  const inputLines  = code.split('\n').length;
-  const outputLines = output.split('\n').length;
+  const inputLines   = useMemo(() => countLines(code), [code]);
+  const inputGutter  = useMemo(() => gutterText(inputLines), [inputLines]);
+  const outputGutter = useMemo(() => gutterText(countLines(output)), [output]);
 
   /* Inject CSS once */
   useEffect(() => {
@@ -114,6 +128,10 @@ export default function ObfuscatorPage() {
   const syncGutter = useCallback(() => {
     if (inputWrapRef.current && inputGutRef.current)
       inputGutRef.current.scrollTop = inputWrapRef.current.scrollTop;
+  }, []);
+
+  const syncOutputGutter = useCallback((e: React.UIEvent<HTMLTextAreaElement>) => {
+    if (outputGutRef.current) outputGutRef.current.scrollTop = e.currentTarget.scrollTop;
   }, []);
 
   /* Reset repo explorer on repo change */
@@ -396,7 +414,7 @@ export default function ObfuscatorPage() {
             <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
               <FileCode className="w-3.5 h-3.5 text-orange-400" />
               <span>input.lua</span>
-              {code.length > MAX_HL && (
+              {bigInput && (
                 <span className="text-[9px] px-1.5 py-0.5 rounded" style={{ backgroundColor: 'rgba(234,179,8,0.1)', color: '#eab308' }}>Low Latency</span>
               )}
             </div>
@@ -425,24 +443,34 @@ export default function ObfuscatorPage() {
             <div
               ref={inputGutRef}
               className="w-10 shrink-0 pt-4 overflow-hidden select-none text-right pr-2"
-              style={{ backgroundColor: '#1e1e1e', color: '#555', fontFamily: '"Fira Code", monospace', fontSize: 12, lineHeight: '20px' }}
+              style={GUTTER_STYLE}
             >
-              {Array.from({ length: Math.max(inputLines, 30) }, (_, i) => (
-                <div key={i} style={{ height: 20 }}>{i + 1}</div>
-              ))}
+              {inputGutter}
             </div>
             <div
               ref={inputWrapRef}
               onScroll={syncGutter}
-              className="flex-1 overflow-auto ob-editor"
+              className={`flex-1 ob-editor ${bigInput ? 'overflow-hidden' : 'overflow-auto'}`}
             >
-              <Editor
-                value={code}
-                onValueChange={setCode}
-                highlight={highlight}
-                padding={16}
-                style={{ fontFamily: '"Fira Code", monospace', fontSize: 13, lineHeight: '20px', minHeight: '100%', backgroundColor: '#1e1e1e', color: '#d4d4d4' }}
-              />
+              {bigInput ? (
+                <textarea
+                  value={code}
+                  onChange={e => setCode(e.target.value)}
+                  onScroll={e => { if (inputGutRef.current) inputGutRef.current.scrollTop = e.currentTarget.scrollTop; }}
+                  spellCheck={false}
+                  wrap="off"
+                  className="h-full w-full resize-none p-4 focus:outline-none"
+                  style={{ ...EDITOR_FONT, whiteSpace: 'pre', overflow: 'auto' }}
+                />
+              ) : (
+                <Editor
+                  value={code}
+                  onValueChange={setCode}
+                  highlight={highlight}
+                  padding={16}
+                  style={{ ...EDITOR_FONT, minHeight: '100%' }}
+                />
+              )}
             </div>
           </div>
 
@@ -509,19 +537,21 @@ export default function ObfuscatorPage() {
           {/* Output — plain textarea, no syntax highlighting (obfuscated = unreadable, no perf cost) */}
           <div className="flex flex-1 min-h-0 overflow-hidden relative" style={{ backgroundColor: '#1e1e1e' }}>
             <div
+              ref={outputGutRef}
               className="w-10 shrink-0 pt-4 overflow-hidden select-none text-right pr-2"
-              style={{ backgroundColor: '#1e1e1e', color: '#555', fontFamily: '"Fira Code", monospace', fontSize: 12, lineHeight: '20px' }}
+              style={GUTTER_STYLE}
             >
-              {Array.from({ length: Math.max(outputLines, 30) }, (_, i) => (
-                <div key={i} style={{ height: 20 }}>{i + 1}</div>
-              ))}
+              {outputGutter}
             </div>
             <textarea
               ref={outputAreaRef}
               readOnly
               value={output}
+              onScroll={syncOutputGutter}
+              spellCheck={false}
+              wrap="off"
               className="flex-1 resize-none focus:outline-none p-4"
-              style={{ fontFamily: '"Fira Code", monospace', fontSize: 13, lineHeight: '20px', backgroundColor: '#1e1e1e', color: '#d4d4d4', overflowY: 'auto' }}
+              style={{ ...EDITOR_FONT, whiteSpace: 'pre', overflow: 'auto' }}
             />
             {!output && !loading && (
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none gap-2" style={{ opacity: 0.15 }}>
