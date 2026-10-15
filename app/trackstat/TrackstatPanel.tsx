@@ -131,6 +131,15 @@ export default function TrackstatPanel() {
     } catch (e) { setError(e instanceof Error ? e.message : 'Could not remove the account.'); }
     finally { setBusy(false); }
   }
+  async function decideLink(index: number, id: string, approve: boolean) {
+    setBusy(true);
+    try {
+      const response = await fetch('/api/trackstat/link', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ index, id, approve }) });
+      if (!response.ok) throw new Error((await response.json()).error);
+      await load();
+    } catch (e) { setError(e instanceof Error ? e.message : 'Could not answer the request.'); await load(); }
+    finally { setBusy(false); }
+  }
   function selectAccount(index: number) {
     setActiveIndex(index); setSessionId(''); setGame(null); setPage('games');
   }
@@ -372,6 +381,15 @@ export default function TrackstatPanel() {
         </div>
       </aside>
       <section className="min-w-0 p-5 md:h-full md:overflow-auto md:p-6">
+        {accounts.flatMap(a => a.pending.map(request => (
+          <div key={request.id} role="alert" className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#c9a97a]/30 bg-[#c9a97a]/[0.06] p-4 text-sm text-white/80">
+            <p className="min-w-0 flex-1 basis-64"><span className="font-medium text-white">A new device is asking to join {a.account.username}&apos;s history.</span> Approve it only if it&apos;s you, and it will keep adding to the same history.</p>
+            <div className="flex gap-2">
+              <button disabled={busy} onClick={() => void decideLink(a.index, request.id, true)} className="rounded-lg border border-[#c9a97a]/40 bg-[#c9a97a]/15 px-4 py-2 text-[#c9a97a] hover:bg-[#c9a97a]/25 disabled:opacity-40">Approve</button>
+              <button disabled={busy} onClick={() => void decideLink(a.index, request.id, false)} className="rounded-lg border border-white/10 px-4 py-2 text-white/60 hover:border-red-400/50 hover:text-red-300 disabled:opacity-40">Deny</button>
+            </div>
+          </div>
+        )))}
         {error && <p role="alert" className="mb-5 rounded-lg border border-amber-400/20 bg-amber-400/5 p-4 text-sm text-amber-200">{error}</p>}
         {main}
       </section>

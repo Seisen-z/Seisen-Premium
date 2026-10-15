@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { trackstatMedia, trackstatRPC } from '@/lib/server/trackstat';
 import { rateLimit, getClientIp, rateLimitResponse } from '@/lib/server/rate-limit';
-import type { TrackstatAccount, TrackstatHistory, TrackstatPublic } from '@/lib/trackstat';
+import type { LinkRequest, TrackstatAccount, TrackstatHistory, TrackstatPublic } from '@/lib/trackstat';
 
 export const dynamic = 'force-dynamic';
 const cookieName = 'seisen_trackstat';
@@ -40,7 +40,8 @@ export async function GET(req: NextRequest) {
       trackstatRPC<TrackstatPublic>('trackstats_stealanegg_public'),
       lookup(readKeys(req)),
     ]);
-    const accounts: TrackstatAccount[] = valid.map(({ history }, index) => ({ ...history, index }));
+    const pending = await Promise.all(valid.map(({ key }) => trackstatRPC<LinkRequest[]>('trackstat_link_pending', { p_key: key }).catch(() => [] as LinkRequest[])));
+    const accounts: TrackstatAccount[] = valid.map(({ history }, index) => ({ ...history, index, pending: pending[index] }));
     const response = NextResponse.json({ public: totals, publicStealAnEgg: totalsStealAnEgg, accounts, media: await trackstatMedia(accounts.map(a => a.account.roblox_id)), reconnect: dropped }, { headers });
     if (dropped) writeKeys(response, valid.map(v => v.key));
     return response;

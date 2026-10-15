@@ -21,7 +21,9 @@ export type TrackstatHistory = {
 };
 export type TrackstatPublic = { game: string; accounts: number; sessions: number; live: number; gained: Counts };
 export type TrackstatMedia = { avatars: Record<string, string | null>; game: string | null; stealAnEgg: string | null };
-export type TrackstatAccount = TrackstatHistory & { index: number };
+// A new device asking to join an account's history
+export type LinkRequest = { id: string; username: string; created_at: string };
+export type TrackstatAccount = TrackstatHistory & { index: number; pending: LinkRequest[] };
 export type TrackstatResponse = { public: TrackstatPublic; publicStealAnEgg: TrackstatPublic | null; accounts: TrackstatAccount[]; media: TrackstatMedia; reconnect?: boolean };
 
 export const PET_SIMULATOR_99 = '3317771874';
