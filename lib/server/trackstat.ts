@@ -30,3 +30,18 @@ export async function trackstatRPC<T>(name: string, args: Record<string, unknown
   if (!response.ok) throw new Error(response.status === 400 ? 'Invalid connection key' : 'Trackstat is temporarily unavailable');
   return response.json() as Promise<T>;
 }
+
+// Public Roblox images are copied once; private images are captured by the library.
+export async function trackstatCacheImage(folder: 'stealanegg' | 'petsimulator99', icon: string, image: string): Promise<boolean> {
+  if (!/^\d{1,20}$/.test(icon) || !/^https:\/\/[a-z0-9-]+\.rbxcdn\.com\//i.test(image)) return false;
+  try {
+    const response = await fetch(image, { next: { revalidate: 86400 }, signal: AbortSignal.timeout(8000) });
+    if (!response.ok || !response.headers.get('content-type')?.includes('image/png')) return false;
+    const bytes = await response.arrayBuffer();
+    if (bytes.byteLength > 1024 * 1024 || bytes.byteLength < 8 || new Uint8Array(bytes).slice(0, 8).join(',') !== '137,80,78,71,13,10,26,10') return false;
+    const stored = await fetch(`${url}/storage/v1/object/trackstats-images/${folder}/${icon}.png`, {
+      method: 'POST', headers: { apikey: publishableKey, 'Content-Type': 'image/png' }, body: bytes, signal: AbortSignal.timeout(8000),
+    });
+    return stored.ok || stored.status === 409;
+  } catch { return false; }
+}

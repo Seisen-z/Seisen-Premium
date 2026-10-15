@@ -27,7 +27,7 @@ export type TrackstatMedia = { avatars: Record<string, string | null>; game: str
 // A new device asking to join an account's history
 export type LinkRequest = { id: string; username: string; created_at: string };
 export type TrackstatAccount = TrackstatHistory & { index: number; pending: LinkRequest[]; activeGames: string[] };
-export type TrackstatResponse = { public: TrackstatPublic; publicStealAnEgg: TrackstatPublic | null; accounts: TrackstatAccount[]; media: TrackstatMedia; reconnect?: boolean };
+export type TrackstatResponse = { public: TrackstatPublic | null; publicStealAnEgg: TrackstatPublic | null; accounts: TrackstatAccount[]; media: TrackstatMedia; reconnect?: boolean };
 
 export const PET_SIMULATOR_99 = '3317771874';
 export const STEAL_AN_EGG = '10563114921';

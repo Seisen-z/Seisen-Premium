@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { trackstatRPC } from '@/lib/server/trackstat';
+import { trackstatRPC, trackstatCacheImage } from '@/lib/server/trackstat';
 import { rateLimit, getClientIp, rateLimitResponse } from '@/lib/server/rate-limit';
 import { STEAL_AN_EGG, type CatalogEntry, type TrackstatHistory } from '@/lib/trackstat';
 
@@ -29,12 +29,19 @@ export async function GET(req: NextRequest) {
     const history = await trackstatRPC<TrackstatHistory>('trackstat_private', { p_key: key });
     const sessions = history.sessions.filter(session => (session.game_id === STEAL_AN_EGG) === stealAnEgg);
     const latest = sessions[0];
-    const itemKeys = [...new Set(latest?.snapshot.inventory?.map(entry => entry.k) ?? [])];
+    const itemKeys = [...new Set((latest?.snapshot.inventory ?? []).flatMap(entry => [
+      entry.k, ...(!stealAnEgg ? entry.ch ?? [] : []).map(charm => `Charm:${charm}:1:`),
+    ]))];
     const names = stealAnEgg ? [...new Set(sessions.flatMap(session => session.snapshot.details.map(detail => detail.name.toLowerCase())))].slice(0, 2000) : [];
     const rows = itemKeys.length || names.length ? await trackstatRPC<Record<string, Omit<CatalogEntry, 'image'>>>(stealAnEgg ? 'trackstats_stealanegg_catalog_read' : 'trackstat_catalog_read', { p_keys: itemKeys, ...(stealAnEgg ? { p_names: names } : {}) }) : {};
-    const images = await icons([...new Set(Object.values(rows).map(row => row.icon).filter((icon): icon is string => !!icon))]);
-    // Some icons are private on Roblox, so the library stores its own copy of each picture
-    const stored = (icon: string | null) => (icon ? `https://xsygxfeutjcwmqejslbv.supabase.co/storage/v1/object/public/trackstats-images/${stealAnEgg ? 'stealanegg' : 'petsimulator99'}/${icon}.png` : null);
+    const folder = stealAnEgg ? 'stealanegg' : 'petsimulator99';
+    const ids = [...new Set(Object.values(rows).map(row => row.icon).filter((icon): icon is string => !!icon && /^\d{1,20}$/.test(icon)))];
+    const cached = new Set(ids.length ? await trackstatRPC<string[]>('trackstat_image_manifest', { p_game: folder, p_icons: ids }) : []);
+    const images = await icons(ids.filter(icon => !cached.has(icon)).slice(0, 12));
+    await Promise.all(Object.entries(images).map(async ([icon, image]) => {
+      if (await trackstatCacheImage(folder, icon, image)) cached.add(icon);
+    }));
+    const stored = (icon: string | null) => icon && cached.has(icon) ? `https://xsygxfeutjcwmqejslbv.supabase.co/storage/v1/object/public/trackstats-images/${folder}/${icon}.png` : null;
     const catalog = Object.fromEntries(Object.entries(rows).map(([k, row]) => [k, { ...row, image: row.icon ? images[row.icon] ?? null : null, stored: stored(row.icon) }]));
     return NextResponse.json({ catalog }, { headers });
   } catch {

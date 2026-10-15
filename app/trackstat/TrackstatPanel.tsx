@@ -22,7 +22,7 @@ const categories = [
 ];
 const variants: Record<string, string> = { g: 'Golden', r: 'Rainbow', s: 'Shiny' };
 
-function InventoryCard({ stack, info }: { stack: InventoryStack; info?: CatalogEntry }) {
+function InventoryCard({ stack, info, catalog }: { stack: InventoryStack; info?: CatalogEntry; catalog: Record<string, CatalogEntry> }) {
   const [cls, id, , variant] = stack.k.split(':');
   const color = info?.rarity_color ?? '#c9a97a';
   const exclusive = info?.rarity === 'Exclusive' || !!stack.e;
@@ -39,7 +39,12 @@ function InventoryCard({ stack, info }: { stack: InventoryStack; info?: CatalogE
         <p className="break-words text-sm font-semibold leading-tight text-white">{info?.name ?? id}</p>
         <p className="text-xs font-medium" style={{ color }}>{info?.rarity ?? cls}{exclusive && ' ★'}</p>
         {cls === 'Pet' && !!stack.cs && (
-          <div className="flex flex-wrap gap-1" aria-label="Charm slots">{Array.from({ length: stack.cs }, (_, i) => <span key={i} className={`rounded px-1.5 py-0.5 text-[10px] ${stack.ch?.[i] ? 'bg-[#c9a97a]/15 text-[#c9a97a]' : 'border border-dashed border-white/15 text-white/25'}`}>{stack.ch?.[i] ?? 'empty'}</span>)}</div>
+          <div className="flex flex-wrap gap-1" aria-label="Charm slots">{Array.from({ length: stack.cs }, (_, i) => {
+            const charm = stack.ch?.[i];
+            const charmInfo = charm ? catalog[`Charm:${charm}:1:`] : undefined;
+            const label = charmInfo?.name ?? charm ?? 'Empty charm slot';
+            return <span key={i} title={label} aria-label={label} className={`grid h-8 w-8 place-items-center rounded ${charm ? 'bg-[#c9a97a]/15 text-[#c9a97a]' : 'border border-dashed border-white/15 text-white/25'}`}>{charm ? <Img src={charmInfo?.stored} backup={charmInfo?.image} className="h-7 w-7 object-contain" fallback={<Gem size={16} />} /> : <span className="text-[9px]">empty</span>}</span>;
+          })}</div>
         )}
         {cls !== 'Pet' && info?.description && <p className="line-clamp-2 text-xs leading-5 text-white/45">{info.description}</p>}
         <div className="mt-auto border-t border-white/[0.06] pt-3 text-xs">
@@ -72,7 +77,7 @@ function InventoryView({ stacks, catalog, loading }: { stacks?: InventoryStack[]
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">{Array.from({ length: 10 }, (_, i) => <CardSkeleton key={i} />)}</div>
       ) : shown.length ? (
         <>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">{shown.slice(0, limit).map((s, i) => <InventoryCard key={`${s.k}:${i}`} stack={s} info={catalog[s.k]} />)}</div>
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">{shown.slice(0, limit).map((s, i) => <InventoryCard key={`${s.k}:${i}`} stack={s} info={catalog[s.k]} catalog={catalog} />)}</div>
           {shown.length > limit && <button onClick={() => setLimit(l => l + 60)} className={`${button} mx-auto mt-6 block`}>Show more ({shown.length - limit})</button>}
         </>
       ) : <p className={`${card} p-8 text-sm text-white/40`}>Nothing matches.</p>}
@@ -90,6 +95,7 @@ export default function TrackstatPanel() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [tab, setTab] = useState<Tab>('overview');
   const [sessionId, setSessionId] = useState('');
+  const [recentCategory, setRecentCategory] = useState('all');
   const [search, setSearch] = useState('');
   const [listView, setListView] = useState(false);
   const [catalog, setCatalog] = useState<Record<string, CatalogEntry>>({});
@@ -165,13 +171,14 @@ export default function TrackstatPanel() {
   const liveSae = history?.activeGames?.includes(STEAL_AN_EGG) ?? false;
   const live = history?.activeGames?.includes(PET_SIMULATOR_99) ?? false;
   const libraryLive = (history?.activeGames?.length ?? 0) > 0;
-  const inventoryKey = `${history?.index}:${latest?.id}:${latest?.snapshot.inventory?.length ?? 0}`;
+  const inventoryKey = `${history?.index}:${latest?.id}:${latest?.updated_at}`;
   useEffect(() => {
     if (!latest?.snapshot.inventory?.length) return;
     fetch(`/api/trackstat/catalog?account=${history?.index ?? 0}`, { cache: 'no-store' }).then(r => r.json()).then(b => setCatalog(b.catalog ?? {})).catch(() => {}).finally(() => setLoadedFor(inventoryKey));
   }, [inventoryKey]); // eslint-disable-line react-hooks/exhaustive-deps
   const images = useMemo(() => Object.fromEntries(Object.values(catalog).map(c => [c.name.toLowerCase(), c.stored ?? c.image])), [catalog]);
-  const recent = sessions.flatMap(s => s.snapshot.details.filter(d => d.gained > 0).map(d => ({ ...d, at: s.updated_at }))).slice(0, 10);
+  const recentClasses = categories.find(c => c.id === recentCategory)?.classes ?? [];
+  const recent = sessions.flatMap(s => s.snapshot.details.filter(d => d.gained > 0 && (!recentClasses.length || recentClasses.includes(d.kind) || recentCategory === 'pets' && ['huge', 'titanic', 'gargantuan'].includes(d.kind))).map(d => ({ ...d, at: s.updated_at }))).slice(0, 10);
   const stacks = selected?.snapshot.inventory;
   const totalValue = (stacks ?? []).reduce((n, x) => n + (x.r ?? 0) * x.a, 0);
   const topStacks = [...(stacks ?? [])].sort((a, b) => (b.r ?? 0) * b.a - (a.r ?? 0) * a.a).slice(0, 6);
@@ -199,15 +206,16 @@ export default function TrackstatPanel() {
     </div>
   );
 
-  const community = data && (
+  const publicStats = data?.public;
+  const community = publicStats ? (
     <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-      <Stat icon={<Users size={20} />} label="Accounts" value={compactCount(data.public.accounts)} />
-      <Stat icon={<Activity size={20} />} label="Active now" value={compactCount(data.public.live)} />
-      <Stat icon={<Clock size={20} />} label="Sessions" value={compactCount(data.public.sessions)} />
-      <Stat icon={<TrendingUp size={20} />} label="Total gained" value={compactCount(total(data.public.gained))} />
-      {(['items', 'huge', 'titanic', 'gargantuan'] as const).map(k => <div key={k} className={`${card} p-4`}><p className="text-xs capitalize text-white/45">{k} collected</p><p className="mt-2 font-mono text-2xl text-white" title={String(data.public.gained[k])}>{compactCount(data.public.gained[k])}</p></div>)}
+      <Stat icon={<Users size={20} />} label="Accounts" value={compactCount(publicStats.accounts)} />
+      <Stat icon={<Activity size={20} />} label="Active now" value={compactCount(publicStats.live)} />
+      <Stat icon={<Clock size={20} />} label="Sessions" value={compactCount(publicStats.sessions)} />
+      <Stat icon={<TrendingUp size={20} />} label="Total gained" value={compactCount(total(publicStats.gained))} />
+      {(['items', 'huge', 'titanic', 'gargantuan'] as const).map(k => <div key={k} className={`${card} p-4`}><p className="text-xs capitalize text-white/45">{k} collected</p><p className="mt-2 font-mono text-2xl text-white" title={String(publicStats.gained[k])}>{compactCount(publicStats.gained[k])}</p></div>)}
     </div>
-  );
+  ) : <p className="py-6 text-sm text-white/40">Community totals are temporarily unavailable. Your account tracking is still available.</p>;
 
   let main: ReactNode;
   if (!data) main = error ? <p className="py-12 text-sm text-white/40">Refresh to try again.</p> : <PageSkeleton />;
@@ -324,7 +332,8 @@ export default function TrackstatPanel() {
             <div className="grid items-stretch gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
               <div className={`${card} p-5`}>
                 <div className="mb-4 flex items-center justify-between"><h3 className="text-sm font-semibold text-white">Recent Activity</h3><button onClick={() => setTab('gains')} className="flex items-center gap-1 text-xs text-[#c9a97a] hover:underline">View All <ChevronRight size={12} /></button></div>
-                {recent.length ? <ul className="divide-y divide-white/[0.05]">{recent.map((r, i) => <li key={`${r.name}:${i}`} className="flex items-center gap-3 py-2.5 text-sm"><Img src={images[r.name.toLowerCase()]} className="h-9 w-9 shrink-0 object-contain" fallback={<Gem size={14} className="text-white/25" />} /><span className="min-w-0 flex-1"><span className="block truncate text-white/85">{r.name}</span><span className="text-xs capitalize text-white/35">{r.kind} · {ago(r.at)}</span></span><span className="shrink-0 rounded-md bg-emerald-400/10 px-2 py-0.5 font-mono text-xs text-emerald-400">+{compactCount(r.gained)}</span></li>)}</ul> : <p className="text-sm text-white/40">No gains recorded yet.</p>}
+                <div className="mb-3 flex flex-wrap gap-1" role="group" aria-label="Recent activity category">{categories.map(c => <button key={c.id} aria-pressed={recentCategory === c.id} onClick={() => setRecentCategory(c.id)} className={`rounded-lg px-3 py-1.5 text-sm transition-colors ${recentCategory === c.id ? 'bg-[#c9a97a] font-medium text-black' : 'bg-white/[0.04] text-white/55 hover:text-white'}`}>{c.label}</button>)}</div>
+                {recent.length ? <ul className="divide-y divide-white/[0.05]">{recent.map((r, i) => <li key={`${r.name}:${i}`} className="flex items-center gap-3 py-2.5 text-sm"><Img src={images[r.name.toLowerCase()]} className="h-9 w-9 shrink-0 object-contain" fallback={<Gem size={14} className="text-white/25" />} /><span className="min-w-0 flex-1"><span className="block truncate text-white/85">{r.name}</span><span className="text-xs capitalize text-white/35">{r.kind} · {ago(r.at)}</span></span><span className="shrink-0 rounded-md bg-emerald-400/10 px-2 py-0.5 font-mono text-xs text-emerald-400">+{compactCount(r.gained)}</span></li>)}</ul> : <p className="text-sm text-white/40">{recentCategory === 'all' ? 'No gains recorded yet.' : 'No recent activity in this category.'}</p>}
               </div>
               <div className={`${card} flex flex-col p-5`}><h3 className="-mb-6 text-sm font-semibold text-white">Gains Chart</h3><GainChart daily={(history?.daily ?? []).filter(day => day.game_id === PET_SIMULATOR_99)} /></div>
             </div>

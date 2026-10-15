@@ -36,8 +36,8 @@ export async function GET(req: NextRequest) {
   if (!limit.allowed) return rateLimitResponse(limit);
   try {
     const [totals, totalsStealAnEgg, { valid, dropped }] = await Promise.all([
-      trackstatRPC<TrackstatPublic>('trackstat_public'),
-      trackstatRPC<TrackstatPublic>('trackstats_stealanegg_public'),
+      trackstatRPC<TrackstatPublic>('trackstat_public').catch(() => null),
+      trackstatRPC<TrackstatPublic>('trackstats_stealanegg_public').catch(() => null),
       lookup(readKeys(req)),
     ]);
     const pending = await Promise.all(valid.map(({ key }) => trackstatRPC<LinkRequest[]>('trackstat_link_pending', { p_key: key }).catch(() => [] as LinkRequest[])));

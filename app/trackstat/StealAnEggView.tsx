@@ -72,6 +72,7 @@ function InventoryView({ stacks, catalog, loading }: { stacks?: InventoryStack[]
 export default function StealAnEggView({ sessions, daily = [], media, community, live, account, onBack }: { sessions: TrackstatSession[]; daily?: TrackstatDailyGains[]; account: number; media: TrackstatMedia | undefined; community: TrackstatPublic | null | undefined; live: boolean; onBack: () => void }) {
   const [tab, setTab] = useState<Tab>('overview');
   const [sessionId, setSessionId] = useState('');
+  const [recentCategory, setRecentCategory] = useState('all');
   const [catalog, setCatalog] = useState<Record<string, CatalogEntry>>({});
   const [loadedFor, setLoadedFor] = useState('');
   const latest = sessions[0];
@@ -84,7 +85,7 @@ export default function StealAnEggView({ sessions, daily = [], media, community,
   }, [signature]); // eslint-disable-line react-hooks/exhaustive-deps
   const images = useMemo(() => Object.fromEntries(Object.values(catalog).map(c => [c.name.toLowerCase(), c.stored ?? c.image])), [catalog]);
   const backups = useMemo(() => Object.fromEntries(Object.values(catalog).map(c => [c.name.toLowerCase(), c.image])), [catalog]);
-  const recent = sessions.flatMap(s => s.snapshot.details.filter(d => d.gained > 0).map(d => ({ ...d, at: s.updated_at }))).slice(0, 10);
+  const recent = sessions.flatMap(s => s.snapshot.details.filter(d => d.gained > 0 && (recentCategory === 'all' || d.kind === recentCategory)).map(d => ({ ...d, at: s.updated_at }))).slice(0, 10);
   const top = [...(snap?.inventory ?? [])].filter(s => s.k.startsWith('pet:')).sort((a, b) => (b.p ?? 0) - (a.p ?? 0)).slice(0, 6);
 
   return (
@@ -124,7 +125,8 @@ export default function StealAnEggView({ sessions, daily = [], media, community,
           <div className="grid items-stretch gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
             <div className={`${card} p-5`}>
               <div className="mb-4 flex items-center justify-between"><h3 className="text-sm font-semibold text-white">Recent Activity</h3><button onClick={() => setTab('gains')} className="flex items-center gap-1 text-xs text-[#c9a97a] hover:underline">View All <ChevronRight size={12} /></button></div>
-              {recent.length ? <ul className="divide-y divide-white/[0.05]">{recent.map((r, i) => <li key={`${r.name}:${i}`} className="flex items-center gap-3 py-2.5 text-sm"><Img src={images[r.name.toLowerCase()]} backup={backups[r.name.toLowerCase()]} className="h-9 w-9 shrink-0 object-contain" fallback={<PawPrint size={14} className="text-white/25" />} /><span className="min-w-0 flex-1"><span className="block truncate text-white/85">{r.name}</span><span className="text-xs capitalize text-white/35">{r.kind} · {ago(r.at)}</span></span><span className="shrink-0 rounded-md bg-emerald-400/10 px-2 py-0.5 font-mono text-xs text-emerald-400">+{compactCount(r.gained)}</span></li>)}</ul> : <p className="text-sm text-white/40">No gains recorded yet.</p>}
+              <div className="mb-3 flex flex-wrap gap-1" role="group" aria-label="Recent activity category">{categories.map(c => <button key={c.id} aria-pressed={recentCategory === c.id} onClick={() => setRecentCategory(c.id)} className={`rounded-lg px-3 py-1.5 text-sm transition-colors ${recentCategory === c.id ? 'bg-[#c9a97a] font-medium text-black' : 'bg-white/[0.04] text-white/55 hover:text-white'}`}>{c.label}</button>)}</div>
+              {recent.length ? <ul className="divide-y divide-white/[0.05]">{recent.map((r, i) => <li key={`${r.name}:${i}`} className="flex items-center gap-3 py-2.5 text-sm"><Img src={images[r.name.toLowerCase()]} backup={backups[r.name.toLowerCase()]} className="h-9 w-9 shrink-0 object-contain" fallback={<PawPrint size={14} className="text-white/25" />} /><span className="min-w-0 flex-1"><span className="block truncate text-white/85">{r.name}</span><span className="text-xs capitalize text-white/35">{r.kind} · {ago(r.at)}</span></span><span className="shrink-0 rounded-md bg-emerald-400/10 px-2 py-0.5 font-mono text-xs text-emerald-400">+{compactCount(r.gained)}</span></li>)}</ul> : <p className="text-sm text-white/40">{recentCategory === 'all' ? 'No gains recorded yet.' : 'No recent activity in this category.'}</p>}
             </div>
             <div className={`${card} flex flex-col p-5`}><h3 className="-mb-6 text-sm font-semibold text-white">Gains Chart</h3><GainChart daily={daily} /></div>
           </div>
