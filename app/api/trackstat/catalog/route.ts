@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { trackstatRPC } from '@/lib/server/trackstat';
 import { rateLimit, getClientIp, rateLimitResponse } from '@/lib/server/rate-limit';
-import type { CatalogEntry, TrackstatHistory } from '@/lib/trackstat';
+import { STEAL_AN_EGG, type CatalogEntry, type TrackstatHistory } from '@/lib/trackstat';
 
 export const dynamic = 'force-dynamic';
 const headers = { 'Cache-Control': 'private, no-store' };
@@ -22,12 +22,14 @@ async function icons(ids: string[]): Promise<Record<string, string>> {
 export async function GET(req: NextRequest) {
   const limit = rateLimit(`trackstat:catalog:${getClientIp(req)}`, 30, 60000);
   if (!limit.allowed) return rateLimitResponse(limit);
-  const key = req.cookies.get('seisen_trackstat')?.value;
+  const key = (req.cookies.get('seisen_trackstat')?.value ?? '').split(',')[Number(req.nextUrl.searchParams.get('account')) || 0];
   if (!key) return NextResponse.json({ catalog: {} }, { headers });
   try {
+    const stealAnEgg = req.nextUrl.searchParams.get('game') === 'sae';
     const history = await trackstatRPC<TrackstatHistory>('trackstat_private', { p_key: key });
-    const keys = [...new Set(history.sessions[0]?.snapshot.inventory?.map(entry => entry.k) ?? [])];
-    const rows = keys.length ? await trackstatRPC<Record<string, Omit<CatalogEntry, 'image'>>>('trackstat_catalog_read', { p_keys: keys }) : {};
+    const latest = history.sessions.find(session => (session.game_id === STEAL_AN_EGG) === stealAnEgg);
+    const itemKeys = [...new Set(latest?.snapshot.inventory?.map(entry => entry.k) ?? [])];
+    const rows = itemKeys.length ? await trackstatRPC<Record<string, Omit<CatalogEntry, 'image'>>>(stealAnEgg ? 'trackstats_stealanegg_catalog_read' : 'trackstat_catalog_read', { p_keys: itemKeys }) : {};
     const images = await icons([...new Set(Object.values(rows).map(row => row.icon).filter((icon): icon is string => !!icon))]);
     const catalog = Object.fromEntries(Object.entries(rows).map(([k, row]) => [k, { ...row, image: row.icon ? images[row.icon] ?? null : null }]));
     return NextResponse.json({ catalog }, { headers });

@@ -9,12 +9,14 @@ async function thumbnail(path: string): Promise<string | null> {
   } catch { return null; }
 }
 
-export async function trackstatMedia(robloxId?: string) {
-  const [avatar, game] = await Promise.all([
-    robloxId && /^\d+$/.test(robloxId) ? thumbnail(`users/avatar-headshot?userIds=${robloxId}&size=150x150&format=Png`) : null,
-    thumbnail('games/icons?universeIds=3317771874&size=512x512&format=Png&returnPolicy=PlaceHolder'),
+export async function trackstatMedia(robloxIds: string[]) {
+  const icon = (universe: string) => thumbnail(`games/icons?universeIds=${universe}&size=512x512&format=Png&returnPolicy=PlaceHolder`);
+  const [avatarList, game, stealAnEgg] = await Promise.all([
+    Promise.all(robloxIds.map(async id => [id, /^\d+$/.test(id) ? await thumbnail(`users/avatar-headshot?userIds=${id}&size=150x150&format=Png`) : null] as const)),
+    icon('3317771874'),
+    icon('10563114921'),
   ]);
-  return { avatar, game };
+  return { avatars: Object.fromEntries(avatarList), game, stealAnEgg };
 }
 
 export async function trackstatRPC<T>(name: string, args: Record<string, unknown> = {}): Promise<T> {
