@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Activity, ArrowLeft, Boxes, ChevronRight, Clock, Coins, Egg, Gauge, PawPrint, Search, Star, Swords, TrendingUp, Users, Weight, Zap } from 'lucide-react';
 import { compactCount, type CatalogEntry, type InventoryStack, type TrackstatMedia, type TrackstatPublic, type TrackstatSession } from '@/lib/trackstat';
-import { DetailTable, GainChart, Img, Stat, ago, card, span, total } from './ui';
+import { CardSkeleton, DetailTable, GainChart, Img, Stat, ago, card, span, total } from './ui';
 
 type Tab = 'overview' | 'inventory' | 'gains' | 'history' | 'community';
 const tabs: { id: Tab; label: string; icon: typeof Activity }[] = [
@@ -24,7 +24,7 @@ function InventoryCard({ stack, info }: { stack: InventoryStack; info?: CatalogE
   return (
     <div className={`${card} flex flex-col overflow-hidden`}>
       <div className="relative grid h-28 place-items-center" style={{ background: `radial-gradient(circle at 50% 60%, ${color}33, transparent 70%)` }}>
-        <Img src={info?.image} className="h-20 w-20 object-contain" fallback={<PawPrint size={28} className="text-white/25" />} />
+        <Img src={info?.stored} backup={info?.image} className="h-20 w-20 object-contain" fallback={<PawPrint size={28} className="text-white/25" />} />
         {stack.f && <Star size={16} className="absolute left-3 top-3 fill-[#c9a97a] text-[#c9a97a]" aria-label="Favorite" />}
         {stack.a > 1 && <span className="absolute right-3 top-3 rounded-md bg-black/50 px-2 py-0.5 font-mono text-xs text-white" title={String(stack.a)}>x{compactCount(stack.a)}</span>}
         {stack.pl ? <span className="absolute bottom-2 right-3 rounded-md bg-black/50 px-2 py-0.5 text-[10px] uppercase tracking-wide text-white/70">Placed</span> : null}
@@ -43,7 +43,7 @@ function InventoryCard({ stack, info }: { stack: InventoryStack; info?: CatalogE
   );
 }
 
-function InventoryView({ stacks, catalog }: { stacks?: InventoryStack[]; catalog: Record<string, CatalogEntry> }) {
+function InventoryView({ stacks, catalog, loading }: { stacks?: InventoryStack[]; catalog: Record<string, CatalogEntry>; loading: boolean }) {
   const [q, setQ] = useState('');
   const [cat, setCat] = useState('all');
   const [limit, setLimit] = useState(60);
@@ -57,7 +57,9 @@ function InventoryView({ stacks, catalog }: { stacks?: InventoryStack[]; catalog
         <label className="relative block w-full max-w-xs"><Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/35" /><input aria-label="Search inventory" value={q} onChange={e => { setQ(e.target.value); setLimit(60); }} placeholder="Search pet, egg, gear or item…" className="w-full rounded-lg border border-white/10 bg-[#101010] py-2 pl-9 pr-3 text-sm text-white outline-none focus:border-[#c9a97a]" /></label>
         <div className="flex flex-wrap gap-1" role="group" aria-label="Inventory category">{categories.map(c => <button key={c.id} aria-pressed={cat === c.id} onClick={() => { setCat(c.id); setLimit(60); }} className={`rounded-lg px-3 py-1.5 text-sm transition-colors ${cat === c.id ? 'bg-[#c9a97a] font-medium text-black' : 'bg-white/[0.04] text-white/55 hover:text-white'}`}>{c.label}</button>)}</div>
       </div>
-      {shown.length ? (
+      {loading ? (
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">{Array.from({ length: 10 }, (_, i) => <CardSkeleton key={i} />)}</div>
+      ) : shown.length ? (
         <>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">{shown.slice(0, limit).map((s, i) => <InventoryCard key={`${s.k}:${i}`} stack={s} info={catalog[s.k]} />)}</div>
           {shown.length > limit && <button onClick={() => setLimit(l => l + 60)} className="mx-auto mt-6 block rounded-lg border border-white/10 px-4 py-2.5 text-sm text-white/70 hover:border-[#c9a97a]/50 hover:text-[#c9a97a]">Show more ({shown.length - limit})</button>}
@@ -71,15 +73,16 @@ export default function StealAnEggView({ sessions, media, community, live, accou
   const [tab, setTab] = useState<Tab>('overview');
   const [sessionId, setSessionId] = useState('');
   const [catalog, setCatalog] = useState<Record<string, CatalogEntry>>({});
+  const [loadedFor, setLoadedFor] = useState('');
   const latest = sessions[0];
   const selected = sessions.find(s => s.id === sessionId) || latest;
   const snap = selected?.snapshot;
   const signature = `${account}:${latest?.id}:${latest?.snapshot.inventory?.length ?? 0}`;
   useEffect(() => {
     if (!latest?.snapshot.inventory?.length) return;
-    fetch(`/api/trackstat/catalog?game=sae&account=${account}`, { cache: 'no-store' }).then(r => r.json()).then(b => setCatalog(b.catalog ?? {})).catch(() => {});
+    fetch(`/api/trackstat/catalog?game=sae&account=${account}`, { cache: 'no-store' }).then(r => r.json()).then(b => setCatalog(b.catalog ?? {})).catch(() => {}).finally(() => setLoadedFor(signature));
   }, [signature]); // eslint-disable-line react-hooks/exhaustive-deps
-  const images = useMemo(() => Object.fromEntries(Object.values(catalog).map(c => [c.name.toLowerCase(), c.image])), [catalog]);
+  const images = useMemo(() => Object.fromEntries(Object.values(catalog).map(c => [c.name.toLowerCase(), c.stored ?? c.image])), [catalog]);
   const recent = sessions.flatMap(s => s.snapshot.details.filter(d => d.gained > 0).map(d => ({ ...d, at: s.updated_at }))).slice(0, 10);
   const top = [...(snap?.inventory ?? [])].filter(s => s.k.startsWith('pet:')).sort((a, b) => (b.p ?? 0) - (a.p ?? 0)).slice(0, 6);
 
@@ -132,7 +135,7 @@ export default function StealAnEggView({ sessions, media, community, live, accou
                   const info = catalog[t.k];
                   return (
                     <div key={`${t.k}:${i}`} className="rounded-lg border border-white/[0.06] p-3 text-center" style={{ background: `radial-gradient(circle at 50% 30%, ${info?.rarity_color ?? '#c9a97a'}22, transparent 70%)` }}>
-                      <Img src={info?.image} className="mx-auto h-14 w-14 object-contain" fallback={<PawPrint size={22} className="text-white/25" />} />
+                      <Img src={info?.stored} backup={info?.image} className="mx-auto h-14 w-14 object-contain" fallback={<PawPrint size={22} className="text-white/25" />} />
                       <p className="mt-2 truncate text-xs font-medium text-white" title={info?.name}>{info?.name ?? t.k.split(':')[1]}</p>
                       <p className="mt-1 font-mono text-xs text-emerald-400">${compactCount(t.p ?? 0)}/s</p>
                       {t.w ? <p className="text-[10px] text-white/35">{kg(t.w)}</p> : null}
@@ -143,7 +146,7 @@ export default function StealAnEggView({ sessions, media, community, live, accou
             </div>
           )}
         </>
-      ) : tab === 'inventory' ? <InventoryView stacks={snap.inventory} catalog={catalog} />
+      ) : tab === 'inventory' ? <InventoryView stacks={snap.inventory} catalog={catalog} loading={!!latest?.snapshot.inventory?.length && loadedFor !== signature && !Object.keys(catalog).length} />
       : tab === 'gains' ? (
         <>
           <div className="mb-6 grid grid-cols-2 gap-3 xl:grid-cols-4">{metrics.map(k => <div key={k} className={`${card} p-4`}><p className="flex items-center gap-1 text-xs capitalize text-white/45">{k === 'gear' && <Swords size={12} />}{k}</p><p className="mt-2 font-mono text-2xl text-white" title={String(snap.owned[k])}>{compactCount(snap.owned[k] ?? 0)}</p><p className="mt-2 text-xs text-[#c9a97a]">+{compactCount(snap.gained[k] ?? 0)} gained</p></div>)}</div>

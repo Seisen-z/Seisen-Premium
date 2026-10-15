@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Activity, ArrowLeft, Boxes, CalendarDays, ChevronRight, Clock, Gem, LayoutGrid, Link2, List, PawPrint, RefreshCw, Search, Star, TrendingUp, Users, Egg, Plus } from 'lucide-react';
 import { PET_SIMULATOR_99, STEAL_AN_EGG, compactCount, type CatalogEntry, type Counts, type InventoryStack, type TrackstatResponse } from '@/lib/trackstat';
 import StealAnEggView from './StealAnEggView';
-import { Avatar, DetailTable, GainChart, Img, Stat, ago, button, card, span, total } from './ui';
+import { Avatar, CardSkeleton, DetailTable, GainChart, Img, PageSkeleton, Stat, ago, button, card, span, total } from './ui';
 
 type Tab = 'overview' | 'inventory' | 'gains' | 'history' | 'community';
 
@@ -51,7 +51,7 @@ function InventoryCard({ stack, info }: { stack: InventoryStack; info?: CatalogE
   );
 }
 
-function InventoryView({ stacks, catalog }: { stacks?: InventoryStack[]; catalog: Record<string, CatalogEntry> }) {
+function InventoryView({ stacks, catalog, loading }: { stacks?: InventoryStack[]; catalog: Record<string, CatalogEntry>; loading: boolean }) {
   const [q, setQ] = useState('');
   const [cat, setCat] = useState('all');
   const [limit, setLimit] = useState(60);
@@ -68,7 +68,9 @@ function InventoryView({ stacks, catalog }: { stacks?: InventoryStack[]; catalog
         <label className="relative block w-full max-w-xs"><Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/35" /><input aria-label="Search inventory" value={q} onChange={e => { setQ(e.target.value); setLimit(60); }} placeholder="Search item or pet…" className="w-full rounded-lg border border-white/10 bg-[#101010] py-2 pl-9 pr-3 text-sm text-white outline-none focus:border-[#c9a97a]" /></label>
         <div className="flex flex-wrap gap-1" role="group" aria-label="Inventory category">{categories.map(c => <button key={c.id} aria-pressed={cat === c.id} onClick={() => { setCat(c.id); setLimit(60); }} className={`rounded-lg px-3 py-1.5 text-sm transition-colors ${cat === c.id ? 'bg-[#c9a97a] font-medium text-black' : 'bg-white/[0.04] text-white/55 hover:text-white'}`}>{c.label}</button>)}</div>
       </div>
-      {shown.length ? (
+      {loading ? (
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">{Array.from({ length: 10 }, (_, i) => <CardSkeleton key={i} />)}</div>
+      ) : shown.length ? (
         <>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">{shown.slice(0, limit).map((s, i) => <InventoryCard key={`${s.k}:${i}`} stack={s} info={catalog[s.k]} />)}</div>
           {shown.length > limit && <button onClick={() => setLimit(l => l + 60)} className={`${button} mx-auto mt-6 block`}>Show more ({shown.length - limit})</button>}
@@ -91,6 +93,7 @@ export default function TrackstatPanel() {
   const [search, setSearch] = useState('');
   const [listView, setListView] = useState(false);
   const [catalog, setCatalog] = useState<Record<string, CatalogEntry>>({});
+  const [loadedFor, setLoadedFor] = useState('');
   const load = useCallback(async () => {
     try {
       const response = await fetch('/api/trackstat', { cache: 'no-store' });
@@ -148,7 +151,7 @@ export default function TrackstatPanel() {
   const inventoryKey = `${history?.index}:${latest?.id}:${latest?.snapshot.inventory?.length ?? 0}`;
   useEffect(() => {
     if (!latest?.snapshot.inventory?.length) return;
-    fetch(`/api/trackstat/catalog?account=${history?.index ?? 0}`, { cache: 'no-store' }).then(r => r.json()).then(b => setCatalog(b.catalog ?? {})).catch(() => {});
+    fetch(`/api/trackstat/catalog?account=${history?.index ?? 0}`, { cache: 'no-store' }).then(r => r.json()).then(b => setCatalog(b.catalog ?? {})).catch(() => {}).finally(() => setLoadedFor(inventoryKey));
   }, [inventoryKey]); // eslint-disable-line react-hooks/exhaustive-deps
   const images = useMemo(() => Object.fromEntries(Object.values(catalog).map(c => [c.name.toLowerCase(), c.image])), [catalog]);
   const recent = sessions.flatMap(s => s.snapshot.details.filter(d => d.gained > 0).map(d => ({ ...d, at: s.updated_at }))).slice(0, 10);
@@ -190,7 +193,7 @@ export default function TrackstatPanel() {
   );
 
   let main: ReactNode;
-  if (!data) main = <p className="py-12 text-sm text-white/40" role="status">{error ? 'Refresh to try again.' : 'Loading Trackstat…'}</p>;
+  if (!data) main = error ? <p className="py-12 text-sm text-white/40">Refresh to try again.</p> : <PageSkeleton />;
   else if (page === 'connection') main = (
     <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
       <div className={`${card} p-6`}>{connection}</div>
@@ -327,7 +330,7 @@ export default function TrackstatPanel() {
               </div>
             )}
           </>
-        ) : tab === 'inventory' ? <InventoryView stacks={counts.inventory} catalog={catalog} />
+        ) : tab === 'inventory' ? <InventoryView stacks={counts.inventory} catalog={catalog} loading={!!latest?.snapshot.inventory?.length && loadedFor !== inventoryKey && !Object.keys(catalog).length} />
         : tab === 'gains' ? (
           <>
             <div className="mb-6 grid grid-cols-2 gap-3 xl:grid-cols-4">{(['items', 'huge', 'titanic', 'gargantuan'] as const).map(k => <div key={k} className={`${card} p-4`}><p className="text-xs capitalize text-white/45">{k}</p><p className="mt-2 font-mono text-2xl text-white" title={String(counts.owned[k])}>{compactCount(counts.owned[k])}</p><p className="mt-2 text-xs text-[#c9a97a]">+{compactCount(counts.gained[k])} gained</p></div>)}</div>

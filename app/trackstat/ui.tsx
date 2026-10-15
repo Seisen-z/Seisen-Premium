@@ -25,10 +25,17 @@ export function Stat({ icon, label, value, hint }: { icon: ReactNode; label: str
   );
 }
 
-export function Img({ src, className, fallback }: { src?: string | null; className: string; fallback: ReactNode }) {
-  const [failed, setFailed] = useState(false);
+export function Skeleton({ className = '' }: { className?: string }) {
+  return <span aria-hidden className={`block animate-pulse rounded-md bg-white/[0.07] ${className}`} />;
+}
+
+// backup is tried when src fails to load; the box pulses until the picture arrives
+export function Img({ src, backup, className, fallback }: { src?: string | null; backup?: string | null; className: string; fallback: ReactNode }) {
+  const [failures, setFailures] = useState(0);
+  const [loaded, setLoaded] = useState(false);
+  const shown = [src, backup].filter((url): url is string => !!url)[failures];
   // eslint-disable-next-line @next/next/no-img-element
-  return src && !failed ? <img src={src} alt="" referrerPolicy="no-referrer" onError={() => setFailed(true)} className={`${className} object-cover`} /> : <span className={`${className} grid place-items-center`}>{fallback}</span>;
+  return shown ? <img src={shown} alt="" referrerPolicy="no-referrer" onLoad={() => setLoaded(true)} onError={() => setFailures(n => n + 1)} className={`${className} object-cover ${loaded ? '' : 'animate-pulse'}`} /> : <span className={`${className} grid place-items-center`}>{fallback}</span>;
 }
 
 export function Avatar({ src, name, small }: { src?: string | null; name: string; small?: boolean }) {
@@ -36,6 +43,31 @@ export function Avatar({ src, name, small }: { src?: string | null; name: string
 }
 
 export const ranges = { '1H': 3600e3, '6H': 21600e3, '24H': 86400e3, '7D': 604800e3 } as const;
+
+// Placeholder shaped like an inventory card
+export function CardSkeleton() {
+  return (
+    <div className={`${card} overflow-hidden`}>
+      <Skeleton className="h-28 rounded-none" />
+      <div className="space-y-3 p-4"><Skeleton className="h-4 w-3/4" /><Skeleton className="h-3 w-1/3" /><Skeleton className="mt-6 h-3 w-1/2" /></div>
+    </div>
+  );
+}
+
+// Whole-page placeholder shown until the first response arrives
+export function PageSkeleton() {
+  return (
+    <div role="status" aria-label="Loading Trackstat">
+      <div className={`${card} mb-6 flex flex-wrap items-center gap-5 p-5`}>
+        <Skeleton className="h-16 w-16 rounded-full" />
+        <div className="min-w-0 flex-1 basis-56 space-y-3"><Skeleton className="h-6 w-48" /><Skeleton className="h-3 w-24" /><Skeleton className="h-3 w-64 max-w-full" /></div>
+        <div className="grid w-full grid-cols-2 gap-3 xl:w-auto xl:grid-cols-4">{[0, 1, 2, 3].map(i => <Skeleton key={i} className="h-[74px] w-full xl:w-44" />)}</div>
+      </div>
+      <Skeleton className="mb-4 h-6 w-48" />
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">{[0, 1].map(i => <div key={i} className={`${card} overflow-hidden`}><Skeleton className="h-36 rounded-none" /><div className="space-y-2 p-4"><Skeleton className="h-4 w-32" /><Skeleton className="h-3 w-16" /></div></div>)}</div>
+    </div>
+  );
+}
 
 export function GainChart({ sessions }: { sessions: TrackstatSession[] }) {
   const [range, setRange] = useState<keyof typeof ranges>('7D');

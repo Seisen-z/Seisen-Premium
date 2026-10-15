@@ -13,7 +13,7 @@ async function icons(ids: string[]): Promise<Record<string, string>> {
     try {
       const response = await fetch(`https://thumbnails.roblox.com/v1/assets?assetIds=${chunk.join(',')}&size=150x150&format=Png&returnPolicy=PlaceHolder`, { next: { revalidate: 86400 }, signal: AbortSignal.timeout(8000) });
       if (!response.ok) return;
-      for (const image of (await response.json()).data ?? []) if (image.state === 'Completed' && image.imageUrl) out[String(image.targetId)] = image.imageUrl;
+      for (const image of (await response.json()).data ?? []) if (image.state === 'Completed' && image.imageUrl && !image.imageUrl.includes('/PrivateImage/')) out[String(image.targetId)] = image.imageUrl;
     } catch { /* icons are optional; cards fall back to a placeholder */ }
   }));
   return out;
@@ -31,7 +31,9 @@ export async function GET(req: NextRequest) {
     const itemKeys = [...new Set(latest?.snapshot.inventory?.map(entry => entry.k) ?? [])];
     const rows = itemKeys.length ? await trackstatRPC<Record<string, Omit<CatalogEntry, 'image'>>>(stealAnEgg ? 'trackstats_stealanegg_catalog_read' : 'trackstat_catalog_read', { p_keys: itemKeys }) : {};
     const images = await icons([...new Set(Object.values(rows).map(row => row.icon).filter((icon): icon is string => !!icon))]);
-    const catalog = Object.fromEntries(Object.entries(rows).map(([k, row]) => [k, { ...row, image: row.icon ? images[row.icon] ?? null : null }]));
+    // Steal An Egg icons are private on Roblox, so the library stores its own copy of each picture
+    const stored = (icon: string | null) => (stealAnEgg && icon ? `https://xsygxfeutjcwmqejslbv.supabase.co/storage/v1/object/public/trackstats-images/stealanegg/${icon}.png` : null);
+    const catalog = Object.fromEntries(Object.entries(rows).map(([k, row]) => [k, { ...row, image: row.icon ? images[row.icon] ?? null : null, stored: stored(row.icon) }]));
     return NextResponse.json({ catalog }, { headers });
   } catch {
     return NextResponse.json({ catalog: {} }, { headers });
