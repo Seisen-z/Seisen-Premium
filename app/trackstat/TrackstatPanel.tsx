@@ -105,8 +105,15 @@ export default function TrackstatPanel() {
   }, []);
   useEffect(() => {
     void load();
-    const timer = setInterval(() => { if (!document.hidden) void load(); }, 15000);
-    return () => clearInterval(timer);
+    const refresh = () => { if (!document.hidden) void load(); };
+    const timer = setInterval(refresh, 15000);
+    document.addEventListener('visibilitychange', refresh);
+    window.addEventListener('focus', refresh);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', refresh);
+      window.removeEventListener('focus', refresh);
+    };
   }, [load]);
 
   async function connect(event: FormEvent) {
@@ -155,8 +162,8 @@ export default function TrackstatPanel() {
   const selected = sessions.find(s => s.id === sessionId) || sessions[0];
   const latest = sessions[0];
   const totalGains = allSessions.reduce((n, s) => n + total(s.snapshot.gained), 0);
-  const liveSae = !!saeSessions[0] && Date.now() - new Date(saeSessions[0].updated_at).getTime() < 120000;
-  const live = !!latest && Date.now() - new Date(latest.updated_at).getTime() < 120000;
+  const liveSae = history?.activeGames?.includes(STEAL_AN_EGG) ?? false;
+  const live = history?.activeGames?.includes(PET_SIMULATOR_99) ?? false;
   const inventoryKey = `${history?.index}:${latest?.id}:${latest?.snapshot.inventory?.length ?? 0}`;
   useEffect(() => {
     if (!latest?.snapshot.inventory?.length) return;
