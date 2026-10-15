@@ -261,8 +261,6 @@ export default function TrackstatPanel() {
           <button className={`${button} w-full border-[#c9a97a]/40 bg-[#c9a97a]/10 text-[#c9a97a]`} disabled={busy || !key.trim()}>{busy ? 'Connecting…' : 'Connect account'}</button>
         </form>
       )}
-      <p className="mt-5 text-xs leading-6 text-white/45">Open <span className="text-white/70">Trackstat</span> in the library, copy your key, and paste it here. Turn on tracking to send stats. Resetting the key in the library disconnects old keys without deleting history.</p>
-      <p className="mt-4 text-xs leading-6 text-white/35">Keep your connection key private. Anyone holding it can access your account&apos;s Trackstat history.</p>
     </div>
   );
 
@@ -278,7 +276,37 @@ export default function TrackstatPanel() {
 
   let main: ReactNode;
   if (!data) main = <p className="py-12 text-sm text-white/40" role="status">{error ? 'Refresh to try again.' : 'Loading Trackstat…'}</p>;
-  else if (page === 'connection') main = <div className={`${card} p-6`}>{connection}</div>;
+  else if (page === 'connection') main = (
+    <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
+      <div className={`${card} p-6`}>{connection}</div>
+      <div className="space-y-4">
+        <div className={`${card} p-6`}>
+          <h2 className="text-lg font-semibold text-white">How it works</h2>
+          <ol className="mt-4 space-y-4 text-sm leading-6 text-white/60">
+            {[
+              ['Open Trackstat in the library', 'Load the Seisen library in a supported game and open the Trackstat tab.'],
+              ['Copy your connection key', 'Press Copy connection key. Each Roblox account gets its own private key, and no website account is needed.'],
+              ['Paste it here', 'Paste the key into the box on this page. This browser stays connected for 30 days.'],
+              ['Turn on tracking', 'Switch on Track this account in the library. Your inventory and session gains sync about every 30 seconds.'],
+            ].map(([title, text], i) => <li key={title} className="flex gap-4"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[#c9a97a]/10 font-mono text-xs text-[#c9a97a]">{i + 1}</span><span><span className="block font-medium text-white">{title}</span>{text}</span></li>)}
+          </ol>
+          <div className="mt-6 space-y-2 border-t border-white/[0.07] pt-5 text-xs leading-6 text-white/45">
+            <p><span className="text-white/70">Your history is saved.</span> Closing the game or clearing your browser never deletes it. Paste the same key on any device to see it again.</p>
+            <p><span className="text-white/70">Resetting the key</span> in the library stops the old key from working but keeps all your history under the new one.</p>
+            <p><span className="text-white/70">Keep your key private.</span> Anyone holding it can see your inventory and history. Stats are reported by the library, so they are not verified.</p>
+          </div>
+        </div>
+        <div className={`${card} p-6`}>
+          <h2 className="text-lg font-semibold text-white">Supported games</h2>
+          <div className="mt-4 flex items-center gap-4 rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
+            <Img src={data?.media?.game} className="h-14 w-14 shrink-0 rounded-lg bg-gradient-to-br from-[#c9a97a]/25 to-[#1a1a1a]" fallback={<PawPrint size={24} className="text-[#c9a97a]" />} />
+            <div className="min-w-0"><p className="text-sm font-medium text-white">Pet Simulator 99</p><p className="mt-1 text-xs text-white/45">Full inventory, Huge / Titanic / Gargantuan pets, items, enchants and session gains.</p></div>
+          </div>
+          <p className="mt-3 text-xs text-white/35">More games will be added over time.</p>
+        </div>
+      </div>
+    </div>
+  );
   else if (!game) {
     main = (
       <>
