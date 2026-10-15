@@ -155,7 +155,7 @@ export default function StealAnEggView({ sessions, media, community, live, accou
         </>
       ) : (
         <div className={`${card} divide-y divide-white/[0.05]`}>
-          {sessions.map(s => <button key={s.id} onClick={() => { setSessionId(s.id); setTab('gains'); }} className={`flex w-full items-center justify-between gap-4 px-4 py-3 text-left text-sm hover:bg-white/[0.03] ${s.id === selected?.id ? 'bg-[#c9a97a]/[0.06]' : ''}`}><span><span className="block text-white/80">{new Date(s.started_at).toLocaleString()}</span><span className="text-xs text-white/40">{span(s)} · ${compactCount(s.snapshot.money ?? 0)}</span></span><span className="font-mono text-emerald-400">+{compactCount(total(s.snapshot.gained))}</span></button>)}
+          {sessions.filter(s => !s.history_expired).map(s => <button key={s.id} onClick={() => { setSessionId(s.id); setTab('gains'); }} className={`flex w-full items-center justify-between gap-4 px-4 py-3 text-left text-sm hover:bg-white/[0.03] ${s.id === selected?.id ? 'bg-[#c9a97a]/[0.06]' : ''}`}><span><span className="block text-white/80">{new Date(s.started_at).toLocaleString()}</span><span className="text-xs text-white/40">{span(s)} · ${compactCount(s.snapshot.money ?? 0)}</span></span><span className="font-mono text-emerald-400">+{compactCount(total(s.snapshot.gained))}</span></button>)}
         </div>
       )}
     </>

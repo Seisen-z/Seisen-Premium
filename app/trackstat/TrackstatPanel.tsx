@@ -105,7 +105,7 @@ export default function TrackstatPanel() {
   }, []);
   useEffect(() => {
     void load();
-    const timer = setInterval(() => { if (!document.hidden) void load(); }, 30000);
+    const timer = setInterval(() => { if (!document.hidden) void load(); }, 15000);
     return () => clearInterval(timer);
   }, [load]);
 
@@ -214,12 +214,12 @@ export default function TrackstatPanel() {
               ['Open Trackstat in the library', 'Load the Seisen library in a supported game and open the Trackstat tab.'],
               ['Copy your connection key', 'Press Copy connection key. Each Roblox account gets its own private key, and no website account is needed.'],
               ['Paste it here', 'Paste the key into the box on this page. This browser stays connected for 30 days.'],
-              ['Turn on tracking', 'Switch on Track this account in the library. Your inventory and session gains sync about every 30 seconds.'],
+              ['Play a supported game', 'Tracking starts automatically when the library detects the game. Your inventory and session gains sync about every 15 seconds. Approve new devices here when prompted.'],
             ].map(([title, text], i) => <li key={title} className="flex gap-4"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[#c9a97a]/10 font-mono text-xs text-[#c9a97a]">{i + 1}</span><span><span className="block font-medium text-white">{title}</span>{text}</span></li>)}
           </ol>
           <div className="mt-6 space-y-2 border-t border-white/[0.07] pt-5 text-xs leading-6 text-white/45">
-            <p><span className="text-white/70">Your history is saved.</span> Closing the game or clearing your browser never deletes it. Paste the same key on any device to see it again.</p>
-            <p><span className="text-white/70">Resetting the key</span> in the library stops the old key from working but keeps all your history under the new one.</p>
+            <p><span className="text-white/70">Activity is kept for 8 days after the last session sync.</span> Older gains and history are automatically removed. Your latest inventory stays until the next game sync updates it.</p>
+            <p><span className="text-white/70">Resetting the key</span> in the library stops the old key from working but keeps your inventory and retained history under the new one.</p>
             <p><span className="text-white/70">Keep your key private.</span> Anyone holding it can see your inventory and history. Stats are reported by the library, so they are not verified.</p>
           </div>
         </div>
@@ -348,7 +348,7 @@ export default function TrackstatPanel() {
           </>
         ) : (
           <div className={`${card} divide-y divide-white/[0.05]`}>
-            {sessions.map(s => <button key={s.id} onClick={() => { setSessionId(s.id); setTab('gains'); }} className={`flex w-full items-center justify-between gap-4 px-4 py-3 text-left text-sm hover:bg-white/[0.03] ${s.id === selected?.id ? 'bg-[#c9a97a]/[0.06]' : ''}`}><span><span className="block text-white/80">{new Date(s.started_at).toLocaleString()}</span><span className="text-xs text-white/40">{span(s)} · {pets(s.snapshot.gained)} large pets</span></span><span className="font-mono text-emerald-400">+{compactCount(total(s.snapshot.gained))}</span></button>)}
+            {sessions.filter(s => !s.history_expired).map(s => <button key={s.id} onClick={() => { setSessionId(s.id); setTab('gains'); }} className={`flex w-full items-center justify-between gap-4 px-4 py-3 text-left text-sm hover:bg-white/[0.03] ${s.id === selected?.id ? 'bg-[#c9a97a]/[0.06]' : ''}`}><span><span className="block text-white/80">{new Date(s.started_at).toLocaleString()}</span><span className="text-xs text-white/40">{span(s)} · {pets(s.snapshot.gained)} large pets</span></span><span className="font-mono text-emerald-400">+{compactCount(total(s.snapshot.gained))}</span></button>)}
           </div>
         )}
       </>
