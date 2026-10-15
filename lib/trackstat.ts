@@ -15,7 +15,9 @@ export type TrackstatSnapshot = {
 export type InventoryStack = { k: string; a: number; r?: number; x?: number; l?: number; f?: boolean; e?: number; cs?: number; ch?: string[]; w?: number; m?: string[]; p?: number; pl?: number };
 export type CatalogEntry = { class?: string; kind?: string; name: string; icon: string | null; image: string | null; stored?: string | null; rarity: string | null; rarity_num: number | null; rarity_color: string | null; description: string | null };
 export type TrackstatSession = { history_expired?: boolean; id: string; game_id: string; started_at: string; updated_at: string; snapshot: TrackstatSnapshot };
+export type TrackstatDailyGains = { day: string; game_id: string; gained: Counts };
 export type TrackstatHistory = {
+  daily?: TrackstatDailyGains[];
   activeGames?: string[];
   account: { username: string; roblox_id: string };
   sessions: TrackstatSession[];

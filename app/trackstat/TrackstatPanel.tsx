@@ -294,7 +294,7 @@ export default function TrackstatPanel() {
       </>
     );
   } else if (game === 'sae') {
-    main = <StealAnEggView sessions={saeSessions} media={data.media} community={data.publicStealAnEgg} live={liveSae} account={history?.index ?? 0} onBack={() => setGame(null)} />;
+    main = <StealAnEggView sessions={saeSessions} daily={(history?.daily ?? []).filter(day => day.game_id === STEAL_AN_EGG)} media={data.media} community={data.publicStealAnEgg} live={liveSae} account={history?.index ?? 0} onBack={() => setGame(null)} />;
   } else {
     const counts = selected?.snapshot;
     main = (
@@ -326,7 +326,7 @@ export default function TrackstatPanel() {
                 <div className="mb-4 flex items-center justify-between"><h3 className="text-sm font-semibold text-white">Recent Activity</h3><button onClick={() => setTab('gains')} className="flex items-center gap-1 text-xs text-[#c9a97a] hover:underline">View All <ChevronRight size={12} /></button></div>
                 {recent.length ? <ul className="divide-y divide-white/[0.05]">{recent.map((r, i) => <li key={`${r.name}:${i}`} className="flex items-center gap-3 py-2.5 text-sm"><Img src={images[r.name.toLowerCase()]} className="h-9 w-9 shrink-0 object-contain" fallback={<Gem size={14} className="text-white/25" />} /><span className="min-w-0 flex-1"><span className="block truncate text-white/85">{r.name}</span><span className="text-xs capitalize text-white/35">{r.kind} · {ago(r.at)}</span></span><span className="shrink-0 rounded-md bg-emerald-400/10 px-2 py-0.5 font-mono text-xs text-emerald-400">+{compactCount(r.gained)}</span></li>)}</ul> : <p className="text-sm text-white/40">No gains recorded yet.</p>}
               </div>
-              <div className={`${card} flex flex-col p-5`}><h3 className="-mb-6 text-sm font-semibold text-white">Gains Chart</h3><GainChart sessions={sessions} /></div>
+              <div className={`${card} flex flex-col p-5`}><h3 className="-mb-6 text-sm font-semibold text-white">Gains Chart</h3><GainChart daily={(history?.daily ?? []).filter(day => day.game_id === PET_SIMULATOR_99)} /></div>
             </div>
             {!!topStacks.length && (
               <div className={`${card} mt-4 p-5`}>

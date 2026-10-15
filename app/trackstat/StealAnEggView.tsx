@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { Activity, ArrowLeft, Boxes, ChevronRight, Clock, Coins, Egg, Gauge, PawPrint, Search, Star, Swords, TrendingUp, Users, Weight, Zap } from 'lucide-react';
-import { compactCount, type CatalogEntry, type InventoryStack, type TrackstatMedia, type TrackstatPublic, type TrackstatSession } from '@/lib/trackstat';
+import { compactCount, type TrackstatDailyGains, type CatalogEntry, type InventoryStack, type TrackstatMedia, type TrackstatPublic, type TrackstatSession } from '@/lib/trackstat';
 import { CardSkeleton, DetailTable, GainChart, Img, Stat, ago, card, span, total } from './ui';
 
 type Tab = 'overview' | 'inventory' | 'gains' | 'history' | 'community';
@@ -69,7 +69,7 @@ function InventoryView({ stacks, catalog, loading }: { stacks?: InventoryStack[]
   );
 }
 
-export default function StealAnEggView({ sessions, media, community, live, account, onBack }: { sessions: TrackstatSession[]; account: number; media: TrackstatMedia | undefined; community: TrackstatPublic | null | undefined; live: boolean; onBack: () => void }) {
+export default function StealAnEggView({ sessions, daily = [], media, community, live, account, onBack }: { sessions: TrackstatSession[]; daily?: TrackstatDailyGains[]; account: number; media: TrackstatMedia | undefined; community: TrackstatPublic | null | undefined; live: boolean; onBack: () => void }) {
   const [tab, setTab] = useState<Tab>('overview');
   const [sessionId, setSessionId] = useState('');
   const [catalog, setCatalog] = useState<Record<string, CatalogEntry>>({});
@@ -126,7 +126,7 @@ export default function StealAnEggView({ sessions, media, community, live, accou
               <div className="mb-4 flex items-center justify-between"><h3 className="text-sm font-semibold text-white">Recent Activity</h3><button onClick={() => setTab('gains')} className="flex items-center gap-1 text-xs text-[#c9a97a] hover:underline">View All <ChevronRight size={12} /></button></div>
               {recent.length ? <ul className="divide-y divide-white/[0.05]">{recent.map((r, i) => <li key={`${r.name}:${i}`} className="flex items-center gap-3 py-2.5 text-sm"><Img src={images[r.name.toLowerCase()]} backup={backups[r.name.toLowerCase()]} className="h-9 w-9 shrink-0 object-contain" fallback={<PawPrint size={14} className="text-white/25" />} /><span className="min-w-0 flex-1"><span className="block truncate text-white/85">{r.name}</span><span className="text-xs capitalize text-white/35">{r.kind} · {ago(r.at)}</span></span><span className="shrink-0 rounded-md bg-emerald-400/10 px-2 py-0.5 font-mono text-xs text-emerald-400">+{compactCount(r.gained)}</span></li>)}</ul> : <p className="text-sm text-white/40">No gains recorded yet.</p>}
             </div>
-            <div className={`${card} flex flex-col p-5`}><h3 className="-mb-6 text-sm font-semibold text-white">Gains Chart</h3><GainChart sessions={sessions} /></div>
+            <div className={`${card} flex flex-col p-5`}><h3 className="-mb-6 text-sm font-semibold text-white">Gains Chart</h3><GainChart daily={daily} /></div>
           </div>
           {!!top.length && (
             <div className={`${card} mt-4 p-5`}>

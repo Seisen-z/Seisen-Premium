@@ -2,7 +2,7 @@
 
 import { useMemo, useState, type ReactNode } from 'react';
 import { Gem, Search } from 'lucide-react';
-import { compactCount, type Counts, type TrackstatSession } from '@/lib/trackstat';
+import { compactCount, type Counts, type TrackstatDailyGains, type TrackstatSession } from '@/lib/trackstat';
 
 export const card = 'rounded-xl border border-white/[0.07] bg-[#101010]';
 export const button = 'rounded-lg border border-white/10 px-4 py-2.5 text-sm text-white/70 transition-colors hover:border-[#c9a97a]/50 hover:text-[#c9a97a] focus-visible:outline-2 focus-visible:outline-[#c9a97a] disabled:opacity-40';
@@ -46,7 +46,7 @@ export function Avatar({ src, name, small }: { src?: string | null; name: string
   return <Img src={src} className={`${small ? 'h-9 w-9 text-sm' : 'h-16 w-16 text-2xl'} shrink-0 rounded-full border border-[#c9a97a]/40 bg-[#c9a97a]/10 font-semibold text-[#c9a97a]`} fallback={name[0]?.toUpperCase()} />;
 }
 
-export const ranges = { '1H': 3600e3, '6H': 21600e3, '24H': 86400e3, '7D': 604800e3 } as const;
+export const ranges = { '1D': 1, '7D': 7 } as const;
 
 // Placeholder shaped like an inventory card
 export function CardSkeleton() {
@@ -73,18 +73,23 @@ export function PageSkeleton() {
   );
 }
 
-export function GainChart({ sessions }: { sessions: TrackstatSession[] }) {
+export function GainChart({ daily }: { daily: TrackstatDailyGains[] }) {
   const [range, setRange] = useState<keyof typeof ranges>('7D');
   const [hover, setHover] = useState<number | null>(null);
   const points = useMemo(() => {
-    const from = new Date().getTime() - ranges[range];
-    return [...sessions].reverse().filter(s => new Date(s.updated_at).getTime() >= from).reduce<{ t: number; v: number; g: number }[]>((acc, s) => [...acc, { t: new Date(s.updated_at).getTime(), g: total(s.snapshot.gained), v: (acc.at(-1)?.v ?? 0) + total(s.snapshot.gained) }], []);
-  }, [sessions, range]);
-  const W = 600, H = 180, max = Math.max(...points.map(p => p.v), 1), t0 = points[0]?.t ?? 0, dt = Math.max((points.at(-1)?.t ?? 0) - t0, 1);
-  const fx = (p: { t: number }) => (p.t - t0) / dt;
+    const today = new Date().toISOString().slice(0, 10);
+    const midnight = Date.parse(`${today}T00:00:00Z`);
+    const totals = new Map(daily.map(day => [day.day, total(day.gained)]));
+    return Array.from({ length: ranges[range] }, (_, i) => {
+      const t = midnight - (ranges[range] - i - 1) * 86400e3;
+      const gained = totals.get(new Date(t).toISOString().slice(0, 10)) ?? 0;
+      return { t, v: gained };
+    });
+  }, [daily, range]);
+  const W = 600, H = 180, max = Math.max(...points.map(p => p.v), 1), t0 = points[0].t, dt = points.length * 86400e3;
+  const fx = (p: { t: number }) => (p.t - t0 + 43200e3) / dt;
   const fy = (p: { v: number }) => (H - (p.v / max) * (H - 10) - 5) / H;
-  const xy = points.map(p => `${fx(p) * W},${fy(p) * H}`);
-  const hm = (t: number) => new Date(t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const dayLabel = (t: number) => new Date(t).toLocaleDateString([], { timeZone: 'UTC', month: 'short', day: 'numeric' });
   const active = hover !== null ? points[hover] : null;
   const move = (e: React.PointerEvent<HTMLDivElement>) => {
     const box = e.currentTarget.getBoundingClientRect();
@@ -94,33 +99,28 @@ export function GainChart({ sessions }: { sessions: TrackstatSession[] }) {
   return (
     <div className="flex h-full flex-col">
       <div className="mb-3 flex justify-end gap-1" role="group" aria-label="Chart range">{(Object.keys(ranges) as (keyof typeof ranges)[]).map(r => <button key={r} aria-pressed={range === r} onClick={() => { setRange(r); setHover(null); }} className={`rounded-md px-3 py-1 text-xs transition-colors ${range === r ? 'bg-[#c9a97a] font-medium text-black' : 'bg-white/[0.04] text-white/55 hover:text-white'}`}>{r}</button>)}</div>
-      {points.length < 2 ? <p className="grid min-h-44 flex-1 place-items-center text-sm text-white/40">Not enough sessions in this range.</p> : (
-        <div className="flex min-h-44 flex-1 gap-3">
+      <div className="flex min-h-44 flex-1 gap-3">
           <div className="flex flex-col justify-between py-1 text-right font-mono text-[11px] text-white/40"><span>{compactCount(max)}</span><span>{compactCount(max / 2)}</span><span>0</span></div>
           <div className="flex min-w-0 flex-1 flex-col">
             <div className="relative flex-1 cursor-crosshair touch-none" onPointerMove={move} onPointerLeave={() => setHover(null)}>
-              <svg viewBox={`0 0 ${W} ${H}`} className="absolute inset-0 h-full w-full" preserveAspectRatio="none" role="img" aria-label="Cumulative gains across sessions">
-                <defs><linearGradient id="ts-fill" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#c9a97a" stopOpacity=".3" /><stop offset="1" stopColor="#c9a97a" stopOpacity="0" /></linearGradient></defs>
+              <svg viewBox={`0 0 ${W} ${H}`} className="absolute inset-0 h-full w-full" preserveAspectRatio="none" role="img" aria-label="Daily gains (UTC)">
                 {[0.25, 0.5, 0.75].map(f => <line key={f} x1="0" x2={W} y1={H * f} y2={H * f} stroke="white" strokeOpacity=".06" vectorEffect="non-scaling-stroke" />)}
-                <polygon points={`0,${H} ${xy.join(' ')} ${W},${H}`} fill="url(#ts-fill)" />
-                <polyline points={xy.join(' ')} fill="none" stroke="#c9a97a" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+                {points.map(p => <rect key={p.t} x={fx(p) * W - W / points.length * 0.3} y={fy(p) * H} width={W / points.length * 0.6} height={Math.max(0, H - 5 - fy(p) * H)} fill="#c9a97a" rx="3" />)}
               </svg>
               {active && (
                 <>
                   <span className="pointer-events-none absolute bottom-0 top-0 w-px bg-white/20" style={{ left: `${fx(active) * 100}%` }} />
                   <span className="pointer-events-none absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-[#c9a97a] bg-[#111]" style={{ left: `${fx(active) * 100}%`, top: `${fy(active) * 100}%` }} />
                   <div className="pointer-events-none absolute z-10 whitespace-nowrap rounded-lg border border-white/10 bg-[#1a1a1a] px-3 py-2 text-xs shadow-xl" style={{ left: `${fx(active) * 100}%`, top: `${fy(active) * 100}%`, transform: `translate(${fx(active) < 0.2 ? '8px' : fx(active) > 0.8 ? 'calc(-100% - 8px)' : '-50%'}, ${fx(active) < 0.2 || fx(active) > 0.8 ? '-50%' : 'calc(-100% - 14px)'})` }}>
-                    <p className="text-white/45">{new Date(active.t).toLocaleDateString([], { month: 'short', day: 'numeric' })} · {hm(active.t)}</p>
-                    <p className="mt-1 font-mono text-sm text-white">+{compactCount(active.v)} <span className="text-white/40">total</span></p>
-                    <p className="font-mono text-emerald-400">+{compactCount(active.g)} <span className="text-white/40">this session</span></p>
+                    <p className="text-white/45">{dayLabel(active.t)} · UTC</p>
+                    <p className="mt-1 font-mono text-sm text-white">+{compactCount(active.v)} <span className="text-white/40">daily total</span></p>
                   </div>
                 </>
               )}
             </div>
-            <div className="mt-2 flex justify-between font-mono text-[11px] text-white/40"><span>{hm(t0)}</span><span>{hm(points.at(-1)!.t)}</span></div>
+            <div className="mt-2 flex justify-between font-mono text-[11px] text-white/40"><span>{dayLabel(t0)}</span><span>{dayLabel(points.at(-1)!.t)}</span></div>
           </div>
-        </div>
-      )}
+      </div>
     </div>
   );
 }
