@@ -16,6 +16,7 @@ export type InventoryStack = { k: string; a: number; r?: number; x?: number; l?:
 export type CatalogEntry = { class?: string; kind?: string; name: string; icon: string | null; image: string | null; stored?: string | null; rarity: string | null; rarity_num: number | null; rarity_color: string | null; description: string | null };
 export type TrackstatSession = { history_expired?: boolean; id: string; game_id: string; started_at: string; updated_at: string; snapshot: TrackstatSnapshot };
 export type TrackstatHistory = {
+  activeGames?: string[];
   account: { username: string; roblox_id: string };
   sessions: TrackstatSession[];
 };

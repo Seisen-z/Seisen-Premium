@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
     const now = Date.now();
     const accounts: TrackstatAccount[] = valid.map(({ history }, index) => ({
       ...history, index, pending: pending[index],
-      activeGames: [...new Set(history.sessions.filter(s => now - new Date(s.updated_at).getTime() < 120000).map(s => s.game_id))],
+      activeGames: history.activeGames ?? [...new Set(history.sessions.filter(s => now - new Date(s.updated_at).getTime() < 120000).map(s => s.game_id))],
     }));
     const response = NextResponse.json({ public: totals, publicStealAnEgg: totalsStealAnEgg, accounts, media: await trackstatMedia(accounts.map(a => a.account.roblox_id)), reconnect: dropped }, { headers });
     if (dropped) writeKeys(response, valid.map(v => v.key));
