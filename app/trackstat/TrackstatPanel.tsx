@@ -48,26 +48,48 @@ const ranges = { '1H': 3600e3, '6H': 21600e3, '24H': 86400e3, '7D': 604800e3 } a
 
 function GainChart({ sessions }: { sessions: Session[] }) {
   const [range, setRange] = useState<keyof typeof ranges>('7D');
+  const [hover, setHover] = useState<number | null>(null);
   const points = useMemo(() => {
     const from = new Date().getTime() - ranges[range];
-    return [...sessions].reverse().filter(s => new Date(s.updated_at).getTime() >= from).reduce<{ t: number; v: number }[]>((acc, s) => [...acc, { t: new Date(s.updated_at).getTime(), v: (acc.at(-1)?.v ?? 0) + total(s.snapshot.gained) }], []);
+    return [...sessions].reverse().filter(s => new Date(s.updated_at).getTime() >= from).reduce<{ t: number; v: number; g: number }[]>((acc, s) => [...acc, { t: new Date(s.updated_at).getTime(), g: total(s.snapshot.gained), v: (acc.at(-1)?.v ?? 0) + total(s.snapshot.gained) }], []);
   }, [sessions, range]);
   const W = 600, H = 180, max = Math.max(...points.map(p => p.v), 1), t0 = points[0]?.t ?? 0, dt = Math.max((points.at(-1)?.t ?? 0) - t0, 1);
-  const xy = points.map(p => `${((p.t - t0) / dt) * W},${H - (p.v / max) * (H - 10) - 5}`);
+  const fx = (p: { t: number }) => (p.t - t0) / dt;
+  const fy = (p: { v: number }) => (H - (p.v / max) * (H - 10) - 5) / H;
+  const xy = points.map(p => `${fx(p) * W},${fy(p) * H}`);
   const hm = (t: number) => new Date(t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const active = hover !== null ? points[hover] : null;
+  const move = (e: React.PointerEvent<HTMLDivElement>) => {
+    const box = e.currentTarget.getBoundingClientRect();
+    const x = (e.clientX - box.left) / box.width;
+    setHover(points.reduce((best, p, i) => (Math.abs(fx(p) - x) < Math.abs(fx(points[best]) - x) ? i : best), 0));
+  };
   return (
-    <div>
-      <div className="mb-3 flex justify-end gap-1" role="group" aria-label="Chart range">{(Object.keys(ranges) as (keyof typeof ranges)[]).map(r => <button key={r} aria-pressed={range === r} onClick={() => setRange(r)} className={`rounded-md px-3 py-1 text-xs transition-colors ${range === r ? 'bg-[#c9a97a] font-medium text-black' : 'bg-white/[0.04] text-white/55 hover:text-white'}`}>{r}</button>)}</div>
-      {points.length < 2 ? <p className="grid h-44 place-items-center text-sm text-white/40">Not enough sessions in this range.</p> : (
-        <div className="flex gap-3">
-          <div className="flex h-44 flex-col justify-between py-1 text-right font-mono text-[11px] text-white/40"><span>{compactCount(max)}</span><span>{compactCount(max / 2)}</span><span>0</span></div>
-          <div className="min-w-0 flex-1">
-            <svg viewBox={`0 0 ${W} ${H}`} className="h-44 w-full" preserveAspectRatio="none" role="img" aria-label="Cumulative gains across sessions">
-              <defs><linearGradient id="ts-fill" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#c9a97a" stopOpacity=".3" /><stop offset="1" stopColor="#c9a97a" stopOpacity="0" /></linearGradient></defs>
-              {[0.25, 0.5, 0.75].map(f => <line key={f} x1="0" x2={W} y1={H * f} y2={H * f} stroke="white" strokeOpacity=".06" />)}
-              <polygon points={`0,${H} ${xy.join(' ')} ${W},${H}`} fill="url(#ts-fill)" />
-              <polyline points={xy.join(' ')} fill="none" stroke="#c9a97a" strokeWidth="2" vectorEffect="non-scaling-stroke" />
-            </svg>
+    <div className="flex h-full flex-col">
+      <div className="mb-3 flex justify-end gap-1" role="group" aria-label="Chart range">{(Object.keys(ranges) as (keyof typeof ranges)[]).map(r => <button key={r} aria-pressed={range === r} onClick={() => { setRange(r); setHover(null); }} className={`rounded-md px-3 py-1 text-xs transition-colors ${range === r ? 'bg-[#c9a97a] font-medium text-black' : 'bg-white/[0.04] text-white/55 hover:text-white'}`}>{r}</button>)}</div>
+      {points.length < 2 ? <p className="grid min-h-44 flex-1 place-items-center text-sm text-white/40">Not enough sessions in this range.</p> : (
+        <div className="flex min-h-44 flex-1 gap-3">
+          <div className="flex flex-col justify-between py-1 text-right font-mono text-[11px] text-white/40"><span>{compactCount(max)}</span><span>{compactCount(max / 2)}</span><span>0</span></div>
+          <div className="flex min-w-0 flex-1 flex-col">
+            <div className="relative flex-1 cursor-crosshair touch-none" onPointerMove={move} onPointerLeave={() => setHover(null)}>
+              <svg viewBox={`0 0 ${W} ${H}`} className="absolute inset-0 h-full w-full" preserveAspectRatio="none" role="img" aria-label="Cumulative gains across sessions">
+                <defs><linearGradient id="ts-fill" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#c9a97a" stopOpacity=".3" /><stop offset="1" stopColor="#c9a97a" stopOpacity="0" /></linearGradient></defs>
+                {[0.25, 0.5, 0.75].map(f => <line key={f} x1="0" x2={W} y1={H * f} y2={H * f} stroke="white" strokeOpacity=".06" vectorEffect="non-scaling-stroke" />)}
+                <polygon points={`0,${H} ${xy.join(' ')} ${W},${H}`} fill="url(#ts-fill)" />
+                <polyline points={xy.join(' ')} fill="none" stroke="#c9a97a" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+              </svg>
+              {active && (
+                <>
+                  <span className="pointer-events-none absolute bottom-0 top-0 w-px bg-white/20" style={{ left: `${fx(active) * 100}%` }} />
+                  <span className="pointer-events-none absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-[#c9a97a] bg-[#111]" style={{ left: `${fx(active) * 100}%`, top: `${fy(active) * 100}%` }} />
+                  <div className="pointer-events-none absolute z-10 whitespace-nowrap rounded-lg border border-white/10 bg-[#1a1a1a] px-3 py-2 text-xs shadow-xl" style={{ left: `${fx(active) * 100}%`, top: `${fy(active) * 100}%`, transform: `translate(${fx(active) < 0.2 ? '8px' : fx(active) > 0.8 ? 'calc(-100% - 8px)' : '-50%'}, ${fx(active) < 0.2 || fx(active) > 0.8 ? '-50%' : 'calc(-100% - 14px)'})` }}>
+                    <p className="text-white/45">{new Date(active.t).toLocaleDateString([], { month: 'short', day: 'numeric' })} · {hm(active.t)}</p>
+                    <p className="mt-1 font-mono text-sm text-white">+{compactCount(active.v)} <span className="text-white/40">total</span></p>
+                    <p className="font-mono text-emerald-400">+{compactCount(active.g)} <span className="text-white/40">this session</span></p>
+                  </div>
+                </>
+              )}
+            </div>
             <div className="mt-2 flex justify-between font-mono text-[11px] text-white/40"><span>{hm(t0)}</span><span>{hm(points.at(-1)!.t)}</span></div>
           </div>
         </div>
@@ -85,7 +107,7 @@ function DetailTable({ rows, empty, gainedOnly, images }: { rows: Session['snaps
       <div className={`${card} max-h-[480px] overflow-auto`}>
         <table className="w-full text-left text-sm">
           <thead className="sticky top-0 bg-[#181818] text-xs text-white/45"><tr><th className="px-4 py-3 font-normal">Item / pet</th><th className="px-4 py-3 text-right font-normal">Owned</th><th className="px-4 py-3 text-right font-normal">Gained</th></tr></thead>
-          <tbody>{shown.map((r, i) => <tr key={`${r.kind}:${r.name}:${i}`} className="border-t border-white/[0.05]"><td className="max-w-[260px] px-4 py-3 text-white/80"><div className="flex items-center gap-3"><Img src={images[r.name.toLowerCase()]} className="h-9 w-9 shrink-0 rounded-md bg-white/[0.04] object-contain" fallback={<Gem size={14} className="text-white/25" />} /><div className="min-w-0 break-words">{r.name}<span className="mt-0.5 block text-xs capitalize text-white/35">{r.kind}</span></div></div></td><td className="px-4 py-3 text-right font-mono text-white/60">{compactCount(r.owned)}</td><td className="px-4 py-3 text-right font-mono text-[#c9a97a]">+{compactCount(r.gained)}</td></tr>)}</tbody>
+          <tbody>{shown.map((r, i) => <tr key={`${r.kind}:${r.name}:${i}`} className="border-t border-white/[0.05]"><td className="max-w-[260px] px-4 py-3 text-white/80"><div className="flex items-center gap-3"><Img src={images[r.name.toLowerCase()]} className="h-9 w-9 shrink-0 object-contain" fallback={<Gem size={14} className="text-white/25" />} /><div className="min-w-0 break-words">{r.name}<span className="mt-0.5 block text-xs capitalize text-white/35">{r.kind}</span></div></div></td><td className="px-4 py-3 text-right font-mono text-white/60">{compactCount(r.owned)}</td><td className="px-4 py-3 text-right font-mono text-[#c9a97a]">+{compactCount(r.gained)}</td></tr>)}</tbody>
         </table>
         {!shown.length && <p className="p-5 text-sm text-white/40">{empty}</p>}
       </div>
@@ -218,7 +240,10 @@ export default function TrackstatPanel() {
     fetch('/api/trackstat/catalog', { cache: 'no-store' }).then(r => r.json()).then(b => setCatalog(b.catalog ?? {})).catch(() => {});
   }, [inventoryKey]); // eslint-disable-line react-hooks/exhaustive-deps
   const images = useMemo(() => Object.fromEntries(Object.values(catalog).map(c => [c.name.toLowerCase(), c.image])), [catalog]);
-  const recent = sessions.flatMap(s => s.snapshot.details.filter(d => d.gained > 0).map(d => ({ ...d, at: s.updated_at }))).slice(0, 8);
+  const recent = sessions.flatMap(s => s.snapshot.details.filter(d => d.gained > 0).map(d => ({ ...d, at: s.updated_at }))).slice(0, 10);
+  const stacks = selected?.snapshot.inventory;
+  const totalValue = (stacks ?? []).reduce((n, x) => n + (x.r ?? 0) * x.a, 0);
+  const topStacks = [...(stacks ?? [])].sort((a, b) => (b.r ?? 0) * b.a - (a.r ?? 0) * a.a).slice(0, 6);
 
   const connection = (
     <div className="max-w-md">
@@ -310,20 +335,38 @@ export default function TrackstatPanel() {
         ) : tab === 'overview' ? (
           <>
             <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-3 2xl:grid-cols-6">
+              <Stat icon={<Gem size={20} className="text-cyan-300" />} label="Total value" value={stacks ? compactCount(totalValue) : '—'} hint={String(totalValue)} />
               <Stat icon={<Boxes size={20} />} label="Items" value={compactCount(counts.owned.items)} hint={String(counts.owned.items)} />
               <Stat icon={<PawPrint size={20} />} label="Large pets" value={compactCount(pets(counts.owned))} hint={String(pets(counts.owned))} />
               <Stat icon={<Gem size={20} />} label="Huge" value={compactCount(counts.owned.huge)} />
-              <Stat icon={<Gem size={20} />} label="Titanic" value={compactCount(counts.owned.titanic)} />
               <Stat icon={<TrendingUp size={20} />} label="Session gains" value={`+${compactCount(total(counts.gained))}`} />
               <Stat icon={<Clock size={20} />} label="Session time" value={span(selected)} />
             </div>
-            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
+            <div className="grid items-stretch gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
               <div className={`${card} p-5`}>
                 <div className="mb-4 flex items-center justify-between"><h3 className="text-sm font-semibold text-white">Recent Activity</h3><button onClick={() => setTab('gains')} className="flex items-center gap-1 text-xs text-[#c9a97a] hover:underline">View All <ChevronRight size={12} /></button></div>
-                {recent.length ? <ul className="space-y-3">{recent.map((r, i) => <li key={`${r.name}:${i}`} className="flex items-center justify-between gap-3 text-sm"><span className="min-w-0 truncate text-white/75"><span className="mr-3 text-xs text-white/35">{ago(r.at)}</span>{r.name}</span><span className="shrink-0 font-mono text-emerald-400">+{compactCount(r.gained)}</span></li>)}</ul> : <p className="text-sm text-white/40">No gains recorded yet.</p>}
+                {recent.length ? <ul className="divide-y divide-white/[0.05]">{recent.map((r, i) => <li key={`${r.name}:${i}`} className="flex items-center gap-3 py-2.5 text-sm"><Img src={images[r.name.toLowerCase()]} className="h-9 w-9 shrink-0 object-contain" fallback={<Gem size={14} className="text-white/25" />} /><span className="min-w-0 flex-1"><span className="block truncate text-white/85">{r.name}</span><span className="text-xs capitalize text-white/35">{r.kind} · {ago(r.at)}</span></span><span className="shrink-0 rounded-md bg-emerald-400/10 px-2 py-0.5 font-mono text-xs text-emerald-400">+{compactCount(r.gained)}</span></li>)}</ul> : <p className="text-sm text-white/40">No gains recorded yet.</p>}
               </div>
-              <div className={`${card} p-5`}><h3 className="-mb-6 text-sm font-semibold text-white">Gains Chart</h3><GainChart sessions={sessions} /></div>
+              <div className={`${card} flex flex-col p-5`}><h3 className="-mb-6 text-sm font-semibold text-white">Gains Chart</h3><GainChart sessions={sessions} /></div>
             </div>
+            {!!topStacks.length && (
+              <div className={`${card} mt-4 p-5`}>
+                <div className="mb-4 flex items-center justify-between"><h3 className="text-sm font-semibold text-white">Most Valuable</h3><button onClick={() => setTab('inventory')} className="flex items-center gap-1 text-xs text-[#c9a97a] hover:underline">Open inventory <ChevronRight size={12} /></button></div>
+                <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+                  {topStacks.map((t, i) => {
+                    const info = catalog[t.k];
+                    return (
+                      <div key={`${t.k}:${i}`} className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3 text-center" style={{ background: `radial-gradient(circle at 50% 30%, ${info?.rarity_color ?? '#c9a97a'}22, transparent 70%)` }}>
+                        <Img src={info?.image} className="mx-auto h-14 w-14 object-contain" fallback={<Gem size={22} className="text-white/25" />} />
+                        <p className="mt-2 truncate text-xs font-medium text-white" title={info?.name}>{info?.name ?? t.k.split(':')[1]}</p>
+                        <p className="mt-1 flex items-center justify-center gap-1 font-mono text-xs text-cyan-300"><Gem size={11} />{compactCount((t.r ?? 0) * t.a)}</p>
+                        {t.a > 1 && <p className="text-[10px] text-white/35">x{compactCount(t.a)}</p>}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </>
         ) : tab === 'inventory' ? <InventoryView stacks={counts.inventory} catalog={catalog} />
         : tab === 'gains' ? (

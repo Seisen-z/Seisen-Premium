@@ -8,13 +8,14 @@ const headers = { 'Cache-Control': 'private, no-store' };
 
 async function icons(ids: string[]): Promise<Record<string, string>> {
   const out: Record<string, string> = {};
-  for (let i = 0; i < ids.length; i += 100) {
+  const chunks = Array.from({ length: Math.ceil(ids.length / 100) }, (_, i) => ids.slice(i * 100, i * 100 + 100));
+  await Promise.all(chunks.map(async chunk => {
     try {
-      const response = await fetch(`https://thumbnails.roblox.com/v1/assets?assetIds=${ids.slice(i, i + 100).join(',')}&size=150x150&format=Png&returnPolicy=PlaceHolder`, { next: { revalidate: 86400 }, signal: AbortSignal.timeout(8000) });
-      if (!response.ok) continue;
+      const response = await fetch(`https://thumbnails.roblox.com/v1/assets?assetIds=${chunk.join(',')}&size=150x150&format=Png&returnPolicy=PlaceHolder`, { next: { revalidate: 86400 }, signal: AbortSignal.timeout(8000) });
+      if (!response.ok) return;
       for (const image of (await response.json()).data ?? []) if (image.state === 'Completed' && image.imageUrl) out[String(image.targetId)] = image.imageUrl;
     } catch { /* icons are optional; cards fall back to a placeholder */ }
-  }
+  }));
   return out;
 }
 
