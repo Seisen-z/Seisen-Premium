@@ -58,9 +58,9 @@ export async function POST(req: NextRequest) {
     if (body.length > 256) return NextResponse.json({ error: 'Invalid connection key' }, { status: 400, headers });
     const key = JSON.parse(body).key;
     if (typeof key !== 'string' || !keyPattern.test(key)) return NextResponse.json({ error: 'Paste the connection key copied from the library.' }, { status: 400, headers });
-    const added = await trackstatRPC<TrackstatHistory>('trackstat_private', { p_key: key });
-    // Re-adding an account (for example after a key reset) replaces its older key instead of listing it twice
-    const others = (await lookup(readKeys(req).filter(existing => existing !== key))).valid.filter(v => v.history.account.roblox_id !== added.account.roblox_id);
+    await trackstatRPC<TrackstatHistory>('trackstat_private', { p_key: key });
+    // Keys that were reset are dropped; every other connected key stays, even for the same Roblox account on another device
+    const others = (await lookup(readKeys(req).filter(existing => existing !== key))).valid;
     if (others.length >= maxAccounts) return NextResponse.json({ error: `You can connect up to ${maxAccounts} accounts. Remove one first.` }, { status: 400, headers });
     const response = NextResponse.json({ connected: true, index: others.length }, { headers });
     writeKeys(response, [...others.map(v => v.key), key]);

@@ -29,7 +29,7 @@ function InventoryCard({ stack, info }: { stack: InventoryStack; info?: CatalogE
   return (
     <div className={`${card} flex flex-col overflow-hidden`}>
       <div className="relative grid h-28 place-items-center" style={{ background: `radial-gradient(circle at 50% 60%, ${color}33, transparent 70%)` }}>
-        <Img src={info?.image} className="h-20 w-20 object-contain" fallback={<Gem size={28} className="text-white/25" />} />
+        <Img src={info?.stored} backup={info?.image} className="h-20 w-20 object-contain" fallback={<Gem size={28} className="text-white/25" />} />
         {stack.f && <Star size={16} className="absolute left-3 top-3 fill-[#c9a97a] text-[#c9a97a]" aria-label="Favorite" />}
         <span className="absolute right-3 top-3 rounded-md bg-black/50 px-2 py-0.5 font-mono text-xs text-white" title={String(stack.a)}>x{compactCount(stack.a)}</span>
         {stack.l ? <span className="absolute bottom-2 left-3 rounded-md bg-black/50 px-2 py-0.5 text-xs text-emerald-300">Lv {stack.l}</span> : null}
@@ -153,7 +153,7 @@ export default function TrackstatPanel() {
     if (!latest?.snapshot.inventory?.length) return;
     fetch(`/api/trackstat/catalog?account=${history?.index ?? 0}`, { cache: 'no-store' }).then(r => r.json()).then(b => setCatalog(b.catalog ?? {})).catch(() => {}).finally(() => setLoadedFor(inventoryKey));
   }, [inventoryKey]); // eslint-disable-line react-hooks/exhaustive-deps
-  const images = useMemo(() => Object.fromEntries(Object.values(catalog).map(c => [c.name.toLowerCase(), c.image])), [catalog]);
+  const images = useMemo(() => Object.fromEntries(Object.values(catalog).map(c => [c.name.toLowerCase(), c.stored ?? c.image])), [catalog]);
   const recent = sessions.flatMap(s => s.snapshot.details.filter(d => d.gained > 0).map(d => ({ ...d, at: s.updated_at }))).slice(0, 10);
   const stacks = selected?.snapshot.inventory;
   const totalValue = (stacks ?? []).reduce((n, x) => n + (x.r ?? 0) * x.a, 0);
@@ -165,7 +165,7 @@ export default function TrackstatPanel() {
       {accounts.length > 0 && (
         <ul className="mt-5 space-y-2">
           {accounts.map(a => (
-            <li key={a.account.roblox_id} className="flex items-center gap-3 rounded-lg border border-white/[0.07] p-3">
+            <li key={a.index} className="flex items-center gap-3 rounded-lg border border-white/[0.07] p-3">
               <Avatar src={avatarOf(a.account.roblox_id)} name={a.account.username} small />
               <span className="min-w-0 flex-1"><span className="block truncate text-sm text-white">{a.account.username}</span><span className="text-xs text-white/40">Roblox ID {a.account.roblox_id}</span></span>
               <button className="rounded-md border border-white/10 px-3 py-1.5 text-xs text-white/60 hover:border-red-400/50 hover:text-red-300 disabled:opacity-40" onClick={() => void removeAccount(a.index)} disabled={busy} aria-label={`Remove ${a.account.username}`}>Remove</button>
@@ -319,7 +319,7 @@ export default function TrackstatPanel() {
                     const info = catalog[t.k];
                     return (
                       <div key={`${t.k}:${i}`} className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3 text-center" style={{ background: `radial-gradient(circle at 50% 30%, ${info?.rarity_color ?? '#c9a97a'}22, transparent 70%)` }}>
-                        <Img src={info?.image} className="mx-auto h-14 w-14 object-contain" fallback={<Gem size={22} className="text-white/25" />} />
+                        <Img src={info?.stored} backup={info?.image} className="mx-auto h-14 w-14 object-contain" fallback={<Gem size={22} className="text-white/25" />} />
                         <p className="mt-2 truncate text-xs font-medium text-white" title={info?.name}>{info?.name ?? t.k.split(':')[1]}</p>
                         <p className="mt-1 flex items-center justify-center gap-1 font-mono text-xs text-cyan-300"><Gem size={11} />{compactCount((t.r ?? 0) * t.a)}</p>
                         {t.a > 1 && <p className="text-[10px] text-white/35">x{compactCount(t.a)}</p>}
@@ -356,7 +356,7 @@ export default function TrackstatPanel() {
           <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.2em] text-white/35">Accounts</p>
           <div className="space-y-2">
             {accounts.map(a => (
-              <button key={a.account.roblox_id} onClick={() => selectAccount(a.index)} className={`flex w-full items-center gap-3 rounded-lg border px-3 py-3 text-left ${page === 'games' && history?.index === a.index ? 'border-[#c9a97a]/50 bg-[#c9a97a]/10' : 'border-white/10 hover:border-[#c9a97a]/30'}`}>
+              <button key={a.index} onClick={() => selectAccount(a.index)} className={`flex w-full items-center gap-3 rounded-lg border px-3 py-3 text-left ${page === 'games' && history?.index === a.index ? 'border-[#c9a97a]/50 bg-[#c9a97a]/10' : 'border-white/10 hover:border-[#c9a97a]/30'}`}>
                 <Avatar src={avatarOf(a.account.roblox_id)} name={a.account.username} small />
                 <span className="min-w-0 flex-1"><span className="block truncate text-sm text-white">{a.account.username}</span><span className="text-xs text-white/40">{new Set(a.sessions.map(x => x.game_id)).size} {new Set(a.sessions.map(x => x.game_id)).size === 1 ? 'game' : 'games'}</span></span>
                 <ChevronRight size={14} className="shrink-0 text-white/35" />

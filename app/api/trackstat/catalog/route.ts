@@ -31,8 +31,8 @@ export async function GET(req: NextRequest) {
     const itemKeys = [...new Set(latest?.snapshot.inventory?.map(entry => entry.k) ?? [])];
     const rows = itemKeys.length ? await trackstatRPC<Record<string, Omit<CatalogEntry, 'image'>>>(stealAnEgg ? 'trackstats_stealanegg_catalog_read' : 'trackstat_catalog_read', { p_keys: itemKeys }) : {};
     const images = await icons([...new Set(Object.values(rows).map(row => row.icon).filter((icon): icon is string => !!icon))]);
-    // Steal An Egg icons are private on Roblox, so the library stores its own copy of each picture
-    const stored = (icon: string | null) => (stealAnEgg && icon ? `https://xsygxfeutjcwmqejslbv.supabase.co/storage/v1/object/public/trackstats-images/stealanegg/${icon}.png` : null);
+    // Some icons are private on Roblox, so the library stores its own copy of each picture
+    const stored = (icon: string | null) => (icon ? `https://xsygxfeutjcwmqejslbv.supabase.co/storage/v1/object/public/trackstats-images/${stealAnEgg ? 'stealanegg' : 'petsimulator99'}/${icon}.png` : null);
     const catalog = Object.fromEntries(Object.entries(rows).map(([k, row]) => [k, { ...row, image: row.icon ? images[row.icon] ?? null : null, stored: stored(row.icon) }]));
     return NextResponse.json({ catalog }, { headers });
   } catch {
