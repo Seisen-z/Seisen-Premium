@@ -61,6 +61,7 @@ const navLinks = [
   { href: '/getkey', label: 'Get Key' },
   { href: '/premium', label: 'Premium' },
   { href: '/updates', label: 'Updates' },
+  { href: '/trackstat', label: 'Trackstat' },
 ];
 
 const DiscordIcon = () => (
@@ -151,6 +152,8 @@ export default function Dock() {
   }, []);
 
   const isClient = pathname.startsWith('/client');
+
+  if (pathname === '/trackstat') return null;
 
   return (
     <>
