@@ -27,9 +27,11 @@ export async function GET(req: NextRequest) {
   try {
     const stealAnEgg = req.nextUrl.searchParams.get('game') === 'sae';
     const history = await trackstatRPC<TrackstatHistory>('trackstat_private', { p_key: key });
-    const latest = history.sessions.find(session => (session.game_id === STEAL_AN_EGG) === stealAnEgg);
+    const sessions = history.sessions.filter(session => (session.game_id === STEAL_AN_EGG) === stealAnEgg);
+    const latest = sessions[0];
     const itemKeys = [...new Set(latest?.snapshot.inventory?.map(entry => entry.k) ?? [])];
-    const rows = itemKeys.length ? await trackstatRPC<Record<string, Omit<CatalogEntry, 'image'>>>(stealAnEgg ? 'trackstats_stealanegg_catalog_read' : 'trackstat_catalog_read', { p_keys: itemKeys }) : {};
+    const names = stealAnEgg ? [...new Set(sessions.flatMap(session => session.snapshot.details.map(detail => detail.name.toLowerCase())))].slice(0, 2000) : [];
+    const rows = itemKeys.length || names.length ? await trackstatRPC<Record<string, Omit<CatalogEntry, 'image'>>>(stealAnEgg ? 'trackstats_stealanegg_catalog_read' : 'trackstat_catalog_read', { p_keys: itemKeys, ...(stealAnEgg ? { p_names: names } : {}) }) : {};
     const images = await icons([...new Set(Object.values(rows).map(row => row.icon).filter((icon): icon is string => !!icon))]);
     // Some icons are private on Roblox, so the library stores its own copy of each picture
     const stored = (icon: string | null) => (icon ? `https://xsygxfeutjcwmqejslbv.supabase.co/storage/v1/object/public/trackstats-images/${stealAnEgg ? 'stealanegg' : 'petsimulator99'}/${icon}.png` : null);

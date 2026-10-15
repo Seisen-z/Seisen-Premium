@@ -41,10 +41,9 @@ export async function GET(req: NextRequest) {
       lookup(readKeys(req)),
     ]);
     const pending = await Promise.all(valid.map(({ key }) => trackstatRPC<LinkRequest[]>('trackstat_link_pending', { p_key: key }).catch(() => [] as LinkRequest[])));
-    const now = Date.now();
     const accounts: TrackstatAccount[] = valid.map(({ history }, index) => ({
       ...history, index, pending: pending[index],
-      activeGames: history.activeGames ?? [...new Set(history.sessions.filter(s => now - new Date(s.updated_at).getTime() < 120000).map(s => s.game_id))],
+      activeGames: history.activeGames ?? [],
     }));
     const response = NextResponse.json({ public: totals, publicStealAnEgg: totalsStealAnEgg, accounts, media: await trackstatMedia(accounts.map(a => a.account.roblox_id)), reconnect: dropped }, { headers });
     if (dropped) writeKeys(response, valid.map(v => v.key));

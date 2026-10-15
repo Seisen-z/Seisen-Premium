@@ -164,6 +164,7 @@ export default function TrackstatPanel() {
   const totalGains = allSessions.reduce((n, s) => n + total(s.snapshot.gained), 0);
   const liveSae = history?.activeGames?.includes(STEAL_AN_EGG) ?? false;
   const live = history?.activeGames?.includes(PET_SIMULATOR_99) ?? false;
+  const libraryLive = (history?.activeGames?.length ?? 0) > 0;
   const inventoryKey = `${history?.index}:${latest?.id}:${latest?.snapshot.inventory?.length ?? 0}`;
   useEffect(() => {
     if (!latest?.snapshot.inventory?.length) return;
@@ -252,8 +253,8 @@ export default function TrackstatPanel() {
           {history ? <Avatar src={avatarOf(history.account.roblox_id)} name={history.account.username} /> : <span className="grid h-16 w-16 place-items-center rounded-full bg-white/[0.05] text-2xl text-white/40">?</span>}
           <div className="min-w-0 flex-1 basis-56">
             <h2 className="break-words text-2xl font-semibold text-white">{history?.account.username ?? 'Not connected'}</h2>
-            <p className={`mt-1 flex items-center gap-2 text-sm ${history ? 'text-emerald-400' : 'text-white/40'}`}><span className={`h-2 w-2 rounded-full ${history ? 'bg-emerald-400' : 'bg-white/30'}`} />{history ? 'Connected' : 'Not connected'}</p>
-            <p className="mt-2 text-xs text-white/45">{history ? 'Your inventory, session gains, and history are being tracked.' : 'Open Connection and paste your library key to start.'}</p>
+            <p className={`mt-1 flex items-center gap-2 text-sm ${libraryLive ? 'text-emerald-400' : 'text-white/40'}`}><span className={`h-2 w-2 rounded-full ${libraryLive ? 'bg-emerald-400' : 'bg-white/30'}`} />{history ? libraryLive ? 'Connected' : 'Offline' : 'Not connected'}</p>
+            <p className="mt-2 text-xs text-white/45">{history ? libraryLive ? 'Your inventory, session gains, and history are being tracked.' : 'Library offline. Your saved inventory and history are still available.' : 'Open Connection and paste your library key to start.'}</p>
           </div>
           {history && (
             <div className="grid w-full grid-cols-2 gap-3 xl:w-auto xl:grid-cols-4">
@@ -282,7 +283,7 @@ export default function TrackstatPanel() {
                 <button key={g.id} onClick={() => setGame(g.id)} className={`${card} group w-full ${listView ? 'flex items-center' : ''} overflow-hidden text-left transition-colors hover:border-[#c9a97a]/40 focus-visible:outline-2 focus-visible:outline-[#c9a97a]`}>
                   <Img src={g.image} className={`bg-gradient-to-br from-[#c9a97a]/25 to-[#1a1a1a] ${listView ? 'h-20 w-32 shrink-0' : 'h-36 w-full'}`} fallback={g.icon} />
                   <div className="flex min-w-0 flex-1 items-center justify-between p-4">
-                    <div><p className="text-sm font-medium text-white">{g.name}</p><p className={`mt-1 flex items-center gap-2 text-xs ${g.live ? 'text-emerald-400' : 'text-white/40'}`}><span className={`h-1.5 w-1.5 rounded-full ${g.live ? 'bg-emerald-400' : 'bg-white/30'}`} />{g.live ? 'Tracking' : history && g.played ? 'Idle' : 'Not played'}</p></div>
+                    <div><p className="text-sm font-medium text-white">{g.name}</p><p className={`mt-1 flex items-center gap-2 text-xs ${g.live ? 'text-emerald-400' : 'text-white/40'}`}><span className={`h-1.5 w-1.5 rounded-full ${g.live ? 'bg-emerald-400' : 'bg-white/30'}`} />{g.live ? 'Tracking' : history && g.played ? 'Not tracking' : 'Not played'}</p></div>
                     <ChevronRight size={16} className="text-white/35 transition-transform group-hover:translate-x-0.5" />
                   </div>
                 </button>

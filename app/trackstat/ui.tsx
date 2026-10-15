@@ -30,12 +30,16 @@ export function Skeleton({ className = '' }: { className?: string }) {
 }
 
 // backup is tried when src fails to load; the box pulses until the picture arrives
-export function Img({ src, backup, className, fallback }: { src?: string | null; backup?: string | null; className: string; fallback: ReactNode }) {
+type ImageProps = { src?: string | null; backup?: string | null; className: string; fallback: ReactNode };
+export function Img(props: ImageProps) {
+  return <ImageWithFallback key={JSON.stringify([props.src, props.backup])} {...props} />;
+}
+function ImageWithFallback({ src, backup, className, fallback }: ImageProps) {
   const [failures, setFailures] = useState(0);
   const [loaded, setLoaded] = useState(false);
   const shown = [src, backup].filter((url): url is string => !!url)[failures];
   // eslint-disable-next-line @next/next/no-img-element
-  return shown ? <img src={shown} alt="" referrerPolicy="no-referrer" onLoad={() => setLoaded(true)} onError={() => setFailures(n => n + 1)} className={`${className} object-cover ${loaded ? '' : 'animate-pulse'}`} /> : <span className={`${className} grid place-items-center`}>{fallback}</span>;
+  return shown ? <img src={shown} alt="" referrerPolicy="no-referrer" onLoad={() => setLoaded(true)} onError={() => { setLoaded(false); setFailures(n => n + 1); }} className={`${className} object-cover ${loaded ? '' : 'animate-pulse'}`} /> : <span className={`${className} grid place-items-center`}>{fallback}</span>;
 }
 
 export function Avatar({ src, name, small }: { src?: string | null; name: string; small?: boolean }) {
@@ -121,7 +125,7 @@ export function GainChart({ sessions }: { sessions: TrackstatSession[] }) {
   );
 }
 
-export function DetailTable({ rows, empty, gainedOnly, images }: { rows: TrackstatSession['snapshot']['details']; empty: string; gainedOnly?: boolean; images: Record<string, string | null> }) {
+export function DetailTable({ rows, empty, gainedOnly, images, backups = {} }: { rows: TrackstatSession['snapshot']['details']; empty: string; gainedOnly?: boolean; images: Record<string, string | null>; backups?: Record<string, string | null> }) {
   const [q, setQ] = useState('');
   const shown = rows.filter(r => (!gainedOnly || r.gained > 0) && r.name.toLowerCase().includes(q.toLowerCase())).sort((a, b) => (gainedOnly ? b.gained - a.gained : b.owned - a.owned));
   return (
@@ -130,7 +134,7 @@ export function DetailTable({ rows, empty, gainedOnly, images }: { rows: Trackst
       <div className={`${card} max-h-[480px] overflow-auto`}>
         <table className="w-full text-left text-sm">
           <thead className="sticky top-0 bg-[#181818] text-xs text-white/45"><tr><th className="px-4 py-3 font-normal">Item / pet</th><th className="px-4 py-3 text-right font-normal">Owned</th><th className="px-4 py-3 text-right font-normal">Gained</th></tr></thead>
-          <tbody>{shown.map((r, i) => <tr key={`${r.kind}:${r.name}:${i}`} className="border-t border-white/[0.05]"><td className="max-w-[260px] px-4 py-3 text-white/80"><div className="flex items-center gap-3"><Img src={images[r.name.toLowerCase()]} className="h-9 w-9 shrink-0 object-contain" fallback={<Gem size={14} className="text-white/25" />} /><div className="min-w-0 break-words">{r.name}<span className="mt-0.5 block text-xs capitalize text-white/35">{r.kind}</span></div></div></td><td className="px-4 py-3 text-right font-mono text-white/60">{compactCount(r.owned)}</td><td className="px-4 py-3 text-right font-mono text-[#c9a97a]">+{compactCount(r.gained)}</td></tr>)}</tbody>
+          <tbody>{shown.map((r, i) => <tr key={`${r.kind}:${r.name}:${i}`} className="border-t border-white/[0.05]"><td className="max-w-[260px] px-4 py-3 text-white/80"><div className="flex items-center gap-3"><Img src={images[r.name.toLowerCase()]} backup={backups[r.name.toLowerCase()]} className="h-9 w-9 shrink-0 object-contain" fallback={<Gem size={14} className="text-white/25" />} /><div className="min-w-0 break-words">{r.name}<span className="mt-0.5 block text-xs capitalize text-white/35">{r.kind}</span></div></div></td><td className="px-4 py-3 text-right font-mono text-white/60">{compactCount(r.owned)}</td><td className="px-4 py-3 text-right font-mono text-[#c9a97a]">+{compactCount(r.gained)}</td></tr>)}</tbody>
         </table>
         {!shown.length && <p className="p-5 text-sm text-white/40">{empty}</p>}
       </div>
