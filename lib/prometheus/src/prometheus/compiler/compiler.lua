@@ -1767,10 +1767,12 @@ function Compiler:compileStatement(statement, funcDepth)
         repeat
             statScope = statScope and statScope.parentScope or statement.scope;
             for id, name in ipairs(statScope.variables) do
-                table.insert(toFreeVars, {
-                    scope = statScope,
-                    id = id;
-                });
+                if self.registersForVar[statScope] and self.registersForVar[statScope][id] then
+                    table.insert(toFreeVars, {
+                        scope = statScope,
+                        id = id;
+                    });
+                end
             end
         until statScope == statement.loop.body.scope;
 
@@ -1799,10 +1801,12 @@ function Compiler:compileStatement(statement, funcDepth)
         repeat
             statScope = statScope and statScope.parentScope or statement.scope;
             for id, name in pairs(statScope.variables) do
-                table.insert(toFreeVars, {
-                    scope = statScope,
-                    id = id;
-                });
+                if self.registersForVar[statScope] and self.registersForVar[statScope][id] then
+                    table.insert(toFreeVars, {
+                        scope = statScope,
+                        id = id;
+                    });
+                end
             end
         until statScope == statement.loop.body.scope;
 

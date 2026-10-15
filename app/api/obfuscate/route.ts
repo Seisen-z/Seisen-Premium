@@ -33,7 +33,7 @@ async function getFilesRec(dir: string, baseDir: string = ''): Promise<{ path: s
 }
 
 async function getPrometheusFiles() {
-    if (cachedPrometheusFiles) return cachedPrometheusFiles;
+    if (cachedPrometheusFiles && process.env.NODE_ENV === 'production') return cachedPrometheusFiles;
     cachedPrometheusFiles = await getFilesRec(PROMETHEUS_DIR);
     return cachedPrometheusFiles;
 }
