@@ -367,7 +367,7 @@ export class EmailService {
         <div class="logo">⚡ SEISEN</div>
         <p class="text">Use the code below to sign in to ${purpose === 'trackstat' ? 'Trackstat' : 'your Client Area'}.</p>
         <div class="code">${code}</div>
-        <p class="text">${purpose === 'trackstat' ? 'This is a one-time sign-in code.' : 'This code will expire in 15 minutes.'}<br>If you didn't request this, you can ignore this email.</p>
+        <p class="text">${purpose === 'trackstat' ? 'This is a one-time sign-in code. It expires in 3 minutes.' : 'This code will expire in 15 minutes.'}<br>If you didn't request this, you can ignore this email.</p>
         <div class="footer">Seisen Hub Security</div>
     </div>
 </body>

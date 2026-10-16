@@ -5,7 +5,10 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, ArrowRight, Mail, Moon, ShieldCheck, Sun } from 'lucide-react';
 import { trackstatAuth, trackstatFetch } from '@/lib/client/trackstat-auth';
 import CodeInput from './CodeInput';
+import Turnstile from './Turnstile';
 import { useTrackstatTheme } from '../theme';
+
+const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
 export default function TrackstatLogin() {
   const router = useRouter();
@@ -15,13 +18,15 @@ export default function TrackstatLogin() {
   const [step, setStep] = useState<'email' | 'code' | 'save'>('email');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
+  const [token, setToken] = useState('');
+  const [widget, setWidget] = useState(0);
   async function submit(event: FormEvent) {
     event.preventDefault(); setBusy(true); setMessage('');
     try {
       if (step === 'email') {
-        const response = await fetch('/api/trackstat/auth/send-code', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email.trim().toLowerCase() }) });
+        const response = await fetch('/api/trackstat/auth/send-code', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email.trim().toLowerCase(), token }) });
         const body = await response.json();
-        if (!response.ok) throw new Error(body.error || 'Could not send your verification code.');
+        if (!response.ok) { setToken(''); setWidget(count => count + 1); throw new Error(body.error || 'Could not send your verification code.'); }
         setStep('code');
       } else {
         if (step === 'code') {
@@ -52,12 +57,13 @@ export default function TrackstatLogin() {
     <section aria-labelledby="login-title" className="rounded-2xl bg-ts-surface p-6 md:p-8">
       <Mail size={22} className="mb-5 text-ts-accent" />
       <h2 id="login-title" className="text-xl font-semibold text-ts-fg">{step === 'email' ? 'Sign in to Trackstat' : step === 'code' ? 'Check your email' : 'Save your connections'}</h2>
-      <p className="mb-6 mt-2 text-xs leading-6 text-ts-fg/45">{step === 'email' ? 'We will send you a one-time verification code.' : step === 'code' ? `Enter the code sent to ${email}.` : 'Your email is verified. Save connections from this browser and continue.'}</p>
+      <p className="mb-6 mt-2 text-xs leading-6 text-ts-fg/45">{step === 'email' ? 'We will send you a one-time verification code.' : step === 'code' ? `Enter the code sent to ${email}. It expires in 3 minutes.` : 'Your email is verified. Save connections from this browser and continue.'}</p>
       <form onSubmit={submit} className="space-y-4">
         {step === 'email' && <label className="block text-xs text-ts-fg/60">Email address<input autoComplete="email" type="email" required maxLength={254} value={email} disabled={busy} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" className={input} /></label>}
+        {step === 'email' && siteKey && <Turnstile key={widget} siteKey={siteKey} theme={theme} onToken={setToken} />}
         {step === 'code' && <CodeInput value={code} onChange={setCode} disabled={busy} />}
         {message && <p role="alert" className="text-xs leading-6 text-ts-warn">{message}</p>}
-        <button disabled={busy || step === 'code' && !/^[0-9]{6}$/.test(code)} className="flex w-full items-center justify-center gap-2 rounded-xl bg-ts-accent px-4 py-3 text-sm font-semibold text-ts-accent-fg transition-colors hover:bg-ts-accent-hover disabled:opacity-50">{busy ? 'Please wait...' : step === 'email' ? 'Send verification code' : step === 'code' ? 'Verify & sign in' : 'Save & open Trackstat'}<ArrowRight size={15} /></button>
+        <button disabled={busy || step === 'code' && !/^[0-9]{6}$/.test(code) || step === 'email' && !!siteKey && !token} className="flex w-full items-center justify-center gap-2 rounded-xl bg-ts-accent px-4 py-3 text-sm font-semibold text-ts-accent-fg transition-colors hover:bg-ts-accent-hover disabled:opacity-50">{busy ? 'Please wait...' : step === 'email' ? 'Send verification code' : step === 'code' ? 'Verify & sign in' : 'Save & open Trackstat'}<ArrowRight size={15} /></button>
         {step === 'code' && <button type="button" disabled={busy} onClick={() => { setStep('email'); setCode(''); setMessage(''); }} className="text-xs text-ts-fg/45 hover:text-ts-fg">Change email or resend code</button>}
       </form>
     </section>

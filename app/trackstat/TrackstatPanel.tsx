@@ -1,12 +1,12 @@
 'use client';
 
-import { trackstatFetch } from '@/lib/client/trackstat-auth';
+import { trackstatAuth, trackstatFetch } from '@/lib/client/trackstat-auth';
 
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import Link from 'next/link';
 import { Activity, ArrowLeft, Boxes, CalendarDays, ChevronRight, Clock, Gem, LayoutGrid, Link2, List, PawPrint, RefreshCw, Search, Star, TrendingUp, Users, Egg, Plus, Sun, Moon, LayoutDashboard } from 'lucide-react';
 import { useTrackstatTheme } from './theme';
-import { PET_SIMULATOR_99, STEAL_AN_EGG, compactCount, type CatalogEntry, type Counts, type InventoryStack, type TrackstatResponse } from '@/lib/trackstat';
+import { PET_SIMULATOR_99, STEAL_AN_EGG, compactCount, type CatalogEntry, type Counts, type InventoryStack, type TrackstatResponse, type TrackstatSample } from '@/lib/trackstat';
 import StealAnEggView from './StealAnEggView';
 import AccountPopover from './AccountPopover';
 import Dashboard from './Dashboard';
@@ -99,6 +99,7 @@ export default function TrackstatPanel() {
   const [game, setGame] = useState<'ps99' | 'sae' | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [accountQuery, setAccountQuery] = useState('');
+  const [samples, setSamples] = useState<TrackstatSample[][]>([]);
   const { theme, toggle: toggleTheme } = useTrackstatTheme();
   const [tab, setTab] = useState<Tab>('overview');
   const [sessionId, setSessionId] = useState('');
@@ -108,6 +109,7 @@ export default function TrackstatPanel() {
   const [catalog, setCatalog] = useState<Record<string, CatalogEntry>>({});
   const [loadedFor, setLoadedFor] = useState('');
   const loadVersion = useRef(0);
+  const accountSynced = useRef(false);
   const load = useCallback(async () => {
     const version = ++loadVersion.current;
     try {
@@ -116,7 +118,12 @@ export default function TrackstatPanel() {
       if (!response.ok) throw new Error(body.error);
       if (version !== loadVersion.current) return;
       setData(body);
-      setError(body.reconnect ? 'Your key was reset. Copy the new key from the library to reconnect.' : '');
+      // Signed in: keys held by this browser are saved to the email account in the background; signed out: browser storage only
+      if (!accountSynced.current && body.accounts?.length) {
+        accountSynced.current = true;
+        void trackstatAuth.auth.getSession().then(({ data }) => { if (data.session) void trackstatFetch('/api/trackstat/profile', { method: 'POST' }).catch(() => {}); });
+      }
+      setError(body.reconnect ? 'Your key was reset. Copy the new key from the library to reconnect.' : body.degraded ? 'Some accounts could not be refreshed. Showing what loaded.' : '');
     } catch (e) { if (version === loadVersion.current) setError(e instanceof Error ? e.message : 'Trackstat could not refresh.'); }
   }, []);
   const accountChanged = useCallback((clear = false) => {
@@ -181,6 +188,14 @@ export default function TrackstatPanel() {
     if (!latest?.snapshot.inventory?.length) return;
     trackstatFetch(`/api/trackstat/catalog?account=${history?.index ?? 0}`, { cache: 'no-store' }).then(r => r.json()).then(b => setCatalog(b.catalog ?? {})).catch(() => {}).finally(() => setLoadedFor(inventoryKey));
   }, [inventoryKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  const accountCount = accounts.length;
+  useEffect(() => {
+    if (page !== 'dashboard' || !accountCount) return;
+    const loadSamples = () => trackstatFetch('/api/trackstat/samples', { cache: 'no-store' }).then(r => r.json()).then(b => { if (b.samples) setSamples(b.samples); }).catch(() => {});
+    void loadSamples();
+    const timer = setInterval(() => { if (!document.hidden) void loadSamples(); }, 300000);
+    return () => clearInterval(timer);
+  }, [page, accountCount]);
   const images = useMemo(() => Object.fromEntries(Object.values(catalog).map(c => [c.name.toLowerCase(), c.stored ?? c.image])), [catalog]);
   const recentClasses = categories.find(c => c.id === recentCategory)?.classes ?? [];
   const recent = sessions.flatMap(s => s.snapshot.details.filter(d => d.gained > 0 && (!recentClasses.length || recentClasses.includes(d.kind) || recentCategory === 'pets' && ['huge', 'titanic', 'gargantuan'].includes(d.kind))).map(d => ({ ...d, at: s.updated_at }))).slice(0, 10);
@@ -224,7 +239,7 @@ export default function TrackstatPanel() {
 
   let main: ReactNode;
   if (!data) main = error ? <p className="py-12 text-sm text-ts-fg/40">Refresh to try again.</p> : <PageSkeleton />;
-  else if (page === 'dashboard') main = <Dashboard accounts={accounts} avatarOf={avatarOf} />;
+  else if (page === 'dashboard') main = <Dashboard accounts={accounts} samples={samples} avatarOf={avatarOf} />;
   else if (page === 'connection') main = (
     <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
       <div className={`${card} p-6`}>{connection}</div>

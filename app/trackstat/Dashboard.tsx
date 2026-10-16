@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { Clock, Coins, Gauge, Gem, Layers, Trophy, Users, Zap } from 'lucide-react';
-import { PET_SIMULATOR_99, STEAL_AN_EGG, compactCount, type TrackstatAccount } from '@/lib/trackstat';
+import { PET_SIMULATOR_99, STEAL_AN_EGG, compactCount, type TrackstatAccount, type TrackstatSample } from '@/lib/trackstat';
 import { BarChart, ChartCard, Donut, Empty, HBars, Heatmap, Legend, LineChart, Sparkline, palette, type Bar, type Line } from './charts';
 import { Avatar, ago, card, total } from './ui';
 
@@ -27,7 +27,7 @@ function Kpi({ icon, label, value, hint, spark }: { icon: React.ReactNode; label
   );
 }
 
-export default function Dashboard({ accounts, avatarOf }: { accounts: TrackstatAccount[]; avatarOf: (id?: string) => string | null | undefined }) {
+export default function Dashboard({ accounts, samples, avatarOf }: { accounts: TrackstatAccount[]; samples: TrackstatSample[][]; avatarOf: (id?: string) => string | null | undefined }) {
   const [game, setGame] = useState('all');
   const [acct, setAcct] = useState<'all' | number>('all');
   const [days, setDays] = useState<1 | 7>(7);
@@ -95,11 +95,20 @@ export default function Dashboard({ accounts, avatarOf }: { accounts: TrackstatA
         t = stop;
       }
     }
+    // Samples are one every 15 minutes while the library runs, so they show real activity beyond the few sessions that are kept
+    const taken = picked.flatMap(a => samples[a.index] ?? []).filter(r => okGame(r[1]));
+    if (taken.length) {
+      for (const row of grid) row.fill(0);
+      for (const r of taken) {
+        const when = new Date(r[0]), idx = 6 - Math.round((today0 - startOfDay(r[0])) / DAY);
+        if (idx >= 0 && idx < 7) grid[idx][when.getHours()] += 15;
+      }
+    }
     const rowLabels = Array.from({ length: 7 }, (_, i) => new Date(today0 - (6 - i) * DAY).toLocaleDateString([], { weekday: 'short' }));
 
-    const perAccountLines = (id: string, value: (s: (typeof allSessions)[number]['s']) => number | undefined): Line[] => picked.map((a, i) => ({
+    const sampleLines = (id: string, column: 2 | 3 | 4): Line[] => picked.map((a, i) => ({
       name: a.account.username, color: palette[i % palette.length],
-      points: allSessions.filter(x => x.a === a && x.s.game_id === id).flatMap(x => { const v = value(x.s); return v === undefined ? [] : [{ t: x.end, v }]; }),
+      points: (samples[a.index] ?? []).flatMap(r => (r[1] === id && r[column] !== null ? [{ t: r[0], v: Number(r[column]) }] : [])),
     })).filter(l => l.points.length);
     const latestOf = <T,>(id: string, value: (s: (typeof allSessions)[number]['s']) => T | undefined) => picked.flatMap(a => {
       const last = [...allSessions].reverse().find(x => x.a === a && x.s.game_id === id && value(x.s) !== undefined);
@@ -113,13 +122,13 @@ export default function Dashboard({ accounts, avatarOf }: { accounts: TrackstatA
       sessionsPerDay: keys.map(day => sessions.filter(x => utcDay(x.end) === day).length),
       live: perAccount.filter(x => x.live).length,
       hasPs99: allSessions.some(x => x.s.game_id === PET_SIMULATOR_99), hasSae: allSessions.some(x => x.s.game_id === STEAL_AN_EGG),
-      invLines: perAccountLines(PET_SIMULATOR_99, invValue),
+      invLines: sampleLines(PET_SIMULATOR_99, 4),
       invLatest: latestOf(PET_SIMULATOR_99, invValue).sort((x, y) => y.v - x.v),
-      moneyLines: perAccountLines(STEAL_AN_EGG, s => s.snapshot.money),
-      speedLines: perAccountLines(STEAL_AN_EGG, s => s.snapshot.per_second),
+      moneyLines: sampleLines(STEAL_AN_EGG, 2),
+      speedLines: sampleLines(STEAL_AN_EGG, 3),
       saeLatest: latestOf(STEAL_AN_EGG, s => (s.snapshot.money === undefined ? undefined : { money: s.snapshot.money, speed: s.snapshot.speed ?? 0, ps: s.snapshot.per_second ?? 0 })),
     };
-  }, [accounts, game, acct, days, now]);
+  }, [accounts, samples, game, acct, days, now]);
 
   const who = (a: TrackstatAccount) => <><Avatar src={avatarOf(a.account.roblox_id)} name={a.account.username} small /><span className="truncate">{a.account.username}</span></>;
   const perHour = d.minutes > 0 ? d.sessionGains / (d.minutes / 60) : 0;
@@ -181,7 +190,7 @@ export default function Dashboard({ accounts, avatarOf }: { accounts: TrackstatA
       </div>
 
       <div className="grid gap-4 xl:grid-cols-3">
-        <ChartCard title="Gains per session" hint="Most recent sessions, oldest to newest" className="xl:col-span-2">
+        <ChartCard title="Recent sessions" hint="Gains of the latest sessions that are kept (3 per game and account)" className="xl:col-span-2">
           {d.sessionBars.length ? <BarChart bars={d.sessionBars} showEvery={Number.MAX_SAFE_INTEGER} /> : <Empty>No sessions in this range.</Empty>}
         </ChartCard>
         <ChartCard title="Top gained" hint="Most gained items and pets">
@@ -194,7 +203,7 @@ export default function Dashboard({ accounts, avatarOf }: { accounts: TrackstatA
           <h3 className="pt-2 text-sm font-semibold text-ts-fg/70">Pet Simulator 99</h3>
           <div className="grid gap-4 xl:grid-cols-3">
             <ChartCard title="Inventory value" hint="Total gem value at each sync" className="xl:col-span-2">
-              {d.invLines.some(l => l.points.length > 1) ? <><LineChart lines={d.invLines} date={when} /><Legend items={d.invLines.map(l => ({ name: l.name, color: l.color }))} /></> : <Empty>Value history appears after a few syncs with inventory details.</Empty>}
+              {d.invLines.some(l => l.points.length > 1) ? <><LineChart lines={d.invLines} date={when} /><Legend items={d.invLines.map(l => ({ name: l.name, color: l.color }))} /></> : <Empty>Value history appears after about 30 minutes of tracking.</Empty>}
             </ChartCard>
             <ChartCard title="Value by account" hint="Latest synced inventory">
               <HBars rows={d.invLatest.map(x => ({ id: String(x.a.index), label: <><Gem size={12} className="shrink-0 text-ts-cyan" />{who(x.a)}</>, value: x.v }))} empty="No inventory synced yet." />
@@ -211,14 +220,14 @@ export default function Dashboard({ accounts, avatarOf }: { accounts: TrackstatA
           <h3 className="pt-2 text-sm font-semibold text-ts-fg/70">Steal an Egg</h3>
           <div className="grid gap-4 xl:grid-cols-3">
             <ChartCard title="Money" hint="Balance at each sync" className="xl:col-span-2">
-              {d.moneyLines.some(l => l.points.length > 1) ? <><LineChart lines={d.moneyLines} date={when} /><Legend items={d.moneyLines.map(l => ({ name: l.name, color: l.color }))} /></> : <Empty>Money history appears after a few syncs.</Empty>}
+              {d.moneyLines.some(l => l.points.length > 1) ? <><LineChart lines={d.moneyLines} date={when} /><Legend items={d.moneyLines.map(l => ({ name: l.name, color: l.color }))} /></> : <Empty>Money history appears after about 30 minutes of tracking.</Empty>}
             </ChartCard>
             <ChartCard title="Money now" hint="Latest sync">
               <HBars rows={d.saeLatest.sort((x, y) => y.v.money - x.v.money).map(x => ({ id: String(x.a.index), label: <><Coins size={12} className="shrink-0 text-ts-pos" />{who(x.a)}</>, value: x.v.money, sub: x.v.ps ? `$${compactCount(x.v.ps)}/s` : undefined }))} empty="No money synced yet." />
             </ChartCard>
           </div>
           <ChartCard title="Money per second" hint="Income from placed pets at each sync">
-            {d.speedLines.some(l => l.points.length > 1) ? <><LineChart lines={d.speedLines} date={when} /><Legend items={d.speedLines.map(l => ({ name: l.name, color: l.color }))} /></> : <Empty>Income history appears after a few syncs.</Empty>}
+            {d.speedLines.some(l => l.points.length > 1) ? <><LineChart lines={d.speedLines} date={when} /><Legend items={d.speedLines.map(l => ({ name: l.name, color: l.color }))} /></> : <Empty>Income history appears after about 30 minutes of tracking.</Empty>}
           </ChartCard>
         </>
       )}

@@ -1,4 +1,4 @@
-import { bearer, trackstatEntries, cookieName, cookieOptions, readKeys, keyPattern } from '@/lib/server/trackstat-accounts';
+import { bearer, trackstatEntries, cookieName, cookieOptions, readKeys, keyPattern, maxKeys } from '@/lib/server/trackstat-accounts';
 import { NextRequest, NextResponse } from 'next/server';
 import { trackstatMedia, trackstatRPC } from '@/lib/server/trackstat';
 import { rateLimit, getClientIp, rateLimitResponse } from '@/lib/server/rate-limit';
@@ -17,17 +17,19 @@ export async function GET(req: NextRequest) {
   const limit = rateLimit(`trackstat:read:${getClientIp(req)}`, 60, 60000);
   if (!limit.allowed) return rateLimitResponse(limit);
   try {
-    const [totals, totalsStealAnEgg, { entries: valid, dropped }] = await Promise.all([
+    const [totals, totalsStealAnEgg, { entries: valid, dropped, failed, degraded }] = await Promise.all([
       trackstatRPC<TrackstatPublic>('trackstat_public').catch(() => null),
       trackstatRPC<TrackstatPublic>('trackstats_stealanegg_public').catch(() => null),
       trackstatEntries(req),
     ]);
+    // Nothing loaded at all is an outage, not an empty account list
+    if (degraded && !valid.length) throw new Error('Trackstat unavailable');
     const accounts: TrackstatAccount[] = valid.map(({ history }, index) => ({
       ...history, index,
       activeGames: history.activeGames ?? [],
     }));
-    const response = NextResponse.json({ public: totals, publicStealAnEgg: totalsStealAnEgg, accounts, media: await trackstatMedia(accounts.map(a => a.account.roblox_id)), reconnect: dropped }, { headers });
-    if (dropped) writeKeys(response, valid.flatMap(v => v.keys));
+    const response = NextResponse.json({ public: totals, publicStealAnEgg: totalsStealAnEgg, accounts, media: await trackstatMedia(accounts.map(a => a.account.roblox_id)), reconnect: dropped, degraded }, { headers });
+    if (dropped) writeKeys(response, [...valid.flatMap(v => v.keys), ...failed]);
     return response;
   } catch {
     return NextResponse.json({ error: 'Trackstat is temporarily unavailable. Try refreshing shortly.' }, { status: 503, headers });
@@ -43,15 +45,17 @@ export async function POST(req: NextRequest) {
     if (body.length > 256) return NextResponse.json({ error: 'Invalid connection key' }, { status: 400, headers });
     const key = JSON.parse(body).key;
     if (typeof key !== 'string' || !keyPattern.test(key)) return NextResponse.json({ error: 'Paste the connection key copied from the library.' }, { status: 400, headers });
-    const connected = await trackstatRPC<TrackstatHistory>('trackstat_private', { p_key: key });
     const token = bearer(req);
+    const claim = await trackstatRPC<{ claimed: boolean; mine: boolean }>('trackstat_key_claim', { p_key: key }, token);
+    if (claim.claimed && !claim.mine) return NextResponse.json({ error: 'This key is linked to an email account. Sign in with that email to use it.' }, { status: 403, headers });
+    const connected = await trackstatRPC<TrackstatHistory>('trackstat_private', { p_key: key });
     const current = await trackstatEntries(req);
     const same = current.entries.findIndex(e => e.history.account.roblox_id === connected.account.roblox_id);
     if (current.entries.length >= maxAccounts && same < 0) return NextResponse.json({ error: 'You can connect up to 10 accounts.' }, { status: 400, headers });
     if (token) await trackstatRPC('trackstat_user_account_save', { p_key: key }, token);
     // Keys that were reset are dropped; every other connected key stays, even for the same Roblox account on another device
-    const others = current.entries.flatMap(entry => entry.keys).filter(other => other !== key);
-    if (others.length >= maxAccounts) return NextResponse.json({ error: `You can connect up to ${maxAccounts} accounts. Remove one first.` }, { status: 400, headers });
+    const others = [...current.entries.flatMap(entry => entry.keys), ...current.failed].filter(other => other !== key);
+    if (others.length >= maxKeys) return NextResponse.json({ error: `You can connect up to ${maxKeys} keys. Remove an account first.` }, { status: 400, headers });
     const response = NextResponse.json({ connected: true, index: same < 0 ? current.entries.filter(entry => entry.keys.length).length : same }, { headers });
     writeKeys(response, [...others, key]);
     return response;
