@@ -19,6 +19,7 @@ import Freshness from './Freshness';
 import ConnectionPage from './ConnectionPage';
 import SettingsPage from './SettingsPage';
 import WhatsNew from './WhatsNew';
+import DiscordAlerts from './DiscordAlerts';
 import { sortAccounts, useSettings } from './settings';
 import { Avatar, CardSkeleton, DetailTable, GainChart, Img, PageSkeleton, Stat, ago, button, card, span, total } from './ui';
 
@@ -271,7 +272,7 @@ export default function TrackstatPanel({ initialTheme }: { initialTheme: Theme }
   let main: ReactNode;
   if (!data) main = error ? <p className="py-12 text-sm text-ts-fg/40">Refresh to try again.</p> : <PageSkeleton />;
   else if (page === 'dashboard') main = accounts.length ? <Dashboard accounts={ordered} avatarOf={avatarOf} nameOf={nameOf} /> : <Welcome onConnect={() => setPage('connection')} />;
-  else if (page === 'settings') main = <SettingsPage settings={settings} update={update} onClearData={() => { etag.current = ''; void cacheClear(); }} />;
+  else if (page === 'settings') main = <SettingsPage settings={settings} update={update} onClearData={() => { etag.current = ''; void cacheClear(); }}><DiscordAlerts accounts={ordered} nameOf={nameOf} /></SettingsPage>;
   else if (page === 'whatsnew') main = <WhatsNew />;
   else if (page === 'connection') main = (
     <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
