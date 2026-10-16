@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
       ...history, index,
       activeGames: history.activeGames ?? [],
     }));
-    const media = accounts.length ? await trackstatMedia(accounts.map(a => a.account.roblox_id)) : { avatars: {}, game: null, stealAnEgg: null };
+    const media = await trackstatMedia(accounts.map(a => a.account.roblox_id));
     const etag = degraded || dropped ? null : await fingerprint;
     const response = NextResponse.json({ public: totals, publicStealAnEgg: totalsStealAnEgg, accounts, media, reconnect: dropped, degraded }, { headers: etag ? { ...headers, ETag: etag } : headers });
     if (dropped) writeKeys(response, [...valid.flatMap(v => v.keys), ...failed]);
