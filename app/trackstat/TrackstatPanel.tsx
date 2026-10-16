@@ -9,7 +9,7 @@ import Link from 'next/link';
 import { Activity, ArrowLeft, Boxes, CalendarDays, ChevronRight, Clock, Gem, LayoutGrid, Link2, List, PawPrint, RefreshCw, Search, Star, TrendingUp, Users, Egg, Plus, Sun, Moon, LayoutDashboard } from 'lucide-react';
 import { useTrackstatTheme } from './theme';
 import type { Theme } from './themeConfig';
-import { PET_SIMULATOR_99, STEAL_AN_EGG, compactCount, type CatalogEntry, type Counts, type InventoryStack, type TrackstatResponse, type TrackstatSample } from '@/lib/trackstat';
+import { PET_SIMULATOR_99, STEAL_AN_EGG, compactCount, type CatalogEntry, type Counts, type InventoryStack, type TrackstatResponse } from '@/lib/trackstat';
 import StealAnEggView from './StealAnEggView';
 import AccountPopover from './AccountPopover';
 import Dashboard from './Dashboard';
@@ -102,7 +102,6 @@ export default function TrackstatPanel({ initialTheme }: { initialTheme: Theme }
   const [game, setGame] = useState<'ps99' | 'sae' | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [accountQuery, setAccountQuery] = useState('');
-  const [samples, setSamples] = useState<TrackstatSample[][]>([]);
   const { theme, toggle: toggleTheme } = useTrackstatTheme(initialTheme);
   const [tab, setTab] = useState<Tab>('overview');
   const [sessionId, setSessionId] = useState('');
@@ -220,23 +219,6 @@ export default function TrackstatPanel({ initialTheme }: { initialTheme: Theme }
     const timer = setInterval(() => { if (!document.hidden) void run(); }, 60000);
     return () => { live = false; clearInterval(timer); };
   }, [game, robloxId, hasInventory, tab, inventoryKey]);
-  const accountCount = accounts.length;
-  useEffect(() => {
-    if (page !== 'dashboard' || !accountCount) return;
-    let live = true;
-    const loadSamples = async () => {
-      // The server records one sample every 15 minutes, so a copy saved in the last 10 minutes is used as it is
-      const key = `${await cacheNamespace()}:samples:${accountCount}`;
-      const saved = await cacheGet<{ at: number; samples: TrackstatSample[][] }>(key);
-      if (saved && live) setSamples(saved.samples);
-      if (saved && Date.now() - saved.at < 600000) return;
-      const body = await (await trackstatFetch('/api/trackstat/samples', { cache: 'no-store' })).json();
-      if (body.samples && live) { setSamples(body.samples); void cacheSet(key, { at: Date.now(), samples: body.samples }); }
-    };
-    void loadSamples().catch(() => {});
-    const timer = setInterval(() => { if (!document.hidden) void loadSamples().catch(() => {}); }, 300000);
-    return () => { live = false; clearInterval(timer); };
-  }, [page, accountCount]);
   const images = useMemo(() => Object.fromEntries(Object.values(catalog).map(c => [c.name.toLowerCase(), c.stored ?? c.image])), [catalog]);
   const recentClasses = categories.find(c => c.id === recentCategory)?.classes ?? [];
   const recent = sessions.flatMap(s => s.snapshot.details.filter(d => d.gained > 0 && (!recentClasses.length || recentClasses.includes(d.kind) || recentCategory === 'pets' && ['huge', 'titanic', 'gargantuan'].includes(d.kind))).map(d => ({ ...d, at: s.updated_at }))).slice(0, 10);
@@ -280,7 +262,7 @@ export default function TrackstatPanel({ initialTheme }: { initialTheme: Theme }
 
   let main: ReactNode;
   if (!data) main = error ? <p className="py-12 text-sm text-ts-fg/40">Refresh to try again.</p> : <PageSkeleton />;
-  else if (page === 'dashboard') main = <Dashboard accounts={accounts} samples={samples} avatarOf={avatarOf} />;
+  else if (page === 'dashboard') main = <Dashboard accounts={accounts} avatarOf={avatarOf} />;
   else if (page === 'connection') main = (
     <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
       <div className={`${card} p-6`}>{connection}</div>

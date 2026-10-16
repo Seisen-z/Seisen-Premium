@@ -25,8 +25,6 @@ export type TrackstatHistory = {
   account: { id?: string; username: string; roblox_id: string };
   sessions: TrackstatSession[];
 };
-// [time ms, game, money, money per second, inventory value] taken every 15 minutes while the library runs
-export type TrackstatSample = [number, string, number | null, number | null, number | null];
 export type TrackstatPublic = { game: string; accounts: number; sessions: number; live: number; gained: Counts };
 export type TrackstatMedia = { avatars: Record<string, string | null>; game: string | null; stealAnEgg: string | null };
 // A new device asking to join an account's history
