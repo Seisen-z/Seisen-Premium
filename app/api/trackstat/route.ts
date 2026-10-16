@@ -1,4 +1,5 @@
 import { bearer, trackstatEntries, cookieName, cookieOptions, readKeys, keyPattern, maxKeys } from '@/lib/server/trackstat-accounts';
+import { createHash } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { trackstatMedia, trackstatRPC } from '@/lib/server/trackstat';
 import { rateLimit, getClientIp, rateLimitResponse } from '@/lib/server/rate-limit';
@@ -28,7 +29,11 @@ export async function GET(req: NextRequest) {
       ...history, index,
       activeGames: history.activeGames ?? [],
     }));
-    const response = NextResponse.json({ public: totals, publicStealAnEgg: totalsStealAnEgg, accounts, media: await trackstatMedia(accounts.map(a => a.account.roblox_id)), reconnect: dropped, degraded }, { headers });
+    const payload = JSON.stringify({ public: totals, publicStealAnEgg: totalsStealAnEgg, accounts, media: await trackstatMedia(accounts.map(a => a.account.roblox_id)), reconnect: dropped, degraded });
+    // Unchanged data is not sent again; the browser keeps what it has
+    const etag = `"${createHash('sha1').update(payload).digest('base64url')}"`;
+    if (!dropped && req.headers.get('if-none-match') === etag) return new NextResponse(null, { status: 304, headers: { ...headers, ETag: etag } });
+    const response = new NextResponse(payload, { headers: { ...headers, 'Content-Type': 'application/json', ETag: etag } });
     if (dropped) writeKeys(response, [...valid.flatMap(v => v.keys), ...failed]);
     return response;
   } catch {

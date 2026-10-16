@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type
 import Link from 'next/link';
 import { Activity, ArrowLeft, Boxes, CalendarDays, ChevronRight, Clock, Gem, LayoutGrid, Link2, List, PawPrint, RefreshCw, Search, Star, TrendingUp, Users, Egg, Plus, Sun, Moon, LayoutDashboard } from 'lucide-react';
 import { useTrackstatTheme } from './theme';
+import type { Theme } from './themeConfig';
 import { PET_SIMULATOR_99, STEAL_AN_EGG, compactCount, type CatalogEntry, type Counts, type InventoryStack, type TrackstatResponse, type TrackstatSample } from '@/lib/trackstat';
 import StealAnEggView from './StealAnEggView';
 import AccountPopover from './AccountPopover';
@@ -90,7 +91,7 @@ function InventoryView({ stacks, catalog, loading }: { stacks?: InventoryStack[]
   );
 }
 
-export default function TrackstatPanel() {
+export default function TrackstatPanel({ initialTheme }: { initialTheme: Theme }) {
   const [data, setData] = useState<TrackstatResponse | null>(null);
   const [key, setKey] = useState('');
   const [error, setError] = useState('');
@@ -100,7 +101,7 @@ export default function TrackstatPanel() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [accountQuery, setAccountQuery] = useState('');
   const [samples, setSamples] = useState<TrackstatSample[][]>([]);
-  const { theme, toggle: toggleTheme } = useTrackstatTheme();
+  const { theme, toggle: toggleTheme } = useTrackstatTheme(initialTheme);
   const [tab, setTab] = useState<Tab>('overview');
   const [sessionId, setSessionId] = useState('');
   const [recentCategory, setRecentCategory] = useState('all');
@@ -110,13 +111,16 @@ export default function TrackstatPanel() {
   const [loadedFor, setLoadedFor] = useState('');
   const loadVersion = useRef(0);
   const accountSynced = useRef(false);
+  const etag = useRef('');
   const load = useCallback(async () => {
     const version = ++loadVersion.current;
     try {
-      const response = await trackstatFetch('/api/trackstat', { cache: 'no-store' });
+      const response = await trackstatFetch('/api/trackstat', { cache: 'no-store', headers: etag.current ? { 'If-None-Match': etag.current } : {} });
+      if (response.status === 304) return;
       const body = await response.json();
       if (!response.ok) throw new Error(body.error);
       if (version !== loadVersion.current) return;
+      etag.current = response.headers.get('ETag') ?? '';
       setData(body);
       // Signed in: keys held by this browser are saved to the email account in the background; signed out: browser storage only
       if (!accountSynced.current && body.accounts?.length) {
@@ -127,13 +131,15 @@ export default function TrackstatPanel() {
     } catch (e) { if (version === loadVersion.current) setError(e instanceof Error ? e.message : 'Trackstat could not refresh.'); }
   }, []);
   const accountChanged = useCallback((clear = false) => {
-    if (clear) { setData(null); setCatalog({}); setGame(null); }
+    if (clear) { setData(null); setCatalog({}); setGame(null); etag.current = ''; }
     void load();
   }, [load]);
+  // The library syncs every 15 seconds while it runs; with nothing running there is nothing new to fetch that often
+  const pollMs = (data?.accounts.some(a => a.activeGames.length > 0) ?? true) ? 15000 : 60000;
   useEffect(() => {
     void load();
     const refresh = () => { if (!document.hidden) void load(); };
-    const timer = setInterval(refresh, 15000);
+    const timer = setInterval(refresh, pollMs);
     document.addEventListener('visibilitychange', refresh);
     window.addEventListener('focus', refresh);
     return () => {
@@ -141,7 +147,7 @@ export default function TrackstatPanel() {
       document.removeEventListener('visibilitychange', refresh);
       window.removeEventListener('focus', refresh);
     };
-  }, [load]);
+  }, [load, pollMs]);
 
   async function connect(event: FormEvent) {
     event.preventDefault();

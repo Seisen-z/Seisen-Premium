@@ -40,7 +40,12 @@ export default function Dashboard({ accounts, samples, avatarOf }: { accounts: T
     const okGame = (g: string) => game === 'all' || g === game;
     const daily = picked.flatMap(a => (a.daily ?? []).filter(r => okGame(r.game_id) && keys.includes(r.day)).map(r => ({ a, ...r })));
     const allSessions = picked.flatMap(a => a.sessions.filter(s => !s.history_expired && okGame(s.game_id)).map(s => ({ a, s, start: Date.parse(s.started_at), end: Date.parse(s.updated_at) }))).sort((x, y) => x.end - y.end);
-    const sessions = allSessions.filter(x => x.end >= now - days * DAY);
+    // The same UTC-day window as the daily totals; a session that began earlier only counts for the time inside it, and item lists use sessions that began inside it
+    const cutoff = Date.parse(`${keys[0]}T00:00:00Z`);
+    const sessions = allSessions.filter(x => x.end >= cutoff);
+    const started = sessions.filter(x => x.start >= cutoff);
+    const inside = (x: { start: number; end: number }) => Math.max(0, x.end - Math.max(x.start, cutoff));
+    const share = (x: { start: number; end: number }) => (x.end > x.start ? inside(x) / (x.end - x.start) : 1);
 
     // Daily bars: stacked by game when showing every game, otherwise by metric
     const metricTotals = new Map<string, number>();
@@ -60,10 +65,10 @@ export default function Dashboard({ accounts, samples, avatarOf }: { accounts: T
 
     const perAccount = picked.map(a => {
       const mine = sessions.filter(x => x.a === a);
-      return { a, gained: daily.filter(r => r.a === a).reduce((n, r) => n + total(r.gained), 0), minutes: mine.reduce((n, x) => n + (x.end - x.start) / 60000, 0), live: (a.activeGames ?? []).some(g => okGame(g)) };
+      return { a, gained: daily.filter(r => r.a === a).reduce((n, r) => n + total(r.gained), 0), minutes: mine.reduce((n, x) => n + inside(x) / 60000, 0), live: (a.activeGames ?? []).some(g => okGame(g)) };
     });
     const minutes = perAccount.reduce((n, x) => n + x.minutes, 0);
-    const sessionGains = sessions.reduce((n, x) => n + total(x.s.snapshot.gained), 0);
+    const sessionGains = sessions.reduce((n, x) => n + total(x.s.snapshot.gained) * share(x), 0);
 
     const cumulative: Line[] = days > 1 ? perAccount.filter(x => x.gained > 0).map((x, i) => {
       let run = 0;
@@ -71,7 +76,7 @@ export default function Dashboard({ accounts, samples, avatarOf }: { accounts: T
     }) : [];
 
     const itemMap = new Map<string, { name: string; kind: string; gained: number }>();
-    for (const { s } of sessions) for (const it of s.snapshot.details) if (it.gained > 0) {
+    for (const { s } of started) for (const it of s.snapshot.details) if (it.gained > 0) {
       const id = `${it.kind}:${it.name}`;
       itemMap.set(id, { name: it.name, kind: it.kind, gained: (itemMap.get(id)?.gained ?? 0) + it.gained });
     }
@@ -115,7 +120,7 @@ export default function Dashboard({ accounts, samples, avatarOf }: { accounts: T
       return last ? [{ a, v: value(last.s) as T }] : [];
     });
     const invValue = (s: (typeof allSessions)[number]['s']) => (s.snapshot.inventory?.length ? sessionValue(s.snapshot.inventory) : undefined);
-    const rare = sessions.flatMap(({ a, s, end }) => s.game_id === PET_SIMULATOR_99 ? s.snapshot.details.filter(it => it.gained > 0 && ['huge', 'titanic', 'gargantuan'].includes(it.kind)).map(it => ({ ...it, a, end })) : []).sort((x, y) => y.end - x.end).slice(0, 8);
+    const rare = started.flatMap(({ a, s, end }) => s.game_id === PET_SIMULATOR_99 ? s.snapshot.details.filter(it => it.gained > 0 && ['huge', 'titanic', 'gargantuan'].includes(it.kind)).map(it => ({ ...it, a, end })) : []).sort((x, y) => y.end - x.end).slice(0, 8);
 
     return {
       keys, bars, stackNames, perDay, gained, best: perDay[bestIdx] > 0 ? { v: perDay[bestIdx], day: keys[bestIdx] } : null, metrics, metricTotals, perAccount, sessions, minutes, sessionGains, cumulative, topItems, sessionBars, grid, rowLabels, rare,
@@ -149,9 +154,9 @@ export default function Dashboard({ accounts, samples, avatarOf }: { accounts: T
       </div>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 2xl:grid-cols-6">
-        <Kpi icon={<Zap size={14} />} label="Total gained" value={compactCount(d.gained)} hint={days === 1 ? 'Today (UTC)' : 'Last 7 days'} spark={days > 1 ? d.perDay : undefined} />
+        <Kpi icon={<Zap size={14} />} label="Total gained" value={compactCount(d.gained)} hint={days === 1 ? 'Today (UTC)' : 'Last 7 days (UTC)'} spark={days > 1 ? d.perDay : undefined} />
         <Kpi icon={<Users size={14} />} label="Active now" value={`${d.live} / ${d.perAccount.length}`} hint="Accounts with the library running" />
-        <Kpi icon={<Layers size={14} />} label="Sessions" value={String(d.sessions.length)} hint={days === 1 ? 'Last 24 hours' : 'Last 7 days'} spark={days > 1 ? d.sessionsPerDay : undefined} />
+        <Kpi icon={<Layers size={14} />} label="Sessions" value={String(d.sessions.length)} hint={days === 1 ? 'Today (UTC)' : 'Last 7 days (UTC)'} spark={days > 1 ? d.sessionsPerDay : undefined} />
         <Kpi icon={<Clock size={14} />} label="Play time" value={hours(d.minutes)} hint="Tracked while the library ran" />
         <Kpi icon={<Gauge size={14} />} label="Gains / hour" value={compactCount(Math.round(perHour))} hint="Across tracked sessions" />
         <Kpi icon={<Trophy size={14} />} label="Best day" value={d.best ? compactCount(d.best.v) : '—'} hint={d.best ? shortDay(d.best.day) : 'No gains yet'} />
@@ -159,7 +164,7 @@ export default function Dashboard({ accounts, samples, avatarOf }: { accounts: T
 
       <div className="grid gap-4 xl:grid-cols-3">
         <ChartCard title="Daily gains" hint={game === 'all' ? 'Stacked by game' : 'Stacked by type'} className="xl:col-span-2">
-          {d.gained > 0 ? <><BarChart bars={d.bars} /><Legend items={d.stackNames.map((name, i) => ({ name, color: palette[i % palette.length] }))} /></> : <Empty>No gains recorded in this range.</Empty>}
+          {d.gained > 0 ? <><BarChart bars={d.bars} label="Daily gains" /><Legend items={d.stackNames.map((name, i) => ({ name, color: palette[i % palette.length] }))} /></> : <Empty>No gains recorded in this range.</Empty>}
         </ChartCard>
         <ChartCard title="Gains by type" hint="Share of everything gained">
           {d.gained > 0 ? <Donut slices={donut} center="gained" /> : <Empty>Nothing gained yet.</Empty>}
@@ -168,9 +173,9 @@ export default function Dashboard({ accounts, samples, avatarOf }: { accounts: T
 
       <div className="grid gap-4 xl:grid-cols-3">
         <ChartCard title="Cumulative gains" hint="Running total per account" className="xl:col-span-2">
-          {d.cumulative.length ? <><LineChart lines={d.cumulative} fromZero date={t => shortDay(utcDay(t))} /><Legend items={d.cumulative.map(l => ({ name: l.name, color: l.color }))} /></> : <Empty>{days === 1 ? 'Switch to 7D to see the trend.' : 'No gains recorded yet.'}</Empty>}
+          {d.cumulative.length ? <><LineChart lines={d.cumulative} label="Cumulative gains per account" fromZero date={t => shortDay(utcDay(t))} /><Legend items={d.cumulative.map(l => ({ name: l.name, color: l.color }))} /></> : <Empty>{days === 1 ? 'Switch to 7D to see the trend.' : 'No gains recorded yet.'}</Empty>}
         </ChartCard>
-        <ChartCard title="Gains by account" hint={days === 1 ? 'Today' : 'Last 7 days'}>
+        <ChartCard title="Gains by account" hint={days === 1 ? 'Today (UTC)' : 'Last 7 days (UTC)'}>
           <HBars rows={[...d.perAccount].sort((x, y) => y.gained - x.gained).map(x => ({ id: String(x.a.index), label: who(x.a), value: x.gained, sub: x.minutes ? `${compactCount(Math.round(x.gained / Math.max(x.minutes / 60, 0.01)))}/h` : undefined }))} empty="No accounts connected." />
         </ChartCard>
       </div>
@@ -191,7 +196,7 @@ export default function Dashboard({ accounts, samples, avatarOf }: { accounts: T
 
       <div className="grid gap-4 xl:grid-cols-3">
         <ChartCard title="Recent sessions" hint="Gains of the latest sessions that are kept (3 per game and account)" className="xl:col-span-2">
-          {d.sessionBars.length ? <BarChart bars={d.sessionBars} showEvery={Number.MAX_SAFE_INTEGER} /> : <Empty>No sessions in this range.</Empty>}
+          {d.sessionBars.length ? <BarChart bars={d.sessionBars} label="Gains per recent session" showEvery={Number.MAX_SAFE_INTEGER} /> : <Empty>No sessions in this range.</Empty>}
         </ChartCard>
         <ChartCard title="Top gained" hint="Most gained items and pets">
           <HBars rows={d.topItems.map(([id, it]) => ({ id, label: <span className="truncate">{it.name}<span className="ml-1.5 text-ts-fg/35">{it.kind}</span></span>, value: it.gained }))} empty="No item gains in this range." />
@@ -203,7 +208,7 @@ export default function Dashboard({ accounts, samples, avatarOf }: { accounts: T
           <h3 className="pt-2 text-sm font-semibold text-ts-fg/70">Pet Simulator 99</h3>
           <div className="grid gap-4 xl:grid-cols-3">
             <ChartCard title="Inventory value" hint="Total gem value at each sync" className="xl:col-span-2">
-              {d.invLines.some(l => l.points.length > 1) ? <><LineChart lines={d.invLines} date={when} /><Legend items={d.invLines.map(l => ({ name: l.name, color: l.color }))} /></> : <Empty>Value history appears after about 30 minutes of tracking.</Empty>}
+              {d.invLines.some(l => l.points.length > 1) ? <><LineChart lines={d.invLines} label="Inventory value per account" date={when} /><Legend items={d.invLines.map(l => ({ name: l.name, color: l.color }))} /></> : <Empty>Value history appears after about 30 minutes of tracking.</Empty>}
             </ChartCard>
             <ChartCard title="Value by account" hint="Latest synced inventory">
               <HBars rows={d.invLatest.map(x => ({ id: String(x.a.index), label: <><Gem size={12} className="shrink-0 text-ts-cyan" />{who(x.a)}</>, value: x.v }))} empty="No inventory synced yet." />
@@ -220,14 +225,14 @@ export default function Dashboard({ accounts, samples, avatarOf }: { accounts: T
           <h3 className="pt-2 text-sm font-semibold text-ts-fg/70">Steal an Egg</h3>
           <div className="grid gap-4 xl:grid-cols-3">
             <ChartCard title="Money" hint="Balance at each sync" className="xl:col-span-2">
-              {d.moneyLines.some(l => l.points.length > 1) ? <><LineChart lines={d.moneyLines} date={when} /><Legend items={d.moneyLines.map(l => ({ name: l.name, color: l.color }))} /></> : <Empty>Money history appears after about 30 minutes of tracking.</Empty>}
+              {d.moneyLines.some(l => l.points.length > 1) ? <><LineChart lines={d.moneyLines} label="Money per account" date={when} /><Legend items={d.moneyLines.map(l => ({ name: l.name, color: l.color }))} /></> : <Empty>Money history appears after about 30 minutes of tracking.</Empty>}
             </ChartCard>
             <ChartCard title="Money now" hint="Latest sync">
               <HBars rows={d.saeLatest.sort((x, y) => y.v.money - x.v.money).map(x => ({ id: String(x.a.index), label: <><Coins size={12} className="shrink-0 text-ts-pos" />{who(x.a)}</>, value: x.v.money, sub: x.v.ps ? `$${compactCount(x.v.ps)}/s` : undefined }))} empty="No money synced yet." />
             </ChartCard>
           </div>
           <ChartCard title="Money per second" hint="Income from placed pets at each sync">
-            {d.speedLines.some(l => l.points.length > 1) ? <><LineChart lines={d.speedLines} date={when} /><Legend items={d.speedLines.map(l => ({ name: l.name, color: l.color }))} /></> : <Empty>Income history appears after about 30 minutes of tracking.</Empty>}
+            {d.speedLines.some(l => l.points.length > 1) ? <><LineChart lines={d.speedLines} label="Money per second per account" date={when} /><Legend items={d.speedLines.map(l => ({ name: l.name, color: l.color }))} /></> : <Empty>Income history appears after about 30 minutes of tracking.</Empty>}
           </ChartCard>
         </>
       )}

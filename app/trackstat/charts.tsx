@@ -31,11 +31,13 @@ export function Sparkline({ values }: { values: number[] }) {
 export type Bar = { id: string; label: string; title: string; segments: { name: string; color: string; value: number }[] };
 
 // Vertical (optionally stacked) bars; the tooltip is pure CSS so it costs no state
-export function BarChart({ bars, format = compactCount, showEvery = 1 }: { bars: Bar[]; format?: (n: number) => string; showEvery?: number }) {
+export function BarChart({ bars, label, format = compactCount, showEvery = 1 }: { bars: Bar[]; label: string; format?: (n: number) => string; showEvery?: number }) {
   const totals = bars.map(b => b.segments.reduce((n, s) => n + s.value, 0));
   const max = Math.max(...totals, 1);
   return (
-    <div className="flex gap-3">
+    <figure aria-label={label} className="m-0">
+    <ul className="sr-only">{bars.map((b, i) => <li key={b.id}>{b.title.replace(/\n/g, ', ')}: {totals[i] > 0 ? b.segments.filter(x => x.value > 0).map(x => `${x.name} ${format(x.value)}`).join(', ') : 'nothing'}</li>)}</ul>
+    <div aria-hidden="true" className="flex gap-3">
       <div className="flex h-48 flex-col justify-between pb-6 text-right font-mono text-[11px] text-ts-fg/40"><span>{format(max)}</span><span>{format(max / 2)}</span><span>0</span></div>
       <div className="min-w-0 flex-1">
         <div className="relative flex h-48 items-end gap-1 border-b border-ts-fg/[0.07] pb-0">
@@ -56,13 +58,14 @@ export function BarChart({ bars, format = compactCount, showEvery = 1 }: { bars:
         <div className="mt-2 flex gap-1 font-mono text-[11px] text-ts-fg/40">{bars.map((b, i) => <span key={b.id} className="min-w-0 flex-1 truncate text-center">{i % showEvery === 0 ? b.label : ''}</span>)}</div>
       </div>
     </div>
+    </figure>
   );
 }
 
 export type Line = { name: string; color: string; points: { t: number; v: number }[] };
 
 // Time-based multi-line chart with a shared hover crosshair
-export function LineChart({ lines, format = compactCount, fromZero = false, date }: { lines: Line[]; format?: (n: number) => string; fromZero?: boolean; date: (t: number) => string }) {
+export function LineChart({ lines, label, format = compactCount, fromZero = false, date }: { lines: Line[]; label: string; format?: (n: number) => string; fromZero?: boolean; date: (t: number) => string }) {
   const [hover, setHover] = useState<number | null>(null);
   const all = lines.flatMap(l => l.points);
   const times = [...new Set(all.map(p => p.t))].sort((a, b) => a - b);
@@ -80,7 +83,9 @@ export function LineChart({ lines, format = compactCount, fromZero = false, date
   };
   const nearest = (l: Line, t: number) => l.points.reduce((best, p) => (Math.abs(p.t - t) < Math.abs(best.t - t) ? p : best), l.points[0]);
   return (
-    <div className="flex gap-3">
+    <figure aria-label={label} className="m-0">
+    <ul className="sr-only">{lines.map(l => { const values = l.points.map(p => p.v); return <li key={l.name}>{l.name}: {date(l.points[0].t)} {format(values[0])}, {date(l.points.at(-1)!.t)} {format(values.at(-1)!)}, lowest {format(Math.min(...values))}, highest {format(Math.max(...values))}</li>; })}</ul>
+    <div aria-hidden="true" className="flex gap-3">
       <div className="flex h-52 flex-col justify-between py-1 text-right font-mono text-[11px] text-ts-fg/40"><span>{format(hi)}</span><span>{format((hi + lo) / 2)}</span><span>{format(lo)}</span></div>
       <div className="min-w-0 flex-1">
         <div className="relative h-52 cursor-crosshair touch-none" onPointerMove={move} onPointerLeave={() => setHover(null)}>
@@ -109,6 +114,7 @@ export function LineChart({ lines, format = compactCount, fromZero = false, date
         <div className="mt-2 flex justify-between font-mono text-[11px] text-ts-fg/40"><span>{date(t0)}</span><span>{date(t0 + span)}</span></div>
       </div>
     </div>
+    </figure>
   );
 }
 
@@ -152,8 +158,10 @@ export function HBars({ rows, format = compactCount, empty = 'No data yet.' }: {
 // rows = days (oldest first), columns = hours 0-23, cell = active minutes
 export function Heatmap({ grid, rowLabels }: { grid: number[][]; rowLabels: string[] }) {
   const max = Math.max(...grid.flat(), 1);
+  const busiest = grid.flatMap((row, r) => row.map((m, h) => ({ m, r, h }))).reduce((best, cell) => (cell.m > best.m ? cell : best));
+  const days = grid.map((row, r) => `${rowLabels[r]} ${Math.round(row.reduce((n, m) => n + m, 0))} min`).join(', ');
   return (
-    <div>
+    <div role="img" aria-label={`Active minutes per hour over the last 7 days. Busiest: ${rowLabels[busiest.r]} at ${String(busiest.h).padStart(2, '0')}:00 with ${Math.round(busiest.m)} minutes. Totals per day: ${days}.`}>
       <div className="grid gap-1" style={{ gridTemplateColumns: 'auto repeat(24, minmax(0, 1fr))' }}>
         {grid.map((row, r) => [
           <span key={`l${r}`} className="pr-2 text-right font-mono text-[11px] leading-5 text-ts-fg/40">{rowLabels[r]}</span>,
