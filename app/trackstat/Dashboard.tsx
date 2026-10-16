@@ -187,7 +187,7 @@ export default function Dashboard({ accounts, samples, avatarOf }: { accounts: T
           {d.perAccount.length ? (
             <ul className="space-y-3">{d.perAccount.map(x => {
               const last = x.a.sessions[0];
-              return <li key={x.a.index} className="flex items-center gap-3 text-sm"><span className="flex min-w-0 flex-1 items-center gap-3 text-ts-fg">{who(x.a)}</span><span className="text-right text-xs"><span className={`flex items-center justify-end gap-1.5 ${x.live ? 'text-ts-pos' : 'text-ts-fg/40'}`}><span className={`h-1.5 w-1.5 rounded-full ${x.live ? 'bg-ts-pos' : 'bg-ts-fg/30'}`} />{x.live ? 'Live' : 'Offline'}</span><span className="text-ts-fg/35">{last ? ago(last.updated_at) : 'never synced'}</span></span></li>;
+              return <li key={x.a.index} className="flex items-center gap-3 text-sm"><span className="flex min-w-0 flex-1 items-center gap-3 text-ts-fg">{who(x.a)}</span><span className="text-right text-xs"><span className={`flex items-center justify-end gap-1.5 ${x.live ? 'text-ts-pos' : 'text-ts-fg/40'}`}><span className={`h-1.5 w-1.5 rounded-full ${x.live ? 'bg-ts-pos' : 'bg-ts-fg/30'}`} />{x.live ? 'Live' : 'Offline'}</span><span className="text-ts-fg/35">{x.live ? 'syncing now' : last ? ago(last.updated_at) : 'never synced'}</span></span></li>;
             })}</ul>
           ) : <Empty>No accounts connected.</Empty>}
         </ChartCard>

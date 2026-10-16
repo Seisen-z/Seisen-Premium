@@ -331,7 +331,7 @@ export default function TrackstatPanel({ initialTheme }: { initialTheme: Theme }
               <Stat icon={<Gem size={20} />} label="Games tracked" value={String(gamesTracked)} />
               <Stat icon={<TrendingUp size={20} />} label="Total session gains" value={`+${compactCount(totalGains)}`} hint={String(totalGains)} />
               <Stat icon={<Clock size={20} />} label="Session time" value={lastAny ? span(lastAny) : '—'} />
-              <Stat icon={<CalendarDays size={20} />} label="Last played" value={lastAny ? ago(lastAny.updated_at) : '—'} />
+              <Stat icon={<CalendarDays size={20} />} label="Last played" value={libraryLive ? 'Now' : lastAny ? ago(lastAny.updated_at) : '—'} />
             </div>
           )}
         </div>
