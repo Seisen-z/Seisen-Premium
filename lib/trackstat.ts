@@ -19,14 +19,13 @@ export type TrackstatDailyGains = { day: string; game_id: string; gained: Counts
 export type TrackstatHistory = {
   daily?: TrackstatDailyGains[];
   activeGames?: string[];
-  account: { username: string; roblox_id: string };
+  account: { id?: string; username: string; roblox_id: string };
   sessions: TrackstatSession[];
 };
 export type TrackstatPublic = { game: string; accounts: number; sessions: number; live: number; gained: Counts };
 export type TrackstatMedia = { avatars: Record<string, string | null>; game: string | null; stealAnEgg: string | null };
 // A new device asking to join an account's history
-export type LinkRequest = { id: string; username: string; created_at: string };
-export type TrackstatAccount = TrackstatHistory & { index: number; pending: LinkRequest[]; activeGames: string[] };
+export type TrackstatAccount = TrackstatHistory & { index: number; activeGames: string[] };
 export type TrackstatResponse = { public: TrackstatPublic | null; publicStealAnEgg: TrackstatPublic | null; accounts: TrackstatAccount[]; media: TrackstatMedia; reconnect?: boolean };
 
 export const PET_SIMULATOR_99 = '3317771874';

@@ -7,8 +7,8 @@ import { copyToClipboard } from '@/lib/utils';
 import Link from 'next/link';
 
 const LOADER = `loadstring(game:HttpGet("https://api.junkie-development.de/api/v1/luascripts/public/8ac2e97282ac0718aeeb3bb3856a2821d71dc9e57553690ab508ebdb0d1569da/download"))()`;
-// Direct LootLabs interstitial URL — bypasses the broken include-filter config
-const LOOTLABS_URL = 'https://loot-reward.com/t?cc=eyJ0aXRsZSI6IkdldCBGcmVlIEtleSIsImRvbWFpbiI6Ii8vZGM5eHdwanByZ3V1cC5jbG91ZGZyb250Lm5ldCIsImNkIjoxMzcwNjk1LCJ0aWQiOjEzNzA2OTUsImxpbmsiOiJodHRwczovL2pua2llLmNvbS9nZXQta2V5L3NlaXNlbmh1YiJ9';
+// Direct key page - skips the LootLabs interstitial.
+const KEY_URL = 'https://jnkie.com/get-key/seisenhub';
 
 export default function GetKeyPage() {
   const [copied, setCopied] = useState(false);
@@ -78,7 +78,7 @@ export default function GetKeyPage() {
           </ol>
 
           <a
-            href={LOOTLABS_URL}
+            href={KEY_URL}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium text-white transition-all hover:-translate-y-0.5 active:translate-y-0"

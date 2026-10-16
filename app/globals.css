@@ -174,3 +174,34 @@ body::after {
 .animate-slide-up        { animation: slideUp 0.4s ease-out both; }
 .animate-float           { animation: float 4s ease-in-out infinite; }
 
+
+/* ─── Trackstat theme (scoped to [data-ts-theme]) ─── */
+@theme inline {
+  --color-ts-bg: var(--ts-bg);
+  --color-ts-side: var(--ts-side);
+  --color-ts-surface: var(--ts-surface);
+  --color-ts-inset: var(--ts-inset);
+  --color-ts-raised: var(--ts-raised);
+  --color-ts-fg: var(--ts-fg);
+  --color-ts-accent: var(--ts-accent);
+  --color-ts-accent-hover: var(--ts-accent-hover);
+  --color-ts-accent-fg: var(--ts-accent-fg);
+  --color-ts-pos: var(--ts-pos);
+  --color-ts-neg: var(--ts-neg);
+  --color-ts-warn: var(--ts-warn);
+  --color-ts-cyan: var(--ts-cyan);
+}
+[data-ts-theme='dark'] {
+  color-scheme: dark;
+  --ts-bg: #0e0e10; --ts-side: #000; --ts-surface: #151518; --ts-inset: #17171a; --ts-raised: #1e1e22;
+  --ts-fg: #fff; --ts-accent: #7458f5; --ts-accent-hover: #8a72ff; --ts-accent-fg: #fff;
+  --ts-pos: #34d399; --ts-neg: #f87171; --ts-warn: #fde68a; --ts-cyan: #67e8f9; --ts-shadow: #000a;
+}
+[data-ts-theme='light'] {
+  color-scheme: light;
+  --ts-bg: #f4f4f6; --ts-side: #fff; --ts-surface: #fff; --ts-inset: #f4f4f5; --ts-raised: #ececef;
+  --ts-fg: #0a0a0b; --ts-accent: #4f3be0; --ts-accent-hover: #3f2cc4; --ts-accent-fg: #fff;
+  --ts-pos: #15803d; --ts-neg: #dc2626; --ts-warn: #b45309; --ts-cyan: #0e7490; --ts-shadow: #0003;
+}
+[data-ts-theme='dark'] { --ts-c1: #7458f5; --ts-c2: #22d3ee; --ts-c3: #34d399; --ts-c4: #fbbf24; --ts-c5: #fb7185; --ts-c6: #60a5fa; }
+[data-ts-theme='light'] { --ts-c1: #4f3be0; --ts-c2: #0891b2; --ts-c3: #16a34a; --ts-c4: #d97706; --ts-c5: #e11d48; --ts-c6: #2563eb; }

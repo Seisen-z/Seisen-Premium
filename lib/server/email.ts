@@ -335,13 +335,13 @@ export class EmailService {
     }
   }
 
-  async sendVerificationCode(to: string, code: string) {
+  async sendVerificationCode(to: string, code: string, purpose: 'client' | 'trackstat' = 'client') {
     if (!this.transporter && !process.env.SMTP_HOST) {
          console.warn('⚠️ No email transport available for OTP');
          return { success: false, error: 'Email service not configured' };
     }
     
-    const subject = `Your Verification Code - ${code}`;
+    const subject = purpose === 'trackstat' ? 'Your Trackstat sign-in code' : `Your Verification Code - ${code}`;
     
     // Verify connection before attempting to send (Fail fast)
     const isConnected = await this.verifyConnection();
@@ -365,9 +365,9 @@ export class EmailService {
 <body>
     <div class="container">
         <div class="logo">⚡ SEISEN</div>
-        <p class="text">Use the code below to sign in to your Client Area.</p>
+        <p class="text">Use the code below to sign in to ${purpose === 'trackstat' ? 'Trackstat' : 'your Client Area'}.</p>
         <div class="code">${code}</div>
-        <p class="text">This code will expire in 15 minutes.<br>If you didn't request this, you can ignore this email.</p>
+        <p class="text">${purpose === 'trackstat' ? 'This is a one-time sign-in code.' : 'This code will expire in 15 minutes.'}<br>If you didn't request this, you can ignore this email.</p>
         <div class="footer">Seisen Hub Security</div>
     </div>
 </body>

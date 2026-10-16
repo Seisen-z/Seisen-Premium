@@ -1,5 +1,4 @@
-const url = 'https://xsygxfeutjcwmqejslbv.supabase.co';
-const publishableKey = 'sb_publishable_565kome-b7OZJPc7-kWSPQ_n_nwH8q5';
+import { TRACKSTAT_URL as url, TRACKSTAT_PUBLIC_KEY as publishableKey } from '@/lib/trackstat-config';
 
 async function thumbnail(path: string): Promise<string | null> {
   try {
@@ -19,10 +18,10 @@ export async function trackstatMedia(robloxIds: string[]) {
   return { avatars: Object.fromEntries(avatarList), game, stealAnEgg };
 }
 
-export async function trackstatRPC<T>(name: string, args: Record<string, unknown> = {}): Promise<T> {
+export async function trackstatRPC<T>(name: string, args: Record<string, unknown> = {}, token?: string): Promise<T> {
   const response = await fetch(`${url}/rest/v1/rpc/${name}`, {
     method: 'POST',
-    headers: { apikey: publishableKey, 'Content-Type': 'application/json' },
+    headers: { apikey: publishableKey, 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
     body: JSON.stringify(args),
     cache: 'no-store',
     signal: AbortSignal.timeout(12000),

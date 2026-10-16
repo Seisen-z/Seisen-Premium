@@ -1,7 +1,8 @@
+import { trackstatEntries } from '@/lib/server/trackstat-accounts';
 import { NextRequest, NextResponse } from 'next/server';
 import { trackstatRPC, trackstatCacheImage } from '@/lib/server/trackstat';
 import { rateLimit, getClientIp, rateLimitResponse } from '@/lib/server/rate-limit';
-import { STEAL_AN_EGG, type CatalogEntry, type TrackstatHistory } from '@/lib/trackstat';
+import { STEAL_AN_EGG, type CatalogEntry } from '@/lib/trackstat';
 
 export const dynamic = 'force-dynamic';
 const headers = { 'Cache-Control': 'private, no-store' };
@@ -22,11 +23,12 @@ async function icons(ids: string[]): Promise<Record<string, string>> {
 export async function GET(req: NextRequest) {
   const limit = rateLimit(`trackstat:catalog:${getClientIp(req)}`, 30, 60000);
   if (!limit.allowed) return rateLimitResponse(limit);
-  const key = (req.cookies.get('seisen_trackstat')?.value ?? '').split(',')[Number(req.nextUrl.searchParams.get('account')) || 0];
-  if (!key) return NextResponse.json({ catalog: {} }, { headers });
   try {
+    const { entries } = await trackstatEntries(req);
+    const index = Number(req.nextUrl.searchParams.get('account') ?? 0);
+    const history = Number.isInteger(index) && index >= 0 ? entries[index]?.history : undefined;
+    if (!history) return NextResponse.json({ catalog: {} }, { headers });
     const stealAnEgg = req.nextUrl.searchParams.get('game') === 'sae';
-    const history = await trackstatRPC<TrackstatHistory>('trackstat_private', { p_key: key });
     const sessions = history.sessions.filter(session => (session.game_id === STEAL_AN_EGG) === stealAnEgg);
     const latest = sessions[0];
     const itemKeys = [...new Set((latest?.snapshot.inventory ?? []).flatMap(entry => [

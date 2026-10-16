@@ -8,13 +8,15 @@ function computeNextVersion(count: number): string {
   return `v1.${minor}.${patch}`;
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    const requested = Number(req.nextUrl.searchParams.get('limit'));
+    const limit = Number.isFinite(requested) && requested > 0 ? Math.min(Math.floor(requested), 200) : 50;
     const { data, error } = await supabase
       .from('site_updates')
       .select('*')
       .order('created_at', { ascending: false })
-      .limit(50);
+      .limit(limit);
 
     if (error) throw error;
     return NextResponse.json(data ?? []);

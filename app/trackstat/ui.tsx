@@ -4,8 +4,8 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { Gem, Search } from 'lucide-react';
 import { compactCount, type Counts, type TrackstatDailyGains, type TrackstatSession } from '@/lib/trackstat';
 
-export const card = 'rounded-xl border border-white/[0.07] bg-[#101010]';
-export const button = 'rounded-lg border border-white/10 px-4 py-2.5 text-sm text-white/70 transition-colors hover:border-[#c9a97a]/50 hover:text-[#c9a97a] focus-visible:outline-2 focus-visible:outline-[#c9a97a] disabled:opacity-40';
+export const card = 'rounded-xl border border-ts-fg/[0.07] bg-ts-surface';
+export const button = 'rounded-lg border border-ts-fg/10 px-4 py-2.5 text-sm text-ts-fg/70 transition-colors hover:border-ts-accent/50 hover:text-ts-accent focus-visible:outline-2 focus-visible:outline-ts-accent disabled:opacity-40';
 export const total = (c: Counts) => Object.values(c).reduce((n, v) => n + v, 0);
 export const ago = (iso: string) => {
   const m = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
@@ -19,14 +19,14 @@ export const span = (s: TrackstatSession) => {
 export function Stat({ icon, label, value, hint }: { icon: ReactNode; label: string; value: string; hint?: string }) {
   return (
     <div className={`${card} flex items-center gap-4 p-4`}>
-      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-[#c9a97a]/10 text-[#c9a97a]">{icon}</span>
-      <div className="min-w-0"><p className="text-xs text-white/45">{label}</p><p className="mt-1 truncate font-mono text-xl text-white" title={hint}>{value}</p></div>
+      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-ts-accent/10 text-ts-accent">{icon}</span>
+      <div className="min-w-0"><p className="text-xs text-ts-fg/45">{label}</p><p className="mt-1 truncate font-mono text-xl text-ts-fg" title={hint}>{value}</p></div>
     </div>
   );
 }
 
 export function Skeleton({ className = '' }: { className?: string }) {
-  return <span aria-hidden className={`block animate-pulse rounded-md bg-white/[0.07] ${className}`} />;
+  return <span aria-hidden className={`block animate-pulse rounded-md bg-ts-fg/[0.07] ${className}`} />;
 }
 
 // backup is tried when src fails to load; the box pulses until the picture arrives
@@ -43,7 +43,7 @@ function ImageWithFallback({ src, backup, className, fallback }: ImageProps) {
 }
 
 export function Avatar({ src, name, small }: { src?: string | null; name: string; small?: boolean }) {
-  return <Img src={src} className={`${small ? 'h-9 w-9 text-sm' : 'h-16 w-16 text-2xl'} shrink-0 rounded-full border border-[#c9a97a]/40 bg-[#c9a97a]/10 font-semibold text-[#c9a97a]`} fallback={name[0]?.toUpperCase()} />;
+  return <Img src={src} className={`${small ? 'h-9 w-9 text-sm' : 'h-16 w-16 text-2xl'} shrink-0 rounded-full bg-ts-accent/15 font-semibold text-ts-accent`} fallback={name[0]?.toUpperCase()} />;
 }
 
 export const ranges = { '1D': 1, '7D': 7 } as const;
@@ -98,27 +98,27 @@ export function GainChart({ daily }: { daily: TrackstatDailyGains[] }) {
   };
   return (
     <div className="flex h-full flex-col">
-      <div className="mb-3 flex justify-end gap-1" role="group" aria-label="Chart range">{(Object.keys(ranges) as (keyof typeof ranges)[]).map(r => <button key={r} aria-pressed={range === r} onClick={() => { setRange(r); setHover(null); }} className={`rounded-md px-3 py-1 text-xs transition-colors ${range === r ? 'bg-[#c9a97a] font-medium text-black' : 'bg-white/[0.04] text-white/55 hover:text-white'}`}>{r}</button>)}</div>
+      <div className="mb-3 flex justify-end gap-1" role="group" aria-label="Chart range">{(Object.keys(ranges) as (keyof typeof ranges)[]).map(r => <button key={r} aria-pressed={range === r} onClick={() => { setRange(r); setHover(null); }} className={`rounded-md px-3 py-1 text-xs transition-colors ${range === r ? 'bg-ts-accent font-medium text-ts-accent-fg' : 'bg-ts-fg/[0.04] text-ts-fg/55 hover:text-ts-fg'}`}>{r}</button>)}</div>
       <div className="flex min-h-44 flex-1 gap-3">
-          <div className="flex flex-col justify-between py-1 text-right font-mono text-[11px] text-white/40"><span>{compactCount(max)}</span><span>{compactCount(max / 2)}</span><span>0</span></div>
+          <div className="flex flex-col justify-between py-1 text-right font-mono text-[11px] text-ts-fg/40"><span>{compactCount(max)}</span><span>{compactCount(max / 2)}</span><span>0</span></div>
           <div className="flex min-w-0 flex-1 flex-col">
             <div className="relative flex-1 cursor-crosshair touch-none" onPointerMove={move} onPointerLeave={() => setHover(null)}>
               <svg viewBox={`0 0 ${W} ${H}`} className="absolute inset-0 h-full w-full" preserveAspectRatio="none" role="img" aria-label="Daily gains (UTC)">
-                {[0.25, 0.5, 0.75].map(f => <line key={f} x1="0" x2={W} y1={H * f} y2={H * f} stroke="white" strokeOpacity=".06" vectorEffect="non-scaling-stroke" />)}
-                {points.map(p => <rect key={p.t} x={fx(p) * W - W / points.length * 0.3} y={fy(p) * H} width={W / points.length * 0.6} height={Math.max(0, H - 5 - fy(p) * H)} fill="#c9a97a" rx="3" />)}
+                {[0.25, 0.5, 0.75].map(f => <line key={f} x1="0" x2={W} y1={H * f} y2={H * f} className="stroke-ts-fg/[0.06]" vectorEffect="non-scaling-stroke" />)}
+                {points.map(p => <rect key={p.t} x={fx(p) * W - W / points.length * 0.3} y={fy(p) * H} width={W / points.length * 0.6} height={Math.max(0, H - 5 - fy(p) * H)} className="fill-ts-accent" rx="3" />)}
               </svg>
               {active && (
                 <>
-                  <span className="pointer-events-none absolute bottom-0 top-0 w-px bg-white/20" style={{ left: `${fx(active) * 100}%` }} />
-                  <span className="pointer-events-none absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-[#c9a97a] bg-[#111]" style={{ left: `${fx(active) * 100}%`, top: `${fy(active) * 100}%` }} />
-                  <div className="pointer-events-none absolute z-10 whitespace-nowrap rounded-lg border border-white/10 bg-[#1a1a1a] px-3 py-2 text-xs shadow-xl" style={{ left: `${fx(active) * 100}%`, top: `${fy(active) * 100}%`, transform: `translate(${fx(active) < 0.2 ? '8px' : fx(active) > 0.8 ? 'calc(-100% - 8px)' : '-50%'}, ${fx(active) < 0.2 || fx(active) > 0.8 ? '-50%' : 'calc(-100% - 14px)'})` }}>
-                    <p className="text-white/45">{dayLabel(active.t)} · UTC</p>
-                    <p className="mt-1 font-mono text-sm text-white">+{compactCount(active.v)} <span className="text-white/40">daily total</span></p>
+                  <span className="pointer-events-none absolute bottom-0 top-0 w-px bg-ts-fg/20" style={{ left: `${fx(active) * 100}%` }} />
+                  <span className="pointer-events-none absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-ts-accent bg-ts-surface" style={{ left: `${fx(active) * 100}%`, top: `${fy(active) * 100}%` }} />
+                  <div className="pointer-events-none absolute z-10 whitespace-nowrap rounded-lg border border-ts-fg/10 bg-ts-raised px-3 py-2 text-xs shadow-xl" style={{ left: `${fx(active) * 100}%`, top: `${fy(active) * 100}%`, transform: `translate(${fx(active) < 0.2 ? '8px' : fx(active) > 0.8 ? 'calc(-100% - 8px)' : '-50%'}, ${fx(active) < 0.2 || fx(active) > 0.8 ? '-50%' : 'calc(-100% - 14px)'})` }}>
+                    <p className="text-ts-fg/45">{dayLabel(active.t)} · UTC</p>
+                    <p className="mt-1 font-mono text-sm text-ts-fg">+{compactCount(active.v)} <span className="text-ts-fg/40">daily total</span></p>
                   </div>
                 </>
               )}
             </div>
-            <div className="mt-2 flex justify-between font-mono text-[11px] text-white/40"><span>{dayLabel(t0)}</span><span>{dayLabel(points.at(-1)!.t)}</span></div>
+            <div className="mt-2 flex justify-between font-mono text-[11px] text-ts-fg/40"><span>{dayLabel(t0)}</span><span>{dayLabel(points.at(-1)!.t)}</span></div>
           </div>
       </div>
     </div>
@@ -130,13 +130,13 @@ export function DetailTable({ rows, empty, gainedOnly, images, backups = {} }: {
   const shown = rows.filter(r => (!gainedOnly || r.gained > 0) && r.name.toLowerCase().includes(q.toLowerCase())).sort((a, b) => (gainedOnly ? b.gained - a.gained : b.owned - a.owned));
   return (
     <div>
-      <label className="relative mb-4 block max-w-xs"><Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/35" /><input aria-label="Search items" value={q} onChange={e => setQ(e.target.value)} placeholder="Search item or pet…" className="w-full rounded-lg border border-white/10 bg-[#111] py-2 pl-9 pr-3 text-sm text-white outline-none focus:border-[#c9a97a]" /></label>
+      <label className="relative mb-4 block max-w-xs"><Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ts-fg/35" /><input aria-label="Search items" value={q} onChange={e => setQ(e.target.value)} placeholder="Search item or pet…" className="w-full rounded-lg border border-ts-fg/10 bg-ts-surface py-2 pl-9 pr-3 text-sm text-ts-fg outline-none focus:border-ts-accent" /></label>
       <div className={`${card} max-h-[480px] overflow-auto`}>
         <table className="w-full text-left text-sm">
-          <thead className="sticky top-0 bg-[#181818] text-xs text-white/45"><tr><th className="px-4 py-3 font-normal">Item / pet</th><th className="px-4 py-3 text-right font-normal">Owned</th><th className="px-4 py-3 text-right font-normal">Gained</th></tr></thead>
-          <tbody>{shown.map((r, i) => <tr key={`${r.kind}:${r.name}:${i}`} className="border-t border-white/[0.05]"><td className="max-w-[260px] px-4 py-3 text-white/80"><div className="flex items-center gap-3"><Img src={images[r.name.toLowerCase()]} backup={backups[r.name.toLowerCase()]} className="h-9 w-9 shrink-0 object-contain" fallback={<Gem size={14} className="text-white/25" />} /><div className="min-w-0 break-words">{r.name}<span className="mt-0.5 block text-xs capitalize text-white/35">{r.kind}</span></div></div></td><td className="px-4 py-3 text-right font-mono text-white/60">{compactCount(r.owned)}</td><td className="px-4 py-3 text-right font-mono text-[#c9a97a]">+{compactCount(r.gained)}</td></tr>)}</tbody>
+          <thead className="sticky top-0 bg-ts-raised text-xs text-ts-fg/45"><tr><th className="px-4 py-3 font-normal">Item / pet</th><th className="px-4 py-3 text-right font-normal">Owned</th><th className="px-4 py-3 text-right font-normal">Gained</th></tr></thead>
+          <tbody>{shown.map((r, i) => <tr key={`${r.kind}:${r.name}:${i}`} className="border-t border-ts-fg/[0.05]"><td className="max-w-[260px] px-4 py-3 text-ts-fg/80"><div className="flex items-center gap-3"><Img src={images[r.name.toLowerCase()]} backup={backups[r.name.toLowerCase()]} className="h-9 w-9 shrink-0 object-contain" fallback={<Gem size={14} className="text-ts-fg/25" />} /><div className="min-w-0 break-words">{r.name}<span className="mt-0.5 block text-xs capitalize text-ts-fg/35">{r.kind}</span></div></div></td><td className="px-4 py-3 text-right font-mono text-ts-fg/60">{compactCount(r.owned)}</td><td className="px-4 py-3 text-right font-mono text-ts-accent">+{compactCount(r.gained)}</td></tr>)}</tbody>
         </table>
-        {!shown.length && <p className="p-5 text-sm text-white/40">{empty}</p>}
+        {!shown.length && <p className="p-5 text-sm text-ts-fg/40">{empty}</p>}
       </div>
     </div>
   );

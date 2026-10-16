@@ -1,52 +1,33 @@
+import { bearer, trackstatEntries, cookieName, cookieOptions, readKeys, keyPattern } from '@/lib/server/trackstat-accounts';
 import { NextRequest, NextResponse } from 'next/server';
 import { trackstatMedia, trackstatRPC } from '@/lib/server/trackstat';
 import { rateLimit, getClientIp, rateLimitResponse } from '@/lib/server/rate-limit';
-import type { LinkRequest, TrackstatAccount, TrackstatHistory, TrackstatPublic } from '@/lib/trackstat';
+import type { TrackstatAccount,TrackstatHistory, TrackstatPublic } from '@/lib/trackstat';
 
 export const dynamic = 'force-dynamic';
-const cookieName = 'seisen_trackstat';
 const maxAccounts = 10;
-const keyPattern = /^sp_[a-f0-9]{64}$/;
 const headers = { 'Cache-Control': 'private, no-store' };
-const cookieOptions = { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax' as const, path: '/api/trackstat', maxAge: 60 * 60 * 24 * 30 };
-
-// The cookie holds every connected account's key, comma separated (a single plain key from before still works).
-const readKeys = (req: NextRequest) => [...new Set((req.cookies.get(cookieName)?.value ?? '').split(',').filter(key => keyPattern.test(key)))].slice(0, maxAccounts);
 function writeKeys(response: NextResponse, keys: string[]) {
   if (keys.length) response.cookies.set(cookieName, keys.join(','), cookieOptions);
   else response.cookies.set(cookieName, '', { ...cookieOptions, maxAge: 0 });
 }
 const isInvalid = (error: unknown) => error instanceof Error && error.message === 'Invalid connection key';
 
-// Looks every key up; keys that were reset are reported as dropped, any other failure aborts.
-async function lookup(keys: string[]) {
-  const results = await Promise.allSettled(keys.map(key => trackstatRPC<TrackstatHistory>('trackstat_private', { p_key: key })));
-  const valid: { key: string; history: TrackstatHistory }[] = [];
-  let dropped = false;
-  results.forEach((result, i) => {
-    if (result.status === 'fulfilled') valid.push({ key: keys[i], history: result.value });
-    else if (isInvalid(result.reason)) dropped = true;
-    else throw result.reason;
-  });
-  return { valid, dropped };
-}
-
 export async function GET(req: NextRequest) {
   const limit = rateLimit(`trackstat:read:${getClientIp(req)}`, 60, 60000);
   if (!limit.allowed) return rateLimitResponse(limit);
   try {
-    const [totals, totalsStealAnEgg, { valid, dropped }] = await Promise.all([
+    const [totals, totalsStealAnEgg, { entries: valid, dropped }] = await Promise.all([
       trackstatRPC<TrackstatPublic>('trackstat_public').catch(() => null),
       trackstatRPC<TrackstatPublic>('trackstats_stealanegg_public').catch(() => null),
-      lookup(readKeys(req)),
+      trackstatEntries(req),
     ]);
-    const pending = await Promise.all(valid.map(({ key }) => trackstatRPC<LinkRequest[]>('trackstat_link_pending', { p_key: key }).catch(() => [] as LinkRequest[])));
     const accounts: TrackstatAccount[] = valid.map(({ history }, index) => ({
-      ...history, index, pending: pending[index],
+      ...history, index,
       activeGames: history.activeGames ?? [],
     }));
     const response = NextResponse.json({ public: totals, publicStealAnEgg: totalsStealAnEgg, accounts, media: await trackstatMedia(accounts.map(a => a.account.roblox_id)), reconnect: dropped }, { headers });
-    if (dropped) writeKeys(response, valid.map(v => v.key));
+    if (dropped) writeKeys(response, valid.flatMap(v => v.keys));
     return response;
   } catch {
     return NextResponse.json({ error: 'Trackstat is temporarily unavailable. Try refreshing shortly.' }, { status: 503, headers });
@@ -62,12 +43,17 @@ export async function POST(req: NextRequest) {
     if (body.length > 256) return NextResponse.json({ error: 'Invalid connection key' }, { status: 400, headers });
     const key = JSON.parse(body).key;
     if (typeof key !== 'string' || !keyPattern.test(key)) return NextResponse.json({ error: 'Paste the connection key copied from the library.' }, { status: 400, headers });
-    await trackstatRPC<TrackstatHistory>('trackstat_private', { p_key: key });
+    const connected = await trackstatRPC<TrackstatHistory>('trackstat_private', { p_key: key });
+    const token = bearer(req);
+    const current = await trackstatEntries(req);
+    const same = current.entries.findIndex(e => e.history.account.roblox_id === connected.account.roblox_id);
+    if (current.entries.length >= maxAccounts && same < 0) return NextResponse.json({ error: 'You can connect up to 10 accounts.' }, { status: 400, headers });
+    if (token) await trackstatRPC('trackstat_user_account_save', { p_key: key }, token);
     // Keys that were reset are dropped; every other connected key stays, even for the same Roblox account on another device
-    const others = (await lookup(readKeys(req).filter(existing => existing !== key))).valid;
+    const others = current.entries.flatMap(entry => entry.keys).filter(other => other !== key);
     if (others.length >= maxAccounts) return NextResponse.json({ error: `You can connect up to ${maxAccounts} accounts. Remove one first.` }, { status: 400, headers });
-    const response = NextResponse.json({ connected: true, index: others.length }, { headers });
-    writeKeys(response, [...others.map(v => v.key), key]);
+    const response = NextResponse.json({ connected: true, index: same < 0 ? current.entries.filter(entry => entry.keys.length).length : same }, { headers });
+    writeKeys(response, [...others, key]);
     return response;
   } catch (error) {
     const invalid = error instanceof SyntaxError || isInvalid(error);
@@ -82,6 +68,12 @@ export async function DELETE(req: NextRequest) {
   const response = NextResponse.json({ connected: false }, { headers });
   let index: unknown;
   try { index = text ? JSON.parse(text).index : undefined; } catch { return new NextResponse(null, { status: 400 }); }
-  writeKeys(response, Number.isInteger(index) ? readKeys(req).filter((_, i) => i !== index) : []);
-  return response;
+  try {
+    const { entries, token } = await trackstatEntries(req);
+    if (index !== undefined && (!Number.isInteger(index) || Number(index) < 0 || Number(index) >= entries.length)) return NextResponse.json({ error: 'Invalid account.' }, { status: 400, headers });
+    const removed = index === undefined ? entries : [entries[Number(index)]];
+    if (token) for (const id of removed.flatMap(entry => entry.ids)) await trackstatRPC('trackstat_user_account_remove', { p_account: id }, token);
+    writeKeys(response, readKeys(req).filter(key => !removed.some(e => e.keys.includes(key))));
+    return response;
+  } catch { return NextResponse.json({ error: 'Account could not be removed.' }, { status: 503, headers }); }
 }
