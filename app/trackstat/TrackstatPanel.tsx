@@ -348,7 +348,7 @@ export default function TrackstatPanel({ initialTheme }: { initialTheme: Theme }
   }
 
   const collapsed = settings.collapsed;
-  const row = (active: boolean) => `relative flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition-colors ${collapsed ? 'md:justify-center md:px-0' : ''} ${active ? 'bg-ts-fg/[0.07] font-medium text-ts-fg' : 'text-ts-fg/70 hover:bg-ts-fg/[0.04] hover:text-ts-fg'}`;
+  const row = (active: boolean, compact = false) => `relative flex w-full items-center rounded-lg px-3 text-left transition-colors ${compact ? 'gap-2.5 py-1.5 text-[13px]' : 'gap-3 py-2.5 text-sm'} ${collapsed ? 'md:justify-center md:px-0' : ''} ${active ? 'bg-ts-fg/[0.07] font-medium text-ts-fg' : 'text-ts-fg/70 hover:bg-ts-fg/[0.04] hover:text-ts-fg'}`;
   const bar = <span className="absolute bottom-2 left-0 top-2 w-0.5 rounded-full bg-ts-accent" />;
   const divider = <div className="my-3 h-px bg-ts-fg/[0.07]" />;
   const shown = ordered.filter(a => nameOf(a).toLowerCase().includes(accountQuery.trim().toLowerCase()));
@@ -376,10 +376,10 @@ export default function TrackstatPanel({ initialTheme }: { initialTheme: Theme }
           const active = page === 'games' && history?.index === a.index;
           const games = new Set(a.sessions.map(x => x.game_id)).size;
           return (
-            <button key={a.account.roblox_id} onClick={() => selectAccount(a.index)} title={nameOf(a)} aria-label={nameOf(a)} className={row(active)}>
+            <button key={a.account.roblox_id} onClick={() => selectAccount(a.index)} title={nameOf(a)} aria-label={nameOf(a)} className={row(active, true)}>
               {active && bar}
-              <Avatar src={avatarOf(a.account.roblox_id)} name={a.account.username} small />
-              {!collapsed && <><span className="min-w-0 flex-1 truncate">{nameOf(a)}</span><span title={`${games} ${games === 1 ? 'game' : 'games'}`} className="grid h-5 min-w-5 place-items-center rounded-full bg-ts-accent px-1.5 text-[11px] font-medium text-ts-accent-fg">{games}</span></>}
+              <Avatar src={avatarOf(a.account.roblox_id)} name={a.account.username} tiny />
+              {!collapsed && <><span className="min-w-0 flex-1 truncate">{nameOf(a)}</span><span title={`${games} ${games === 1 ? 'game' : 'games'}`} className="grid h-4 min-w-4 place-items-center rounded-full bg-ts-accent px-1 text-[10px] font-medium text-ts-accent-fg">{games}</span></>}
             </button>
           );
         })}

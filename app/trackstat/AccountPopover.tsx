@@ -33,9 +33,9 @@ export default function AccountPopover({ count, onChange, compact = false, popov
     finally { signingOut.current = false; setBusy(false); }
   }
   return <>
-    <button popoverTarget={popoverId} className={`flex w-full items-center gap-3 rounded-xl bg-ts-fg/[0.05] p-2.5 text-left hover:bg-ts-fg/[0.08] ${compact ? 'justify-center' : ''}`} aria-label="Open Account">
-      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-ts-accent/15 text-ts-accent"><UserRound size={17} /></span>
-      {!compact && <><span className="min-w-0 flex-1"><span className="block truncate text-sm font-medium leading-tight text-ts-fg">Account</span><span className="block truncate text-xs text-ts-fg/45">{user?.email ?? 'Not signed in'}</span></span>
+    <button popoverTarget={popoverId} className={`flex w-full items-center gap-3 rounded-xl bg-ts-fg/[0.05] p-2 text-left hover:bg-ts-fg/[0.08] ${compact ? 'justify-center' : ''}`} aria-label="Open Account">
+      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-ts-accent/15 text-ts-accent"><UserRound size={15} /></span>
+      {!compact && <><span className="min-w-0 flex-1"><span className="block truncate text-[13px] font-medium leading-tight text-ts-fg">Account</span><span className="block truncate text-[11px] text-ts-fg/45">{user?.email ?? 'Not signed in'}</span></span>
       <MoreHorizontal size={16} className="shrink-0 text-ts-fg/45" /></>}
     </button>
     <div id={popoverId} popover="auto" role="dialog" aria-labelledby={`${popoverId}-title`} className={`fixed inset-auto bottom-4 left-4 m-0 w-[min(340px,calc(100vw-32px))] rounded-2xl bg-ts-surface p-5 text-ts-fg shadow-[0_24px_90px_var(--ts-shadow)] ${compact ? 'md:left-[84px]' : 'md:left-[282px]'}`}>

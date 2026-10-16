@@ -42,8 +42,8 @@ function ImageWithFallback({ src, backup, className, fallback }: ImageProps) {
   return shown ? <img src={shown} alt="" referrerPolicy="no-referrer" onLoad={() => setLoaded(true)} onError={() => { setLoaded(false); setFailures(n => n + 1); }} className={`${className} object-cover ${loaded ? '' : 'animate-pulse'}`} /> : <span className={`${className} grid place-items-center`}>{fallback}</span>;
 }
 
-export function Avatar({ src, name, small }: { src?: string | null; name: string; small?: boolean }) {
-  return <Img src={src} className={`${small ? 'h-9 w-9 text-sm' : 'h-16 w-16 text-2xl'} shrink-0 rounded-full bg-ts-accent/15 font-semibold text-ts-accent`} fallback={name[0]?.toUpperCase()} />;
+export function Avatar({ src, name, small, tiny }: { src?: string | null; name: string; small?: boolean; tiny?: boolean }) {
+  return <Img src={src} className={`${tiny ? 'h-7 w-7 text-xs' : small ? 'h-9 w-9 text-sm' : 'h-16 w-16 text-2xl'} shrink-0 rounded-full bg-ts-accent/15 font-semibold text-ts-accent`} fallback={name[0]?.toUpperCase()} />;
 }
 
 export const ranges = { '1D': 1, '7D': 7 } as const;
