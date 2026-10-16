@@ -3,11 +3,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Clock, Gauge, Info, Layers, Trophy, Users, Zap } from 'lucide-react';
 import { PET_SIMULATOR_99, STEAL_AN_EGG, compactCount, type TrackstatAccount } from '@/lib/trackstat';
-import { BarChart, ChartCard, Empty, HBars, Legend, Sparkline, palette, type Bar } from './charts';
+import { AreaChart, ArcsChart, ChartCard, Empty, HBars, Sparkline, type AreaPoint } from './charts';
 import { Avatar, card, total } from './ui';
 
 const DAY = 86400e3;
-const games: Record<string, string> = { [PET_SIMULATOR_99]: 'Pet Simulator 99', [STEAL_AN_EGG]: 'Steal an Egg' };
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 const utcDay = (t: number) => new Date(t).toISOString().slice(0, 10);
 const shortDay = (day: string) => new Date(`${day}T00:00:00Z`).toLocaleDateString([], { timeZone: 'UTC', month: 'short', day: 'numeric' });
@@ -41,19 +40,13 @@ export default function Dashboard({ accounts, avatarOf, nameOf, single = false }
     const daily = picked.flatMap(a => (a.daily ?? []).filter(r => okGame(r.game_id) && keys.includes(r.day)).map(r => ({ a, ...r })));
     const sessions = picked.flatMap(a => a.sessions.filter(s => !s.history_expired && okGame(s.game_id)).map(s => ({ a, s, start: Date.parse(s.started_at), end: Date.parse(s.updated_at) }))).filter(x => x.end >= cutoff);
 
-    // Bars are stacked by game when every game is shown, otherwise by type of gain
     const metricTotals = new Map<string, number>();
     for (const r of daily) for (const [k, v] of Object.entries(r.gained)) metricTotals.set(k, (metricTotals.get(k) ?? 0) + v);
-    const metrics = [...metricTotals.entries()].sort((x, y) => y[1] - x[1]).map(([k]) => k);
-    const stackNames = game === 'all' ? Object.values(games) : metrics.map(cap);
-    const bars: Bar[] = keys.map(day => {
-      const rows = daily.filter(r => r.day === day);
-      const segments = game === 'all'
-        ? Object.entries(games).map(([id, name], i) => ({ name, color: palette[i], value: rows.filter(r => r.game_id === id).reduce((n, r) => n + total(r.gained), 0) }))
-        : metrics.map((k, i) => ({ name: cap(k), color: palette[i % palette.length], value: rows.reduce((n, r) => n + (r.gained[k] ?? 0), 0) }));
-      return { id: day, label: shortDay(day), title: `${shortDay(day)} · UTC`, segments };
-    });
-    const perDay = bars.map(b => b.segments.reduce((n, s) => n + s.value, 0));
+    const perDay = keys.map(day => daily.filter(r => r.day === day).reduce((n, r) => n + total(r.gained), 0));
+    // The overview always shows the last 7 days, whatever range the cards use
+    const weekKeys = Array.from({ length: 7 }, (_, i) => utcDay(now - (6 - i) * DAY));
+    const week = picked.flatMap(a => (a.daily ?? []).filter(r => okGame(r.game_id) && weekKeys.includes(r.day)));
+    const weekPoints: AreaPoint[] = weekKeys.map(day => ({ id: day, label: shortDay(day), title: `${shortDay(day)} · UTC`, value: week.filter(r => r.day === day).reduce((n, r) => n + total(r.gained), 0) }));
     const best = Math.max(...perDay);
     const yesterdayKey = utcDay(now - DAY);
     const yesterday = picked.flatMap(a => a.daily ?? []).filter(r => okGame(r.game_id) && r.day === yesterdayKey).reduce((n, r) => n + total(r.gained), 0);
@@ -70,15 +63,17 @@ export default function Dashboard({ accounts, avatarOf, nameOf, single = false }
       items.set(id, { name: it.name, kind: it.kind, gained: (items.get(id)?.gained ?? 0) + it.gained });
     }
     return {
-      bars, stackNames, yesterday, gained: perDay.reduce((n, v) => n + v, 0), best: best > 0 ? { v: best, day: keys[perDay.indexOf(best)] } : null,
+      yesterday, weekPoints, metricTotals,
+      topItems: [...items.entries()].sort((x, y) => y[1].gained - x[1].gained).slice(0, 8), gained: perDay.reduce((n, v) => n + v, 0), best: best > 0 ? { v: best, day: keys[perDay.indexOf(best)] } : null,
       perDay, perAccount, live: perAccount.filter(x => x.live).length, minutes, sessionCount: sessions.length,
       perHour: minutes > 0 ? sessionGains / (minutes / 60) : 0,
       sessionsPerDay: keys.map(day => sessions.filter(x => utcDay(x.end) === day).length),
-      topItems: [...items.entries()].sort((x, y) => y[1].gained - x[1].gained).slice(0, 8),
     };
   }, [accounts, game, acct, days, now]);
 
   const range = days === 1 ? 'Today (UTC)' : 'Last 7 days (UTC)';
+  const byAccount = d.perAccount.length > 1;
+  const structure = byAccount ? d.perAccount.map(x => ({ id: String(x.a.index), name: nameOf(x.a), value: x.gained })) : [...d.metricTotals.entries()].map(([k, value]) => ({ id: k, name: cap(k), value }));
   // Today against yesterday, or the average per day over the week
   const change = d.yesterday > 0 ? Math.round(((d.gained - d.yesterday) / d.yesterday) * 100) : null;
   const compare = days === 1 ? (change === null ? 'Today' : `Today · ${change >= 0 ? '+' : ''}${change}% vs yesterday`) : `7 days · avg ${compactCount(Math.round(d.gained / 7))}/day`;
@@ -107,9 +102,14 @@ export default function Dashboard({ accounts, avatarOf, nameOf, single = false }
         <Kpi icon={<Trophy size={14} />} label="Best day" value={d.best ? compactCount(d.best.v) : '—'} hint={d.best ? shortDay(d.best.day) : 'No gains yet'} />
       </div>
 
-      <ChartCard title="Daily gains" hint={game === 'all' ? 'Stacked by game' : 'Stacked by type'}>
-        {d.gained > 0 ? <><BarChart bars={d.bars} label="Daily gains" /><Legend items={d.stackNames.map((name, i) => ({ name, color: palette[i % palette.length] }))} /></> : <Empty>No gains recorded in this range.</Empty>}
-      </ChartCard>
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
+        <ChartCard title="Overview" hint="Gains per day, last 7 days (UTC)" info="Gains are items and pets added to your inventory while the library runs, including trades and rewards.">
+          {d.weekPoints.some(p => p.value > 0) ? <AreaChart points={d.weekPoints} label="Gains per day over the last 7 days" /> : <Empty>No gains recorded in the last 7 days.</Empty>}
+        </ChartCard>
+        <ChartCard title={byAccount ? 'Share of gains' : 'Gains by type'} hint={byAccount ? `Per account, ${range}` : range}>
+          {structure.some(r => r.value > 0) ? <ArcsChart rows={structure} label={byAccount ? 'Gains by account' : 'Gains by type'} /> : <Empty>No gains recorded in this range.</Empty>}
+        </ChartCard>
+      </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <ChartCard title="Gains by account" hint={range}>
