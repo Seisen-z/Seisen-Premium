@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Clock, Gauge, Layers, Trophy, Users, Zap } from 'lucide-react';
+import { Clock, Gauge, Info, Layers, Trophy, Users, Zap } from 'lucide-react';
 import { PET_SIMULATOR_99, STEAL_AN_EGG, compactCount, type TrackstatAccount } from '@/lib/trackstat';
 import { BarChart, ChartCard, Empty, HBars, Legend, Sparkline, palette, type Bar } from './charts';
 import { Avatar, card, total } from './ui';
@@ -25,7 +25,7 @@ function Kpi({ icon, label, value, hint, spark }: { icon: React.ReactNode; label
   );
 }
 
-export default function Dashboard({ accounts, avatarOf }: { accounts: TrackstatAccount[]; avatarOf: (id?: string) => string | null | undefined }) {
+export default function Dashboard({ accounts, avatarOf, nameOf }: { accounts: TrackstatAccount[]; avatarOf: (id?: string) => string | null | undefined; nameOf: (a: TrackstatAccount) => string }) {
   const [game, setGame] = useState('all');
   const [acct, setAcct] = useState<'all' | number>('all');
   const [days, setDays] = useState<1 | 7>(7);
@@ -55,6 +55,8 @@ export default function Dashboard({ accounts, avatarOf }: { accounts: TrackstatA
     });
     const perDay = bars.map(b => b.segments.reduce((n, s) => n + s.value, 0));
     const best = Math.max(...perDay);
+    const yesterdayKey = utcDay(now - DAY);
+    const yesterday = picked.flatMap(a => a.daily ?? []).filter(r => okGame(r.game_id) && r.day === yesterdayKey).reduce((n, r) => n + total(r.gained), 0);
 
     const perAccount = picked.map(a => ({ a, gained: daily.filter(r => r.a === a).reduce((n, r) => n + total(r.gained), 0), live: (a.activeGames ?? []).some(g => okGame(g)) }));
     const inside = (x: { start: number; end: number }) => Math.max(0, x.end - Math.max(x.start, cutoff));
@@ -68,7 +70,7 @@ export default function Dashboard({ accounts, avatarOf }: { accounts: TrackstatA
       items.set(id, { name: it.name, kind: it.kind, gained: (items.get(id)?.gained ?? 0) + it.gained });
     }
     return {
-      bars, stackNames, gained: perDay.reduce((n, v) => n + v, 0), best: best > 0 ? { v: best, day: keys[perDay.indexOf(best)] } : null,
+      bars, stackNames, yesterday, gained: perDay.reduce((n, v) => n + v, 0), best: best > 0 ? { v: best, day: keys[perDay.indexOf(best)] } : null,
       perDay, perAccount, live: perAccount.filter(x => x.live).length, minutes, sessionCount: sessions.length,
       perHour: minutes > 0 ? sessionGains / (minutes / 60) : 0,
       sessionsPerDay: keys.map(day => sessions.filter(x => utcDay(x.end) === day).length),
@@ -77,22 +79,27 @@ export default function Dashboard({ accounts, avatarOf }: { accounts: TrackstatA
   }, [accounts, game, acct, days, now]);
 
   const range = days === 1 ? 'Today (UTC)' : 'Last 7 days (UTC)';
+  // Today against yesterday, or the average per day over the week
+  const change = d.yesterday > 0 ? Math.round(((d.gained - d.yesterday) / d.yesterday) * 100) : null;
+  const compare = days === 1 ? (change === null ? 'Today' : `Today · ${change >= 0 ? '+' : ''}${change}% vs yesterday`) : `7 days · avg ${compactCount(Math.round(d.gained / 7))}/day`;
+  // Days follow UTC; this is when a new one starts on your clock
+  const resets = new Date(Date.UTC(new Date(now).getUTCFullYear(), new Date(now).getUTCMonth(), new Date(now).getUTCDate())).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div><h2 className="text-xl font-semibold text-ts-fg">Dashboard</h2><p className="mt-0.5 text-xs text-ts-fg/40">What your accounts gained. Days are UTC.</p></div>
+        <div><h2 className="flex items-center gap-2 text-xl font-semibold text-ts-fg">Dashboard<span title="Gains are items and pets added to your inventory while the library runs, including trades and rewards. Currency and regular pets are not counted." aria-label="What counts as a gain" tabIndex={0} className="text-ts-fg/35 hover:text-ts-fg"><Info size={15} /></span></h2><p className="mt-0.5 text-xs text-ts-fg/40">What your accounts gained. A new day starts at {resets} for you (midnight UTC).</p></div>
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex gap-1" role="group" aria-label="Game">{[['all', 'All games'], [PET_SIMULATOR_99, 'PS99'], [STEAL_AN_EGG, 'Steal an Egg']].map(([id, label]) => <button key={id} aria-pressed={game === id} onClick={() => setGame(id)} className={pill(game === id)}>{label}</button>)}</div>
           <select aria-label="Account" value={acct} onChange={e => setAcct(e.target.value === 'all' ? 'all' : Number(e.target.value))} className="rounded-lg bg-ts-fg/[0.05] px-3 py-2 text-sm text-ts-fg outline-none focus-visible:ring-2 focus-visible:ring-ts-accent/40">
             <option value="all" className="bg-ts-surface">All accounts</option>
-            {accounts.map(a => <option key={a.index} value={a.index} className="bg-ts-surface">{a.account.username}</option>)}
+            {accounts.map(a => <option key={a.index} value={a.index} className="bg-ts-surface">{nameOf(a)}</option>)}
           </select>
           <div className="flex gap-1" role="group" aria-label="Range">{([1, 7] as const).map(n => <button key={n} aria-pressed={days === n} onClick={() => setDays(n)} className={pill(days === n)}>{n}D</button>)}</div>
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 2xl:grid-cols-6">
-        <Kpi icon={<Zap size={14} />} label="Total gained" value={compactCount(d.gained)} hint={range} spark={days > 1 ? d.perDay : undefined} />
+        <Kpi icon={<Zap size={14} />} label="Total gained" value={compactCount(d.gained)} hint={compare} spark={days > 1 ? d.perDay : undefined} />
         <Kpi icon={<Users size={14} />} label="Active now" value={`${d.live} / ${d.perAccount.length}`} hint="Accounts with the library running" />
         <Kpi icon={<Layers size={14} />} label="Sessions" value={String(d.sessionCount)} hint={range} spark={days > 1 ? d.sessionsPerDay : undefined} />
         <Kpi icon={<Clock size={14} />} label="Play time" value={hours(d.minutes)} hint="Tracked while the library ran" />
@@ -108,7 +115,7 @@ export default function Dashboard({ accounts, avatarOf }: { accounts: TrackstatA
         <ChartCard title="Gains by account" hint={range}>
           <HBars rows={[...d.perAccount].sort((x, y) => y.gained - x.gained).map(x => ({
             id: String(x.a.index), value: x.gained,
-            label: <><Avatar src={avatarOf(x.a.account.roblox_id)} name={x.a.account.username} small /><span className="truncate">{x.a.account.username}</span>{x.live && <span title="Library running" className="h-1.5 w-1.5 shrink-0 rounded-full bg-ts-pos" />}</>,
+            label: <><Avatar src={avatarOf(x.a.account.roblox_id)} name={x.a.account.username} small /><span className="truncate">{nameOf(x.a)}</span>{x.live && <span title="Library running" className="h-1.5 w-1.5 shrink-0 rounded-full bg-ts-pos" />}</>,
           }))} empty="No accounts connected." />
         </ChartCard>
         <ChartCard title="Top gained" hint="Most gained items and pets">

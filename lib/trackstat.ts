@@ -36,7 +36,11 @@ export const STEAL_AN_EGG = '10563114921';
 
 const suffixes = ['', 'K', 'M', 'B', 'T', 'Qa', 'Qi', 'Sx'];
 // 1.5K, 2.4M ... up to quintillions (Steal An Egg money is in the quadrillions)
+let fullNumbers = false;
+// Settings can show 1,500 instead of 1.5K
+export const setNumberFormat = (full: boolean) => { fullNumbers = full; };
 export function compactCount(value: number) {
+  if (fullNumbers) return Math.round(value).toLocaleString('en-US');
   const sign = value < 0 ? '-' : '';
   let n = Math.abs(value);
   let i = 0;

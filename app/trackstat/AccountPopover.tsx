@@ -6,7 +6,8 @@ import { LogOut, MoreHorizontal, ShieldCheck, UserRound, Users, X } from 'lucide
 import { trackstatAuth } from '@/lib/client/trackstat-auth';
 import { button } from './ui';
 
-export default function AccountPopover({ count, onChange }: { count: number; onChange: (clear?: boolean) => void }) {
+// compact = icon only (collapsed sidebar and phones); watch = this copy reacts to sign-in changes, so only one copy should
+export default function AccountPopover({ count, onChange, compact = false, popoverId = 'trackstat-account', watch = true }: { count: number; onChange: (clear?: boolean) => void; compact?: boolean; popoverId?: string; watch?: boolean }) {
   const [user, setUser] = useState<User | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
@@ -15,10 +16,10 @@ export default function AccountPopover({ count, onChange }: { count: number; onC
     let live = true;
     void trackstatAuth.auth.getSession().then(({ data }) => { if (live) setUser(data.session?.user ?? null); });
     const { data: { subscription } } = trackstatAuth.auth.onAuthStateChange((event, session) => {
-      if (live) { setUser(session?.user ?? null); setTimeout(() => { if (live && !signingOut.current) onChange(event === 'SIGNED_OUT'); }, 0); }
+      if (live) { setUser(session?.user ?? null); setTimeout(() => { if (live && watch && !signingOut.current) onChange(event === 'SIGNED_OUT'); }, 0); }
     });
     return () => { live = false; subscription.unsubscribe(); };
-  }, [onChange]);
+  }, [onChange, watch]);
   async function signOut() {
     setBusy(true); setMessage('');
     signingOut.current = true;
@@ -32,13 +33,13 @@ export default function AccountPopover({ count, onChange }: { count: number; onC
     finally { signingOut.current = false; setBusy(false); }
   }
   return <>
-    <button popoverTarget="trackstat-account" className="flex w-full items-center gap-3 rounded-xl bg-ts-fg/[0.05] p-2.5 text-left hover:bg-ts-fg/[0.08]" aria-label="Open Account">
+    <button popoverTarget={popoverId} className={`flex w-full items-center gap-3 rounded-xl bg-ts-fg/[0.05] p-2.5 text-left hover:bg-ts-fg/[0.08] ${compact ? 'justify-center' : ''}`} aria-label="Open Account">
       <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-ts-accent/15 text-ts-accent"><UserRound size={17} /></span>
-      <span className="min-w-0 flex-1"><span className="block truncate text-sm font-medium leading-tight text-ts-fg">Account</span><span className="block truncate text-xs text-ts-fg/45">{user?.email ?? 'Not signed in'}</span></span>
-      <MoreHorizontal size={16} className="shrink-0 text-ts-fg/45" />
+      {!compact && <><span className="min-w-0 flex-1"><span className="block truncate text-sm font-medium leading-tight text-ts-fg">Account</span><span className="block truncate text-xs text-ts-fg/45">{user?.email ?? 'Not signed in'}</span></span>
+      <MoreHorizontal size={16} className="shrink-0 text-ts-fg/45" /></>}
     </button>
-    <div id="trackstat-account" popover="auto" role="dialog" aria-labelledby="trackstat-account-title" className="fixed inset-auto bottom-4 left-4 m-0 w-[min(340px,calc(100vw-32px))] rounded-2xl bg-ts-surface p-5 text-ts-fg shadow-[0_24px_90px_var(--ts-shadow)] md:left-[282px]">
-      <div className="mb-5 flex items-center justify-between"><div className="flex items-center gap-2 text-ts-accent"><ShieldCheck size={17} /><h2 id="trackstat-account-title" className="text-sm font-semibold">Account</h2></div><button popoverTarget="trackstat-account" popoverTargetAction="hide" aria-label="Close account panel" className="p-1 text-ts-fg/40 hover:text-ts-fg"><X size={17} /></button></div>
+    <div id={popoverId} popover="auto" role="dialog" aria-labelledby={`${popoverId}-title`} className={`fixed inset-auto bottom-4 left-4 m-0 w-[min(340px,calc(100vw-32px))] rounded-2xl bg-ts-surface p-5 text-ts-fg shadow-[0_24px_90px_var(--ts-shadow)] ${compact ? 'md:left-[84px]' : 'md:left-[282px]'}`}>
+      <div className="mb-5 flex items-center justify-between"><div className="flex items-center gap-2 text-ts-accent"><ShieldCheck size={17} /><h2 id={`${popoverId}-title`} className="text-sm font-semibold">Account</h2></div><button popoverTarget={popoverId} popoverTargetAction="hide" aria-label="Close account panel" className="p-1 text-ts-fg/40 hover:text-ts-fg"><X size={17} /></button></div>
       <div className="space-y-4">
         <div><p className="mb-1 text-[10px] uppercase tracking-[0.18em] text-ts-fg/35">{user ? 'Verified email' : 'Browser account'}</p><p className="break-all text-sm">{user?.email ?? 'Not signed in'}</p></div>
         <div className="flex items-center gap-3 rounded-lg border border-ts-fg/[0.07] bg-ts-fg/[0.025] p-3"><Users size={19} className="text-ts-accent" /><div className="flex-1 text-xs text-ts-fg/55">Connected Roblox accounts</div><span className="font-mono text-xl text-ts-fg">{count}</span></div>

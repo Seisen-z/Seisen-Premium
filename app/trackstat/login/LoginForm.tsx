@@ -1,5 +1,5 @@
 "use client";
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, ArrowRight, Mail, Moon, ShieldCheck, Sun } from 'lucide-react';
@@ -22,12 +22,18 @@ export default function LoginForm({ initialTheme }: { initialTheme: Theme }) {
   const [token, setToken] = useState('');
   const [widget, setWidget] = useState(0);
   const [sending, setSending] = useState(false);
+  const [resendIn, setResendIn] = useState(0);
+  useEffect(() => {
+    if (resendIn <= 0) return;
+    const timer = setTimeout(() => setResendIn(seconds => seconds - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [resendIn]);
   async function submit(event: FormEvent) {
     event.preventDefault(); setBusy(true); setMessage('');
     try {
       if (step === 'email') {
         // The code step opens right away while the request runs; if sending fails the email step comes back with the reason
-        setStep('code'); setSending(true);
+        setStep('code'); setSending(true); setResendIn(60);
         void fetch('/api/trackstat/auth/send-code', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email.trim().toLowerCase(), token }) })
           .then(async response => { const body = await response.json(); if (!response.ok) throw new Error(body.error || 'Could not send your verification code.'); })
           .catch(error => { setStep('email'); setToken(''); setWidget(count => count + 1); setMessage(error instanceof Error ? error.message : 'Could not send your verification code.'); })
@@ -37,7 +43,7 @@ export default function LoginForm({ initialTheme }: { initialTheme: Theme }) {
         if (step === 'code') {
           if (!/^[0-9]{6}$/.test(code)) throw new Error('Enter all six digits.');
           const { error } = await trackstatAuth.auth.verifyOtp({ email: email.trim().toLowerCase(), token: code.trim(), type: 'email' });
-          if (error) throw error;
+          if (error) throw new Error(/expired|invalid/i.test(error.message) ? 'That code is wrong or has expired. Codes last 3 minutes, so request a new one if you need to.' : error.message);
           setStep('save'); setCode('');
         }
         const response = await trackstatFetch('/api/trackstat/profile', { method: 'POST' });
@@ -61,15 +67,16 @@ export default function LoginForm({ initialTheme }: { initialTheme: Theme }) {
     </div>
     <section aria-labelledby="login-title" className="rounded-2xl bg-ts-surface p-6 md:p-8">
       <Mail size={22} className="mb-5 text-ts-accent" />
-      <h2 id="login-title" className="text-xl font-semibold text-ts-fg">{step === 'email' ? 'Sign in to Trackstat' : step === 'code' ? 'Check your email' : 'Save your connections'}</h2>
-      <p className="mb-6 mt-2 text-xs leading-6 text-ts-fg/45">{step === 'email' ? 'We will send you a one-time verification code.' : step === 'code' ? (sending ? `Sending a code to ${email}…` : `Enter the code sent to ${email}. It expires in 3 minutes.`) : 'Your email is verified. Save connections from this browser and continue.'}</p>
+      <h2 id="login-title" className="text-xl font-semibold text-ts-fg">{step === 'email' ? 'Sign in to Trackstat' : step === 'code' ? 'Check your email' : 'You are signed in'}</h2>
+      <p className="mb-6 mt-2 text-xs leading-6 text-ts-fg/45">{step === 'email' ? 'We will send you a one-time verification code.' : step === 'code' ? (sending ? `Sending a code to ${email}…` : `Enter the code sent to ${email}. It expires in 3 minutes.`) : 'Saving the accounts from this browser to your email…'}</p>
       <form onSubmit={submit} className="space-y-4">
         {step === 'email' && <label className="block text-xs text-ts-fg/60">Email address<input autoComplete="email" type="email" required maxLength={254} value={email} disabled={busy} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" className={input} /></label>}
         {step === 'email' && siteKey && <Turnstile key={widget} siteKey={siteKey} theme={theme} onToken={setToken} />}
         {step === 'code' && <CodeInput value={code} onChange={setCode} disabled={busy} />}
         {message && <p role="alert" className="text-xs leading-6 text-ts-warn">{message}</p>}
-        <button disabled={busy || step === 'code' && !/^[0-9]{6}$/.test(code) || step === 'email' && !!siteKey && !token} className="flex w-full items-center justify-center gap-2 rounded-xl bg-ts-accent px-4 py-3 text-sm font-semibold text-ts-accent-fg transition-colors hover:bg-ts-accent-hover disabled:opacity-50">{busy ? 'Please wait...' : step === 'email' ? 'Send verification code' : step === 'code' ? 'Verify & sign in' : 'Save & open Trackstat'}<ArrowRight size={15} /></button>
+        <button disabled={busy || step === 'code' && !/^[0-9]{6}$/.test(code) || step === 'email' && !!siteKey && !token} className="flex w-full items-center justify-center gap-2 rounded-xl bg-ts-accent px-4 py-3 text-sm font-semibold text-ts-accent-fg transition-colors hover:bg-ts-accent-hover disabled:opacity-50">{busy ? (step === 'save' ? 'Saving…' : 'Please wait...') : step === 'email' ? 'Send verification code' : step === 'code' ? 'Verify & sign in' : 'Open Trackstat'}<ArrowRight size={15} /></button>
         {step === 'code' && <button type="button" disabled={busy} onClick={() => { setStep('email'); setCode(''); setMessage(''); }} className="text-xs text-ts-fg/45 hover:text-ts-fg">Change email or resend code</button>}
+        {step === 'code' && resendIn > 0 && <p className="text-xs text-ts-fg/35">You can ask for a new code in {resendIn}s.</p>}
       </form>
     </section>
   </div>

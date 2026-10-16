@@ -6,13 +6,20 @@ import { loadInventory } from '@/lib/client/trackstat-inventory';
 
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import Link from 'next/link';
-import { Activity, ArrowLeft, Boxes, CalendarDays, ChevronRight, Clock, Gem, LayoutGrid, Link2, List, PawPrint, RefreshCw, Search, Star, TrendingUp, Users, Egg, Plus, Sun, Moon, LayoutDashboard } from 'lucide-react';
+import { Activity, ArrowLeft, Boxes, CalendarDays, ChevronRight, Clock, Gem, LayoutGrid, Link2, List, PawPrint, RefreshCw, Search, Star, TrendingUp, Users, Egg, Plus, Sun, Moon, LayoutDashboard, Settings as SettingsIcon, Sparkles, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useTrackstatTheme } from './theme';
 import type { Theme } from './themeConfig';
-import { PET_SIMULATOR_99, STEAL_AN_EGG, compactCount, type CatalogEntry, type Counts, type InventoryStack, type TrackstatResponse } from '@/lib/trackstat';
+import { PET_SIMULATOR_99, STEAL_AN_EGG, compactCount, type CatalogEntry, type Counts, type InventoryStack, type TrackstatAccount, type TrackstatResponse } from '@/lib/trackstat';
 import StealAnEggView from './StealAnEggView';
 import AccountPopover from './AccountPopover';
 import Dashboard from './Dashboard';
+import Welcome from './Welcome';
+import InventoryControls from './InventoryControls';
+import Freshness from './Freshness';
+import ConnectionPage from './ConnectionPage';
+import SettingsPage from './SettingsPage';
+import WhatsNew from './WhatsNew';
+import { sortAccounts, useSettings } from './settings';
 import { Avatar, CardSkeleton, DetailTable, GainChart, Img, PageSkeleton, Stat, ago, button, card, span, total } from './ui';
 
 type Tab = 'overview' | 'inventory' | 'gains' | 'history' | 'community';
@@ -68,12 +75,22 @@ function InventoryView({ stacks, catalog, loading }: { stacks?: InventoryStack[]
   const [q, setQ] = useState('');
   const [cat, setCat] = useState('all');
   const [limit, setLimit] = useState(60);
+  const [sort, setSort] = useState<'value' | 'amount' | 'rarity' | 'name'>('value');
+  const [favOnly, setFavOnly] = useState(false);
   const shown = useMemo(() => {
     const classes = categories.find(c => c.id === cat)?.classes ?? [];
+    const worth = (s: InventoryStack) => (s.r ?? 0) * s.a;
+    const name = (s: InventoryStack) => catalog[s.k]?.name ?? s.k.split(':')[1];
+    const order = {
+      value: (a: InventoryStack, b: InventoryStack) => worth(b) - worth(a),
+      amount: (a: InventoryStack, b: InventoryStack) => b.a - a.a,
+      rarity: (a: InventoryStack, b: InventoryStack) => (catalog[b.k]?.rarity_num ?? 0) - (catalog[a.k]?.rarity_num ?? 0) || worth(b) - worth(a),
+      name: (a: InventoryStack, b: InventoryStack) => name(a).localeCompare(name(b)),
+    }[sort];
     return (stacks ?? [])
-    .filter(s => (!classes.length || classes.includes(s.k.split(':')[0])) && (catalog[s.k]?.name ?? s.k.split(':')[1]).toLowerCase().includes(q.toLowerCase()))
-    .sort((a, b) => (b.r ?? 0) * b.a - (a.r ?? 0) * a.a);
-  }, [stacks, catalog, q, cat]);
+    .filter(s => (!classes.length || classes.includes(s.k.split(':')[0])) && (!favOnly || s.f) && name(s).toLowerCase().includes(q.toLowerCase()))
+    .sort(order);
+  }, [stacks, catalog, q, cat, sort, favOnly]);
   if (!stacks) return loading ? <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">{Array.from({ length: 10 }, (_, i) => <CardSkeleton key={i} />)}</div> : <div className={`${card} p-10 text-sm text-ts-fg/45`}>Inventory details appear after the next sync from the updated library.</div>;
   return (
     <div>
@@ -81,6 +98,7 @@ function InventoryView({ stacks, catalog, loading }: { stacks?: InventoryStack[]
         <label className="relative block w-full max-w-xs"><Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ts-fg/35" /><input aria-label="Search inventory" value={q} onChange={e => { setQ(e.target.value); setLimit(60); }} placeholder="Search item or pet…" className="w-full rounded-lg border border-ts-fg/10 bg-ts-surface py-2 pl-9 pr-3 text-sm text-ts-fg outline-none focus:border-ts-accent" /></label>
         <div className="flex flex-wrap gap-1" role="group" aria-label="Inventory category">{categories.map(c => <button key={c.id} aria-pressed={cat === c.id} onClick={() => { setCat(c.id); setLimit(60); }} className={`rounded-lg px-3 py-1.5 text-sm transition-colors ${cat === c.id ? 'bg-ts-accent font-medium text-ts-accent-fg' : 'bg-ts-fg/[0.04] text-ts-fg/55 hover:text-ts-fg'}`}>{c.label}</button>)}</div>
       </div>
+      <InventoryControls sort={sort} onSort={value => { setSort(value); setLimit(60); }} options={[['value', 'Value'], ['amount', 'Amount'], ['rarity', 'Rarity'], ['name', 'Name']]} favOnly={favOnly} onFav={value => { setFavOnly(value); setLimit(60); }} summary={`Total value ${compactCount(stacks.reduce((n, s) => n + (s.r ?? 0) * s.a, 0))} · ${shown.length} of ${stacks.length} stacks`} />
       {loading ? (
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">{Array.from({ length: 10 }, (_, i) => <CardSkeleton key={i} />)}</div>
       ) : shown.length ? (
@@ -98,10 +116,12 @@ export default function TrackstatPanel({ initialTheme }: { initialTheme: Theme }
   const [key, setKey] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const [page, setPage] = useState<'games' | 'connection' | 'dashboard'>('games');
+  const [page, setPage] = useState<'games' | 'connection' | 'dashboard' | 'settings' | 'whatsnew'>('games');
   const [game, setGame] = useState<'ps99' | 'sae' | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [accountQuery, setAccountQuery] = useState('');
+  const { settings, update } = useSettings();
+  const [loadedAt, setLoadedAt] = useState<number | null>(null);
   const { theme, toggle: toggleTheme } = useTrackstatTheme(initialTheme);
   const [tab, setTab] = useState<Tab>('overview');
   const [sessionId, setSessionId] = useState('');
@@ -118,11 +138,12 @@ export default function TrackstatPanel({ initialTheme }: { initialTheme: Theme }
     const version = ++loadVersion.current;
     try {
       const response = await trackstatFetch('/api/trackstat', { cache: 'no-store', headers: etag.current ? { 'If-None-Match': etag.current } : {} });
-      if (response.status === 304) return;
+      if (response.status === 304) { if (version === loadVersion.current) setLoadedAt(Date.now()); return; }
       const body = await response.json();
       if (!response.ok) throw new Error(body.error);
       if (version !== loadVersion.current) return;
       etag.current = response.headers.get('ETag') ?? '';
+      setLoadedAt(Date.now());
       setData(body);
       // Saved in this browser so the next visit shows it at once and only downloads if something changed
       if (etag.current) void cacheNamespace().then(namespace => cacheSet(`${namespace}:main`, { etag: etag.current, data: body }));
@@ -140,7 +161,7 @@ export default function TrackstatPanel({ initialTheme }: { initialTheme: Theme }
     void load();
   }, [load]);
   // The library syncs every 15 seconds while it runs; with nothing running there is nothing new to fetch that often
-  const pollMs = (data?.accounts.some(a => a.activeGames.length > 0) ?? true) ? 15000 : 60000;
+  const pollMs = (data?.accounts.some(a => a.activeGames.length > 0) ?? true) ? (settings.relaxedRefresh ? 30000 : 15000) : 60000;
   useEffect(() => {
     let live = true;
     void (async () => {
@@ -188,6 +209,16 @@ export default function TrackstatPanel({ initialTheme }: { initialTheme: Theme }
   }
 
   const accounts = data?.accounts ?? [];
+  const ordered = sortAccounts(accounts, settings.order);
+  const nameOf = (a: TrackstatAccount) => settings.names[a.account.roblox_id] || a.account.username;
+  const rename = (robloxId: string, name: string) => update({ names: { ...settings.names, [robloxId]: name.trim() } });
+  const move = (robloxId: string, direction: -1 | 1) => {
+    const ids = ordered.map(a => a.account.roblox_id);
+    const i = ids.indexOf(robloxId), j = i + direction;
+    if (i < 0 || j < 0 || j >= ids.length) return;
+    [ids[i], ids[j]] = [ids[j], ids[i]];
+    update({ order: ids });
+  };
   const history = accounts.find(a => a.index === activeIndex) ?? accounts[0];
   const avatarOf = (id?: string) => (id ? data?.media?.avatars?.[id] : null);
   const allSessions = history?.sessions ?? [];
@@ -226,29 +257,6 @@ export default function TrackstatPanel({ initialTheme }: { initialTheme: Theme }
   const totalValue = (stacks ?? []).reduce((n, x) => n + (x.r ?? 0) * x.a, 0);
   const topStacks = [...(stacks ?? [])].sort((a, b) => (b.r ?? 0) * b.a - (a.r ?? 0) * a.a).slice(0, 6);
 
-  const connection = (
-    <div className="max-w-md">
-      <h2 className="text-lg font-semibold text-ts-fg">Library connection</h2>
-      {accounts.length > 0 && (
-        <ul className="mt-5 space-y-2">
-          {accounts.map(a => (
-            <li key={a.index} className="flex items-center gap-3 rounded-lg border border-ts-fg/[0.07] p-3">
-              <Avatar src={avatarOf(a.account.roblox_id)} name={a.account.username} small />
-              <span className="min-w-0 flex-1"><span className="block truncate text-sm text-ts-fg">{a.account.username}</span><span className="text-xs text-ts-fg/40">Roblox ID {a.account.roblox_id}</span></span>
-              <button className="rounded-md border border-ts-fg/10 px-3 py-1.5 text-xs text-ts-fg/60 hover:border-ts-neg/50 hover:text-ts-neg disabled:opacity-40" onClick={() => void removeAccount(a.index)} disabled={busy} aria-label={`Remove ${a.account.username}`}>Remove</button>
-            </li>
-          ))}
-        </ul>
-      )}
-      <form onSubmit={connect} className="mt-6 space-y-4">
-        <label htmlFor="trackstat-key" className="block text-sm text-ts-fg/60">{accounts.length ? 'Add another account' : 'Connection key'}</label>
-        <input id="trackstat-key" type="password" autoComplete="off" spellCheck={false} value={key} onChange={e => setKey(e.target.value)} placeholder="sp_…" maxLength={67} required className="w-full min-w-0 rounded-lg border border-ts-fg/10 bg-ts-surface px-3 py-3 font-mono text-sm text-ts-fg outline-none focus:border-ts-accent" />
-        <button className={`${button} w-full border-ts-accent/40 bg-ts-accent/10 text-ts-accent`} disabled={busy || !key.trim()}>{busy ? 'Connecting…' : accounts.length ? 'Add account' : 'Connect account'}</button>
-      </form>
-      <p className="mt-4 text-xs leading-6 text-ts-fg/40">Run the library on each Roblox account, copy its key, and paste it here. You can connect up to 10 accounts and switch between them in the sidebar.</p>
-    </div>
-  );
-
   const publicStats = data?.public;
   const community = publicStats ? (
     <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
@@ -262,10 +270,12 @@ export default function TrackstatPanel({ initialTheme }: { initialTheme: Theme }
 
   let main: ReactNode;
   if (!data) main = error ? <p className="py-12 text-sm text-ts-fg/40">Refresh to try again.</p> : <PageSkeleton />;
-  else if (page === 'dashboard') main = <Dashboard accounts={accounts} avatarOf={avatarOf} />;
+  else if (page === 'dashboard') main = accounts.length ? <Dashboard accounts={ordered} avatarOf={avatarOf} nameOf={nameOf} /> : <Welcome onConnect={() => setPage('connection')} />;
+  else if (page === 'settings') main = <SettingsPage settings={settings} update={update} onClearData={() => { etag.current = ''; void cacheClear(); }} />;
+  else if (page === 'whatsnew') main = <WhatsNew />;
   else if (page === 'connection') main = (
     <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
-      <div className={`${card} p-6`}>{connection}</div>
+      <div className={`${card} p-6`}><ConnectionPage accounts={ordered} avatarOf={avatarOf} nameOf={nameOf} rename={rename} move={move} busy={busy} onRemove={index => void removeAccount(index)} keyValue={key} setKey={setKey} onSubmit={connect} /></div>
       <div className="space-y-4">
         <div className={`${card} p-6`}>
           <h2 className="text-lg font-semibold text-ts-fg">How it works</h2>
@@ -301,10 +311,11 @@ export default function TrackstatPanel({ initialTheme }: { initialTheme: Theme }
   else if (!game) {
     main = (
       <>
+        {!history ? <div className="mb-6"><Welcome onConnect={() => setPage('connection')} /></div> : !allSessions.length ? <div className="mb-6"><Welcome waiting onConnect={() => setPage('connection')} /></div> : (
         <div className={`${card} mb-6 flex flex-wrap items-center gap-5 p-5`}>
           {history ? <Avatar src={avatarOf(history.account.roblox_id)} name={history.account.username} /> : <span className="grid h-16 w-16 place-items-center rounded-full bg-ts-fg/[0.05] text-2xl text-ts-fg/40">?</span>}
           <div className="min-w-0 flex-1 basis-56">
-            <h2 className="break-words text-2xl font-semibold text-ts-fg">{history?.account.username ?? 'Not connected'}</h2>
+            <h2 className="break-words text-2xl font-semibold text-ts-fg">{history ? nameOf(history) : 'Not connected'}</h2>
             <p className={`mt-1 flex items-center gap-2 text-sm ${libraryLive ? 'text-ts-pos' : 'text-ts-fg/40'}`}><span className={`h-2 w-2 rounded-full ${libraryLive ? 'bg-ts-pos' : 'bg-ts-fg/30'}`} />{history ? libraryLive ? 'Connected' : 'Offline' : 'Not connected'}</p>
             <p className="mt-2 text-xs text-ts-fg/45">{history ? libraryLive ? 'Your inventory, session gains, and history are being tracked.' : 'Library offline. Your saved inventory and history are still available.' : 'Open Connection and paste your library key to start.'}</p>
           </div>
@@ -316,7 +327,7 @@ export default function TrackstatPanel({ initialTheme }: { initialTheme: Theme }
               <Stat icon={<CalendarDays size={20} />} label="Last played" value={libraryLive ? 'Now' : lastAny ? ago(lastAny.updated_at) : '—'} />
             </div>
           )}
-        </div>
+        </div>)}
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <h3 className="text-lg font-semibold text-ts-fg">Supported Games (2)</h3>
           <div className="flex items-center gap-2">
@@ -416,48 +427,68 @@ export default function TrackstatPanel({ initialTheme }: { initialTheme: Theme }
     );
   }
 
-  const row = (active: boolean) => `relative flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition-colors ${active ? 'bg-ts-fg/[0.07] font-medium text-ts-fg' : 'text-ts-fg/70 hover:bg-ts-fg/[0.04] hover:text-ts-fg'}`;
+  const collapsed = settings.collapsed;
+  const row = (active: boolean) => `relative flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition-colors ${collapsed ? 'md:justify-center md:px-0' : ''} ${active ? 'bg-ts-fg/[0.07] font-medium text-ts-fg' : 'text-ts-fg/70 hover:bg-ts-fg/[0.04] hover:text-ts-fg'}`;
   const bar = <span className="absolute bottom-2 left-0 top-2 w-0.5 rounded-full bg-ts-accent" />;
   const divider = <div className="my-3 h-px bg-ts-fg/[0.07]" />;
-  const shown = accounts.filter(a => a.account.username.toLowerCase().includes(accountQuery.trim().toLowerCase()));
+  const shown = ordered.filter(a => nameOf(a).toLowerCase().includes(accountQuery.trim().toLowerCase()));
+  const anyLive = accounts.some(a => a.activeGames.length > 0);
+  const text = (label: string) => (collapsed ? null : label);
+  const phoneItem = (active: boolean, label: string, icon: ReactNode, onClick: () => void) => (
+    <button key={label} onClick={onClick} aria-label={label} aria-current={active ? 'page' : undefined} className={`flex w-16 flex-col items-center gap-1 rounded-lg py-1.5 text-[11px] ${active ? 'text-ts-accent' : 'text-ts-fg/55'}`}>{icon}{label}</button>
+  );
   return (
-    <div data-ts-theme={theme} className="fixed inset-0 z-[200] overflow-auto bg-ts-bg md:grid md:grid-cols-[270px_minmax(0,1fr)] md:overflow-hidden">
-      <aside className="flex flex-col bg-ts-side px-4 py-5 md:h-full md:overflow-auto">
-        <div className="flex items-center gap-3 px-1">
+    <div data-ts-theme={theme} className={`fixed inset-0 z-[200] overflow-auto bg-ts-bg md:grid ${collapsed ? 'md:grid-cols-[72px_minmax(0,1fr)]' : 'md:grid-cols-[270px_minmax(0,1fr)]'} md:overflow-hidden`}>
+      <aside className={`hidden flex-col bg-ts-side py-5 md:flex md:h-full md:overflow-auto ${collapsed ? 'px-3' : 'px-4'}`}>
+        <div className={`flex items-center ${collapsed ? 'flex-col gap-3' : 'gap-3 px-1'}`}>
           <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-ts-accent text-ts-accent-fg"><Activity size={20} /></span>
-          <div className="min-w-0"><h1 className="truncate text-base font-semibold leading-tight text-ts-fg">Trackstat</h1><p className="truncate text-xs text-ts-fg/45">Pet Simulator 99</p></div>
+          {!collapsed && <div className="min-w-0 flex-1"><h1 className="truncate text-base font-semibold leading-tight text-ts-fg">Trackstat</h1><p className="truncate text-xs text-ts-fg/45">Pet Simulator 99</p></div>}
+          <button onClick={() => update({ collapsed: !collapsed })} aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} className="text-ts-fg/40 hover:text-ts-fg">{collapsed ? <PanelLeftOpen size={17} /> : <PanelLeftClose size={17} />}</button>
         </div>
-        <label className="relative mt-5 block"><Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ts-fg/40" /><input value={accountQuery} onChange={e => setAccountQuery(e.target.value)} placeholder="Search accounts..." aria-label="Search accounts" className="w-full rounded-lg bg-ts-inset py-2.5 pl-9 pr-3 text-sm text-ts-fg outline-none placeholder:text-ts-fg/35 focus-visible:ring-2 focus-visible:ring-ts-accent/40" /></label>
+        {!collapsed && <label className="relative mt-5 block"><Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ts-fg/40" /><input value={accountQuery} onChange={e => setAccountQuery(e.target.value)} placeholder="Search accounts..." aria-label="Search accounts" className="w-full rounded-lg bg-ts-inset py-2.5 pl-9 pr-3 text-sm text-ts-fg outline-none placeholder:text-ts-fg/35 focus-visible:ring-2 focus-visible:ring-ts-accent/40" /></label>}
         {divider}
-        <p className="mb-1 px-3 text-xs text-ts-fg/40">Menu</p>
-        <button onClick={() => setPage('dashboard')} className={row(page === 'dashboard')}>{page === 'dashboard' && bar}<LayoutDashboard size={17} />Dashboard</button>
-        <button onClick={() => setPage('connection')} className={row(page === 'connection')}>{page === 'connection' && bar}<Link2 size={17} />Connection</button>
+        {!collapsed && <p className="mb-1 px-3 text-xs text-ts-fg/40">Menu</p>}
+        <button onClick={() => setPage('dashboard')} title="Dashboard" aria-label="Dashboard" className={row(page === 'dashboard')}>{page === 'dashboard' && bar}<LayoutDashboard size={17} />{text('Dashboard')}</button>
+        <button onClick={() => setPage('connection')} title="Connection" aria-label="Connection" className={row(page === 'connection')}>{page === 'connection' && bar}<Link2 size={17} />{text('Connection')}</button>
         {divider}
-        <div className="mb-1 flex items-center justify-between px-3"><p className="text-xs text-ts-fg/40">Accounts</p><button onClick={() => setPage('connection')} aria-label="Add account" className="text-ts-fg/45 hover:text-ts-fg"><Plus size={15} /></button></div>
+        {collapsed ? null : <div className="mb-1 flex items-center justify-between px-3"><p className="text-xs text-ts-fg/40">Accounts</p><button onClick={() => setPage('connection')} aria-label="Add account" className="text-ts-fg/45 hover:text-ts-fg"><Plus size={15} /></button></div>}
         {shown.map(a => {
           const active = page === 'games' && history?.index === a.index;
           const games = new Set(a.sessions.map(x => x.game_id)).size;
           return (
-            <button key={a.index} onClick={() => selectAccount(a.index)} className={row(active)}>
+            <button key={a.account.roblox_id} onClick={() => selectAccount(a.index)} title={nameOf(a)} aria-label={nameOf(a)} className={row(active)}>
               {active && bar}
               <Avatar src={avatarOf(a.account.roblox_id)} name={a.account.username} small />
-              <span className="min-w-0 flex-1 truncate">{a.account.username}</span>
-              <span title={`${games} ${games === 1 ? 'game' : 'games'}`} className="grid h-5 min-w-5 place-items-center rounded-full bg-ts-accent px-1.5 text-[11px] font-medium text-ts-accent-fg">{games}</span>
+              {!collapsed && <><span className="min-w-0 flex-1 truncate">{nameOf(a)}</span><span title={`${games} ${games === 1 ? 'game' : 'games'}`} className="grid h-5 min-w-5 place-items-center rounded-full bg-ts-accent px-1.5 text-[11px] font-medium text-ts-accent-fg">{games}</span></>}
             </button>
           );
         })}
-        {!shown.length && <p className="px-3 py-2 text-xs text-ts-fg/40">{accounts.length ? 'No match' : 'No account connected'}</p>}
+        {!shown.length && !collapsed && <p className="px-3 py-2 text-xs text-ts-fg/40">{accounts.length ? 'No match' : 'No account connected'}</p>}
         {divider}
-        <p className="mb-1 px-3 text-xs text-ts-fg/40">Help</p>
-        <button onClick={() => void load()} className={row(false)}><RefreshCw size={17} />Refresh</button>
-        <button onClick={toggleTheme} className={row(false)}>{theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}{theme === 'dark' ? 'Light mode' : 'Dark mode'}</button>
-        <Link href="/" className={row(false)}><ArrowLeft size={17} />Back to Seisen</Link>
-        <div className="mt-auto pt-3"><AccountPopover count={accounts.length} onChange={accountChanged} /></div>
+        {!collapsed && <p className="mb-1 px-3 text-xs text-ts-fg/40">Help</p>}
+        <button onClick={() => void load()} title="Refresh" aria-label="Refresh" className={row(false)}><RefreshCw size={17} />{text('Refresh')}</button>
+        <button onClick={toggleTheme} title="Switch theme" aria-label="Switch theme" className={row(false)}>{theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}{text(theme === 'dark' ? 'Light mode' : 'Dark mode')}</button>
+        <button onClick={() => setPage('settings')} title="Settings" aria-label="Settings" className={row(page === 'settings')}>{page === 'settings' && bar}<SettingsIcon size={17} />{text('Settings')}</button>
+        <button onClick={() => setPage('whatsnew')} title="What's new" aria-label="What's new" className={row(page === 'whatsnew')}>{page === 'whatsnew' && bar}<Sparkles size={17} />{text("What's new")}</button>
+        <Link href="/" title="Back to Seisen" aria-label="Back to Seisen" className={row(false)}><ArrowLeft size={17} />{text('Back to Seisen')}</Link>
+        <div className="mt-auto space-y-3 pt-3"><Freshness loadedAt={loadedAt} live={anyLive} compact={collapsed} /><AccountPopover compact={collapsed} count={accounts.length} onChange={accountChanged} /></div>
       </aside>
-      <section className="min-w-0 p-5 md:h-full md:overflow-auto md:p-6">
+      <section className="min-w-0 p-5 pb-24 md:h-full md:overflow-auto md:p-6 md:pb-6">
+        <div className="mb-4 flex items-center justify-between gap-3 md:hidden">
+          <span className="flex items-center gap-2 font-semibold text-ts-fg"><span className="grid h-8 w-8 place-items-center rounded-lg bg-ts-accent text-ts-accent-fg"><Activity size={16} /></span>Trackstat</span>
+          <Freshness loadedAt={loadedAt} live={anyLive} />
+        </div>
+        {ordered.length > 1 && <div className="-mx-1 mb-4 flex gap-2 overflow-x-auto px-1 md:hidden" role="group" aria-label="Accounts">{ordered.map(a => <button key={a.account.roblox_id} onClick={() => selectAccount(a.index)} aria-pressed={page === 'games' && history?.index === a.index} className={`flex shrink-0 items-center gap-2 rounded-full py-1 pl-1 pr-3 text-sm ${page === 'games' && history?.index === a.index ? 'bg-ts-accent/15 text-ts-fg' : 'bg-ts-fg/[0.05] text-ts-fg/65'}`}><Avatar src={avatarOf(a.account.roblox_id)} name={a.account.username} small />{nameOf(a)}</button>)}</div>}
         {error && <p role="alert" className="mb-5 rounded-lg border border-ts-warn/20 bg-ts-warn/5 p-4 text-sm text-ts-warn">{error}</p>}
         {main}
       </section>
+      <nav aria-label="Main" className="fixed inset-x-0 bottom-0 z-10 flex items-center justify-around bg-ts-side/95 px-2 py-1.5 backdrop-blur md:hidden">
+        {phoneItem(page === 'dashboard', 'Dashboard', <LayoutDashboard size={19} />, () => setPage('dashboard'))}
+        {phoneItem(page === 'games', 'Accounts', <Users size={19} />, () => { setPage('games'); setGame(null); })}
+        {phoneItem(page === 'connection', 'Connect', <Link2 size={19} />, () => setPage('connection'))}
+        {phoneItem(page === 'settings', 'Settings', <SettingsIcon size={19} />, () => setPage('settings'))}
+        <div className="w-16"><AccountPopover compact popoverId="trackstat-account-phone" watch={false} count={accounts.length} onChange={accountChanged} /></div>
+      </nav>
     </div>
   );
 }
