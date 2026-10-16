@@ -1,8 +1,8 @@
 'use client';
 
-import { trackstatFetch } from '@/lib/client/trackstat-auth';
+import { loadInventory } from '@/lib/client/trackstat-inventory';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Activity, ArrowLeft, Boxes, ChevronRight, Clock, Coins, Egg, Gauge, PawPrint, Search, Star, Swords, TrendingUp, Users, Weight, Zap } from 'lucide-react';
 import { compactCount, type TrackstatDailyGains, type CatalogEntry, type InventoryStack, type TrackstatMedia, type TrackstatPublic, type TrackstatSession } from '@/lib/trackstat';
 import { CardSkeleton, DetailTable, GainChart, Img, Stat, ago, card, span, total } from './ui';
@@ -83,13 +83,15 @@ export default function StealAnEggView({ sessions, daily = [], media, community,
   const snap = selected?.snapshot;
   const signature = `${roblox}:${latest?.id}`;
   const hasInventory = !!latest?.snapshot.has_inventory;
+  const latestUpdated = useRef<string>(undefined);
+  useEffect(() => { latestUpdated.current = latest?.updated_at; });
   useEffect(() => {
     if (!latest || !roblox) return;
     let live = true;
-    const run = () => trackstatFetch(`/api/trackstat/catalog?game=sae&roblox=${roblox}`, { cache: 'no-store' }).then(r => r.json()).then(b => {
+    const run = () => loadInventory(roblox, 'sae', latestUpdated.current, result => {
       if (!live) return;
-      setCatalog(b.catalog ?? {});
-      if (b.inventory) setInventory(b.inventory);
+      setCatalog(result.catalog);
+      if (result.inventory) setInventory(result.inventory);
     }).catch(() => {}).finally(() => { if (live) setLoadedFor(signature); });
     void run();
     const timer = setInterval(() => { if (!document.hidden) void run(); }, 60000);

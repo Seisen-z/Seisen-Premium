@@ -17,8 +17,8 @@ export async function GET(req: NextRequest) {
   const limit = rateLimit(`trackstat:read:${getClientIp(req)}`, 60, 60000);
   if (!limit.allowed) return rateLimitResponse(limit);
   try {
-    // A short fingerprint of everything shown (plus a 5 minute step for the community totals); an unchanged page downloads nothing
-    const fingerprint = trackstatRPC<string>('trackstat_version', { p_keys: readKeys(req) }, bearer(req)).then(version => `"v1-${version}-${Math.floor(Date.now() / 300000)}"`).catch(() => null);
+    // A short fingerprint of everything shown (plus a 30 minute step for the community totals); an unchanged page downloads nothing
+    const fingerprint = trackstatRPC<string>('trackstat_version', { p_keys: readKeys(req) }, bearer(req)).then(version => `"v1-${version}-${Math.floor(Date.now() / 1800000)}"`).catch(() => null);
     const known = req.headers.get('if-none-match');
     if (known && await fingerprint === known) return new NextResponse(null, { status: 304, headers: { ...headers, ETag: known } });
     const [totals, totalsStealAnEgg, { entries: valid, dropped, failed, degraded }] = await Promise.all([

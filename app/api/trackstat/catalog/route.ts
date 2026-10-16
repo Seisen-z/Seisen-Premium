@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
     const roblox = req.nextUrl.searchParams.get('roblox') ?? '';
     if (!/^[0-9]{1,20}$/.test(roblox)) return NextResponse.json({ catalog: {} }, { headers });
     // The newest inventory comes from the database for this one account and game, not from the full account read
-    const found = await trackstatRPC<{ id?: string; inventory: InventoryStack[] | null }>('trackstat_inventory', { p_keys: readKeys(req), p_roblox: roblox, p_game: stealAnEgg ? STEAL_AN_EGG : PET_SIMULATOR_99 }, bearer(req));
+    const found = await trackstatRPC<{ id?: string; updated_at?: string; inventory: InventoryStack[] | null }>('trackstat_inventory', { p_keys: readKeys(req), p_roblox: roblox, p_game: stealAnEgg ? STEAL_AN_EGG : PET_SIMULATOR_99 }, bearer(req));
     const itemKeys = [...new Set((found.inventory ?? []).flatMap(entry => [
       entry.k, ...(!stealAnEgg ? entry.ch ?? [] : []).map(charm => `Charm:${charm}:1:`),
     ]))];
@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
     }));
     const stored = (icon: string | null) => icon && cached.has(icon) ? `https://xsygxfeutjcwmqejslbv.supabase.co/storage/v1/object/public/trackstats-images/${folder}/${icon}.png` : null;
     const catalog = Object.fromEntries(Object.entries(rows).map(([k, row]) => [k, { ...row, image: row.icon ? images[row.icon] ?? null : null, stored: stored(row.icon) }]));
-    return NextResponse.json({ catalog, inventory: found.inventory }, { headers });
+    return NextResponse.json({ catalog, inventory: found.inventory, updatedAt: found.updated_at ?? null }, { headers });
   } catch {
     return NextResponse.json({ catalog: {} }, { headers });
   }

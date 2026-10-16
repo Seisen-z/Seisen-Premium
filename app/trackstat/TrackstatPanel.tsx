@@ -1,6 +1,8 @@
 'use client';
 
 import { trackstatAuth, trackstatFetch } from '@/lib/client/trackstat-auth';
+import { cacheClear, cacheGet, cacheNamespace, cacheSet } from '@/lib/client/trackstat-cache';
+import { loadInventory } from '@/lib/client/trackstat-inventory';
 
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import Link from 'next/link';
@@ -123,6 +125,8 @@ export default function TrackstatPanel({ initialTheme }: { initialTheme: Theme }
       if (version !== loadVersion.current) return;
       etag.current = response.headers.get('ETag') ?? '';
       setData(body);
+      // Saved in this browser so the next visit shows it at once and only downloads if something changed
+      if (etag.current) void cacheNamespace().then(namespace => cacheSet(`${namespace}:main`, { etag: etag.current, data: body }));
       // Signed in: keys held by this browser are saved to the email account in the background; signed out: browser storage only
       if (!accountSynced.current && body.accounts?.length) {
         accountSynced.current = true;
@@ -133,18 +137,25 @@ export default function TrackstatPanel({ initialTheme }: { initialTheme: Theme }
   }, []);
   const accountChanged = useCallback((clear = false) => {
     // Signing out empties the account list right away instead of blanking the page while the refresh runs
-    if (clear) { setData(current => (current ? { ...current, accounts: [], reconnect: false, degraded: false } : current)); setCatalog({}); setInventoryData(null); setGame(null); etag.current = ''; }
+    if (clear) { setData(current => (current ? { ...current, accounts: [], reconnect: false, degraded: false } : current)); setCatalog({}); setInventoryData(null); setGame(null); etag.current = ''; void cacheClear(); }
     void load();
   }, [load]);
   // The library syncs every 15 seconds while it runs; with nothing running there is nothing new to fetch that often
   const pollMs = (data?.accounts.some(a => a.activeGames.length > 0) ?? true) ? 15000 : 60000;
   useEffect(() => {
-    void load();
+    let live = true;
+    void (async () => {
+      // What this browser saved last time shows straight away; the request then only downloads if the server has something newer
+      const saved = await cacheGet<{ etag: string; data: TrackstatResponse }>(`${await cacheNamespace()}:main`);
+      if (saved && live) { setData(current => current ?? saved.data); if (!etag.current) etag.current = saved.etag; }
+      if (live) void load();
+    })();
     const refresh = () => { if (!document.hidden) void load(); };
     const timer = setInterval(refresh, pollMs);
     document.addEventListener('visibilitychange', refresh);
     window.addEventListener('focus', refresh);
     return () => {
+      live = false;
       clearInterval(timer);
       document.removeEventListener('visibilitychange', refresh);
       window.removeEventListener('focus', refresh);
@@ -194,14 +205,16 @@ export default function TrackstatPanel({ initialTheme }: { initialTheme: Theme }
   const robloxId = history?.account.roblox_id;
   const hasInventory = !!latest?.snapshot.has_inventory;
   const inventoryKey = `${robloxId}:${latest?.id}`;
+  const latestUpdated = useRef<string>(undefined);
+  useEffect(() => { latestUpdated.current = latest?.updated_at; });
   useEffect(() => {
     // The inventory is only fetched while a view that shows it is open, and refreshed once a minute
     if (game !== 'ps99' || !robloxId || !hasInventory || (tab !== 'overview' && tab !== 'inventory')) return;
     let live = true;
-    const run = () => trackstatFetch(`/api/trackstat/catalog?roblox=${robloxId}&game=ps`, { cache: 'no-store' }).then(r => r.json()).then(b => {
+    const run = () => loadInventory(robloxId, 'ps', latestUpdated.current, result => {
       if (!live) return;
-      setCatalog(b.catalog ?? {});
-      if (b.inventory) setInventoryData({ roblox: robloxId, stacks: b.inventory });
+      setCatalog(result.catalog);
+      if (result.inventory) setInventoryData({ roblox: robloxId, stacks: result.inventory });
     }).catch(() => {}).finally(() => { if (live) setLoadedFor(inventoryKey); });
     void run();
     const timer = setInterval(() => { if (!document.hidden) void run(); }, 60000);
@@ -210,10 +223,19 @@ export default function TrackstatPanel({ initialTheme }: { initialTheme: Theme }
   const accountCount = accounts.length;
   useEffect(() => {
     if (page !== 'dashboard' || !accountCount) return;
-    const loadSamples = () => trackstatFetch('/api/trackstat/samples', { cache: 'no-store' }).then(r => r.json()).then(b => { if (b.samples) setSamples(b.samples); }).catch(() => {});
-    void loadSamples();
-    const timer = setInterval(() => { if (!document.hidden) void loadSamples(); }, 300000);
-    return () => clearInterval(timer);
+    let live = true;
+    const loadSamples = async () => {
+      // The server records one sample every 15 minutes, so a copy saved in the last 10 minutes is used as it is
+      const key = `${await cacheNamespace()}:samples:${accountCount}`;
+      const saved = await cacheGet<{ at: number; samples: TrackstatSample[][] }>(key);
+      if (saved && live) setSamples(saved.samples);
+      if (saved && Date.now() - saved.at < 600000) return;
+      const body = await (await trackstatFetch('/api/trackstat/samples', { cache: 'no-store' })).json();
+      if (body.samples && live) { setSamples(body.samples); void cacheSet(key, { at: Date.now(), samples: body.samples }); }
+    };
+    void loadSamples().catch(() => {});
+    const timer = setInterval(() => { if (!document.hidden) void loadSamples().catch(() => {}); }, 300000);
+    return () => { live = false; clearInterval(timer); };
   }, [page, accountCount]);
   const images = useMemo(() => Object.fromEntries(Object.values(catalog).map(c => [c.name.toLowerCase(), c.stored ?? c.image])), [catalog]);
   const recentClasses = categories.find(c => c.id === recentCategory)?.classes ?? [];
