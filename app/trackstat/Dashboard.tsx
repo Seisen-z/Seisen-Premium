@@ -13,7 +13,6 @@ const utcDay = (t: number) => new Date(t).toISOString().slice(0, 10);
 const shortDay = (day: string) => new Date(`${day}T00:00:00Z`).toLocaleDateString([], { timeZone: 'UTC', month: 'short', day: 'numeric' });
 const when = (t: number) => new Date(t).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 const hours = (minutes: number) => (minutes >= 60 ? `${Math.floor(minutes / 60)}h ${Math.round(minutes % 60)}m` : `${Math.round(minutes)}m`);
-const sessionValue = (inventory: { r?: number; a: number }[]) => inventory.reduce((n, x) => n + (x.r ?? 0) * x.a, 0);
 const pill = (on: boolean) => `rounded-lg px-3 py-1.5 text-sm transition-colors ${on ? 'bg-ts-accent font-medium text-ts-accent-fg' : 'bg-ts-fg/[0.05] text-ts-fg/60 hover:text-ts-fg'}`;
 
 function Kpi({ icon, label, value, hint, spark }: { icon: React.ReactNode; label: string; value: string; hint?: string; spark?: number[] }) {
@@ -119,7 +118,7 @@ export default function Dashboard({ accounts, samples, avatarOf }: { accounts: T
       const last = [...allSessions].reverse().find(x => x.a === a && x.s.game_id === id && value(x.s) !== undefined);
       return last ? [{ a, v: value(last.s) as T }] : [];
     });
-    const invValue = (s: (typeof allSessions)[number]['s']) => (s.snapshot.inventory?.length ? sessionValue(s.snapshot.inventory) : undefined);
+    const invValue = (s: (typeof allSessions)[number]['s']) => s.snapshot.inventory_value ?? undefined;
     const rare = started.flatMap(({ a, s, end }) => s.game_id === PET_SIMULATOR_99 ? s.snapshot.details.filter(it => it.gained > 0 && ['huge', 'titanic', 'gargantuan'].includes(it.kind)).map(it => ({ ...it, a, end })) : []).sort((x, y) => y.end - x.end).slice(0, 8);
 
     return {

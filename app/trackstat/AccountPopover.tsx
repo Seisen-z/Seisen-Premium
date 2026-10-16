@@ -1,33 +1,35 @@
 "use client";
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import type { User } from '@supabase/supabase-js';
 import { LogOut, MoreHorizontal, ShieldCheck, UserRound, Users, X } from 'lucide-react';
-import { trackstatAuth, trackstatFetch } from '@/lib/client/trackstat-auth';
+import { trackstatAuth } from '@/lib/client/trackstat-auth';
 import { button } from './ui';
 
 export default function AccountPopover({ count, onChange }: { count: number; onChange: (clear?: boolean) => void }) {
   const [user, setUser] = useState<User | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
+  const signingOut = useRef(false);
   useEffect(() => {
     let live = true;
     void trackstatAuth.auth.getSession().then(({ data }) => { if (live) setUser(data.session?.user ?? null); });
     const { data: { subscription } } = trackstatAuth.auth.onAuthStateChange((event, session) => {
-      if (live) { setUser(session?.user ?? null); setTimeout(() => { if (live) onChange(event === 'SIGNED_OUT'); }, 0); }
+      if (live) { setUser(session?.user ?? null); setTimeout(() => { if (live && !signingOut.current) onChange(event === 'SIGNED_OUT'); }, 0); }
     });
     return () => { live = false; subscription.unsubscribe(); };
   }, [onChange]);
   async function signOut() {
     setBusy(true); setMessage('');
+    signingOut.current = true;
     try {
-      const response = await trackstatFetch('/api/trackstat/profile', { method: 'DELETE' });
+      // Both run together and the page refreshes once afterwards instead of on every auth event
+      const [response, { error }] = await Promise.all([fetch('/api/trackstat/profile', { method: 'DELETE' }), trackstatAuth.auth.signOut({ scope: 'local' })]);
       if (!response.ok) throw new Error('Could not clear this browser connection.');
-      const { error } = await trackstatAuth.auth.signOut({ scope: 'local' });
       if (error) throw error;
       onChange(true);
     } catch (error) { setMessage(error instanceof Error ? error.message : 'Sign out failed.'); }
-    finally { setBusy(false); }
+    finally { signingOut.current = false; setBusy(false); }
   }
   return <>
     <button popoverTarget="trackstat-account" className="flex w-full items-center gap-3 rounded-xl bg-ts-fg/[0.05] p-2.5 text-left hover:bg-ts-fg/[0.08]" aria-label="Open Account">

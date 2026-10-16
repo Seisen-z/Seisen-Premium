@@ -4,6 +4,9 @@ export type TrackstatSnapshot = {
   gained: Counts;
   details: { name: string; kind: string; owned: number; gained: number }[];
   inventory?: InventoryStack[];
+  // Reads leave the inventory out; the newest session says whether it has one and what it is worth
+  inventory_value?: number | null;
+  has_inventory?: boolean;
   // Steal An Egg only
   money?: number;
   speed?: number;

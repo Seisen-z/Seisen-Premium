@@ -21,14 +21,18 @@ export default function LoginForm({ initialTheme }: { initialTheme: Theme }) {
   const [message, setMessage] = useState('');
   const [token, setToken] = useState('');
   const [widget, setWidget] = useState(0);
+  const [sending, setSending] = useState(false);
   async function submit(event: FormEvent) {
     event.preventDefault(); setBusy(true); setMessage('');
     try {
       if (step === 'email') {
-        const response = await fetch('/api/trackstat/auth/send-code', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email.trim().toLowerCase(), token }) });
-        const body = await response.json();
-        if (!response.ok) { setToken(''); setWidget(count => count + 1); throw new Error(body.error || 'Could not send your verification code.'); }
-        setStep('code');
+        // The code step opens right away while the request runs; if sending fails the email step comes back with the reason
+        setStep('code'); setSending(true);
+        void fetch('/api/trackstat/auth/send-code', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email.trim().toLowerCase(), token }) })
+          .then(async response => { const body = await response.json(); if (!response.ok) throw new Error(body.error || 'Could not send your verification code.'); })
+          .catch(error => { setStep('email'); setToken(''); setWidget(count => count + 1); setMessage(error instanceof Error ? error.message : 'Could not send your verification code.'); })
+          .finally(() => setSending(false));
+        return;
       } else {
         if (step === 'code') {
           if (!/^[0-9]{6}$/.test(code)) throw new Error('Enter all six digits.');
@@ -58,7 +62,7 @@ export default function LoginForm({ initialTheme }: { initialTheme: Theme }) {
     <section aria-labelledby="login-title" className="rounded-2xl bg-ts-surface p-6 md:p-8">
       <Mail size={22} className="mb-5 text-ts-accent" />
       <h2 id="login-title" className="text-xl font-semibold text-ts-fg">{step === 'email' ? 'Sign in to Trackstat' : step === 'code' ? 'Check your email' : 'Save your connections'}</h2>
-      <p className="mb-6 mt-2 text-xs leading-6 text-ts-fg/45">{step === 'email' ? 'We will send you a one-time verification code.' : step === 'code' ? `Enter the code sent to ${email}. It expires in 3 minutes.` : 'Your email is verified. Save connections from this browser and continue.'}</p>
+      <p className="mb-6 mt-2 text-xs leading-6 text-ts-fg/45">{step === 'email' ? 'We will send you a one-time verification code.' : step === 'code' ? (sending ? `Sending a code to ${email}…` : `Enter the code sent to ${email}. It expires in 3 minutes.`) : 'Your email is verified. Save connections from this browser and continue.'}</p>
       <form onSubmit={submit} className="space-y-4">
         {step === 'email' && <label className="block text-xs text-ts-fg/60">Email address<input autoComplete="email" type="email" required maxLength={254} value={email} disabled={busy} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" className={input} /></label>}
         {step === 'email' && siteKey && <Turnstile key={widget} siteKey={siteKey} theme={theme} onToken={setToken} />}

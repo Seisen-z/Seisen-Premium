@@ -14,8 +14,8 @@ export async function trackstatEntries(req: NextRequest) {
   const token = bearer(req);
   // Both lookups run together; the email-linked read leaves out accounts these keys already load, so nothing is fetched twice
   const [results, saved] = await Promise.all([
-    Promise.allSettled(keys.map(key => trackstatRPC<TrackstatHistory>('trackstat_private', { p_key: key }))),
-    token ? trackstatRPC<TrackstatHistory[]>('trackstat_user_accounts_read', { p_skip_keys: keys }, token).catch(error => { console.error('trackstat saved accounts failed:', error instanceof Error ? error.message : error); return null; }) : Promise.resolve<TrackstatHistory[]>([]),
+    Promise.allSettled(keys.map(key => trackstatRPC<TrackstatHistory>('trackstat_private', { p_key: key, p_slim: true }))),
+    token ? trackstatRPC<TrackstatHistory[]>('trackstat_user_accounts_read', { p_skip_keys: keys, p_slim: true }, token).catch(error => { console.error('trackstat saved accounts failed:', error instanceof Error ? error.message : error); return null; }) : Promise.resolve<TrackstatHistory[]>([]),
   ]);
   const found: { key?: string; history: TrackstatHistory }[] = [];
   let dropped = false;

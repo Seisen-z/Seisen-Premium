@@ -72,7 +72,7 @@ function InventoryView({ stacks, catalog, loading }: { stacks?: InventoryStack[]
     .filter(s => (!classes.length || classes.includes(s.k.split(':')[0])) && (catalog[s.k]?.name ?? s.k.split(':')[1]).toLowerCase().includes(q.toLowerCase()))
     .sort((a, b) => (b.r ?? 0) * b.a - (a.r ?? 0) * a.a);
   }, [stacks, catalog, q, cat]);
-  if (!stacks) return <div className={`${card} p-10 text-sm text-ts-fg/45`}>Inventory details appear after the next sync from the updated library.</div>;
+  if (!stacks) return loading ? <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">{Array.from({ length: 10 }, (_, i) => <CardSkeleton key={i} />)}</div> : <div className={`${card} p-10 text-sm text-ts-fg/45`}>Inventory details appear after the next sync from the updated library.</div>;
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center gap-3">
@@ -108,6 +108,7 @@ export default function TrackstatPanel({ initialTheme }: { initialTheme: Theme }
   const [search, setSearch] = useState('');
   const [listView, setListView] = useState(false);
   const [catalog, setCatalog] = useState<Record<string, CatalogEntry>>({});
+  const [inventoryData, setInventoryData] = useState<{ roblox: string; stacks: InventoryStack[] } | null>(null);
   const [loadedFor, setLoadedFor] = useState('');
   const loadVersion = useRef(0);
   const accountSynced = useRef(false);
@@ -131,7 +132,8 @@ export default function TrackstatPanel({ initialTheme }: { initialTheme: Theme }
     } catch (e) { if (version === loadVersion.current) setError(e instanceof Error ? e.message : 'Trackstat could not refresh.'); }
   }, []);
   const accountChanged = useCallback((clear = false) => {
-    if (clear) { setData(null); setCatalog({}); setGame(null); etag.current = ''; }
+    // Signing out empties the account list right away instead of blanking the page while the refresh runs
+    if (clear) { setData(current => (current ? { ...current, accounts: [], reconnect: false, degraded: false } : current)); setCatalog({}); setInventoryData(null); setGame(null); etag.current = ''; }
     void load();
   }, [load]);
   // The library syncs every 15 seconds while it runs; with nothing running there is nothing new to fetch that often
@@ -189,11 +191,22 @@ export default function TrackstatPanel({ initialTheme }: { initialTheme: Theme }
   const liveSae = history?.activeGames?.includes(STEAL_AN_EGG) ?? false;
   const live = history?.activeGames?.includes(PET_SIMULATOR_99) ?? false;
   const libraryLive = (history?.activeGames?.length ?? 0) > 0;
-  const inventoryKey = `${history?.index}:${latest?.id}:${latest?.updated_at}`;
+  const robloxId = history?.account.roblox_id;
+  const hasInventory = !!latest?.snapshot.has_inventory;
+  const inventoryKey = `${robloxId}:${latest?.id}`;
   useEffect(() => {
-    if (!latest?.snapshot.inventory?.length) return;
-    trackstatFetch(`/api/trackstat/catalog?account=${history?.index ?? 0}`, { cache: 'no-store' }).then(r => r.json()).then(b => setCatalog(b.catalog ?? {})).catch(() => {}).finally(() => setLoadedFor(inventoryKey));
-  }, [inventoryKey]); // eslint-disable-line react-hooks/exhaustive-deps
+    // The inventory is only fetched while a view that shows it is open, and refreshed once a minute
+    if (game !== 'ps99' || !robloxId || !hasInventory || (tab !== 'overview' && tab !== 'inventory')) return;
+    let live = true;
+    const run = () => trackstatFetch(`/api/trackstat/catalog?roblox=${robloxId}&game=ps`, { cache: 'no-store' }).then(r => r.json()).then(b => {
+      if (!live) return;
+      setCatalog(b.catalog ?? {});
+      if (b.inventory) setInventoryData({ roblox: robloxId, stacks: b.inventory });
+    }).catch(() => {}).finally(() => { if (live) setLoadedFor(inventoryKey); });
+    void run();
+    const timer = setInterval(() => { if (!document.hidden) void run(); }, 60000);
+    return () => { live = false; clearInterval(timer); };
+  }, [game, robloxId, hasInventory, tab, inventoryKey]);
   const accountCount = accounts.length;
   useEffect(() => {
     if (page !== 'dashboard' || !accountCount) return;
@@ -205,7 +218,7 @@ export default function TrackstatPanel({ initialTheme }: { initialTheme: Theme }
   const images = useMemo(() => Object.fromEntries(Object.values(catalog).map(c => [c.name.toLowerCase(), c.stored ?? c.image])), [catalog]);
   const recentClasses = categories.find(c => c.id === recentCategory)?.classes ?? [];
   const recent = sessions.flatMap(s => s.snapshot.details.filter(d => d.gained > 0 && (!recentClasses.length || recentClasses.includes(d.kind) || recentCategory === 'pets' && ['huge', 'titanic', 'gargantuan'].includes(d.kind))).map(d => ({ ...d, at: s.updated_at }))).slice(0, 10);
-  const stacks = selected?.snapshot.inventory;
+  const stacks = inventoryData?.roblox === robloxId ? inventoryData?.stacks : undefined;
   const totalValue = (stacks ?? []).reduce((n, x) => n + (x.r ?? 0) * x.a, 0);
   const topStacks = [...(stacks ?? [])].sort((a, b) => (b.r ?? 0) * b.a - (a.r ?? 0) * a.a).slice(0, 6);
 
@@ -329,7 +342,7 @@ export default function TrackstatPanel({ initialTheme }: { initialTheme: Theme }
       </>
     );
   } else if (game === 'sae') {
-    main = <StealAnEggView sessions={saeSessions} daily={(history?.daily ?? []).filter(day => day.game_id === STEAL_AN_EGG)} media={data.media} community={data.publicStealAnEgg} live={liveSae} account={history?.index ?? 0} onBack={() => setGame(null)} />;
+    main = <StealAnEggView sessions={saeSessions} daily={(history?.daily ?? []).filter(day => day.game_id === STEAL_AN_EGG)} media={data.media} community={data.publicStealAnEgg} live={liveSae} roblox={history?.account.roblox_id ?? ''} onBack={() => setGame(null)} />;
   } else {
     const counts = selected?.snapshot;
     main = (
@@ -383,7 +396,7 @@ export default function TrackstatPanel({ initialTheme }: { initialTheme: Theme }
               </div>
             )}
           </>
-        ) : tab === 'inventory' ? <InventoryView stacks={counts.inventory} catalog={catalog} loading={!!latest?.snapshot.inventory?.length && loadedFor !== inventoryKey && !Object.keys(catalog).length} />
+        ) : tab === 'inventory' ? <InventoryView stacks={stacks} catalog={catalog} loading={hasInventory && loadedFor !== inventoryKey} />
         : tab === 'gains' ? (
           <>
             <div className="mb-6 grid grid-cols-2 gap-3 xl:grid-cols-4">{(['items', 'huge', 'titanic', 'gargantuan'] as const).map(k => <div key={k} className={`${card} p-4`}><p className="text-xs capitalize text-ts-fg/45">{k}</p><p className="mt-2 font-mono text-2xl text-ts-fg" title={String(counts.owned[k])}>{compactCount(counts.owned[k])}</p><p className="mt-2 text-xs text-ts-accent">+{compactCount(counts.gained[k])} gained</p></div>)}</div>

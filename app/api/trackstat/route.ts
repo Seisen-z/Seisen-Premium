@@ -1,5 +1,4 @@
 import { bearer, trackstatEntries, cookieName, cookieOptions, readKeys, keyPattern, maxKeys } from '@/lib/server/trackstat-accounts';
-import { createHash } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { trackstatMedia, trackstatRPC } from '@/lib/server/trackstat';
 import { rateLimit, getClientIp, rateLimitResponse } from '@/lib/server/rate-limit';
@@ -18,6 +17,10 @@ export async function GET(req: NextRequest) {
   const limit = rateLimit(`trackstat:read:${getClientIp(req)}`, 60, 60000);
   if (!limit.allowed) return rateLimitResponse(limit);
   try {
+    // A short fingerprint of everything shown (plus a 5 minute step for the community totals); an unchanged page downloads nothing
+    const fingerprint = trackstatRPC<string>('trackstat_version', { p_keys: readKeys(req) }, bearer(req)).then(version => `"v1-${version}-${Math.floor(Date.now() / 300000)}"`).catch(() => null);
+    const known = req.headers.get('if-none-match');
+    if (known && await fingerprint === known) return new NextResponse(null, { status: 304, headers: { ...headers, ETag: known } });
     const [totals, totalsStealAnEgg, { entries: valid, dropped, failed, degraded }] = await Promise.all([
       trackstatRPC<TrackstatPublic>('trackstat_public').catch(() => null),
       trackstatRPC<TrackstatPublic>('trackstats_stealanegg_public').catch(() => null),
@@ -29,11 +32,9 @@ export async function GET(req: NextRequest) {
       ...history, index,
       activeGames: history.activeGames ?? [],
     }));
-    const payload = JSON.stringify({ public: totals, publicStealAnEgg: totalsStealAnEgg, accounts, media: await trackstatMedia(accounts.map(a => a.account.roblox_id)), reconnect: dropped, degraded });
-    // Unchanged data is not sent again; the browser keeps what it has
-    const etag = `"${createHash('sha1').update(payload).digest('base64url')}"`;
-    if (!dropped && req.headers.get('if-none-match') === etag) return new NextResponse(null, { status: 304, headers: { ...headers, ETag: etag } });
-    const response = new NextResponse(payload, { headers: { ...headers, 'Content-Type': 'application/json', ETag: etag } });
+    const media = accounts.length ? await trackstatMedia(accounts.map(a => a.account.roblox_id)) : { avatars: {}, game: null, stealAnEgg: null };
+    const etag = degraded || dropped ? null : await fingerprint;
+    const response = NextResponse.json({ public: totals, publicStealAnEgg: totalsStealAnEgg, accounts, media, reconnect: dropped, degraded }, { headers: etag ? { ...headers, ETag: etag } : headers });
     if (dropped) writeKeys(response, [...valid.flatMap(v => v.keys), ...failed]);
     return response;
   } catch (error) {

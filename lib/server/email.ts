@@ -1,5 +1,8 @@
 import nodemailer from 'nodemailer';
 
+// One pooled connection per warm server instance instead of a new login for every email
+let sharedTransporter: nodemailer.Transporter | undefined;
+
 export class EmailService {
   private transporter: nodemailer.Transporter | null;
   private fromEmail: string;
@@ -10,7 +13,9 @@ export class EmailService {
       : `"${process.env.SMTP_USER}" <${process.env.SMTP_USER}>`;
 
     if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
-        this.transporter = nodemailer.createTransport({
+        this.transporter = sharedTransporter ??= nodemailer.createTransport({
+            pool: true,
+            maxConnections: 2,
             host: process.env.SMTP_HOST,
             port: Number(process.env.SMTP_PORT) || 587,
             secure: process.env.SMTP_SECURE === 'true' || Number(process.env.SMTP_PORT) === 465,
@@ -343,11 +348,6 @@ export class EmailService {
     
     const subject = purpose === 'trackstat' ? 'Your Trackstat sign-in code' : `Your Verification Code - ${code}`;
     
-    // Verify connection before attempting to send (Fail fast)
-    const isConnected = await this.verifyConnection();
-    if (!isConnected) {
-        return { success: false, error: 'SMTP Connection Failed (Port blocked?)' };
-    }
     
     const emailHtml = `
 <!DOCTYPE html>

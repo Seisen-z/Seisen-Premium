@@ -52,7 +52,7 @@ function InventoryView({ stacks, catalog, loading }: { stacks?: InventoryStack[]
   const shown = useMemo(() => (stacks ?? [])
     .filter(s => (cat === 'all' || s.k.startsWith(`${cat}:`)) && (catalog[s.k]?.name ?? s.k.split(':')[1]).toLowerCase().includes(q.toLowerCase()))
     .sort((a, b) => (b.p ?? 0) - (a.p ?? 0) || (b.w ?? 0) - (a.w ?? 0) || b.a - a.a), [stacks, catalog, q, cat]);
-  if (!stacks) return <div className={`${card} p-10 text-sm text-ts-fg/45`}>Inventory details appear after the next sync from the updated library.</div>;
+  if (!stacks) return loading ? <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">{Array.from({ length: 10 }, (_, i) => <CardSkeleton key={i} />)}</div> : <div className={`${card} p-10 text-sm text-ts-fg/45`}>Inventory details appear after the next sync from the updated library.</div>;
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center gap-3">
@@ -71,24 +71,34 @@ function InventoryView({ stacks, catalog, loading }: { stacks?: InventoryStack[]
   );
 }
 
-export default function StealAnEggView({ sessions, daily = [], media, community, live, account, onBack }: { sessions: TrackstatSession[]; daily?: TrackstatDailyGains[]; account: number; media: TrackstatMedia | undefined; community: TrackstatPublic | null | undefined; live: boolean; onBack: () => void }) {
+export default function StealAnEggView({ sessions, daily = [], media, community, live, roblox, onBack }: { sessions: TrackstatSession[]; daily?: TrackstatDailyGains[]; roblox: string; media: TrackstatMedia | undefined; community: TrackstatPublic | null | undefined; live: boolean; onBack: () => void }) {
   const [tab, setTab] = useState<Tab>('overview');
   const [sessionId, setSessionId] = useState('');
   const [recentCategory, setRecentCategory] = useState('all');
   const [catalog, setCatalog] = useState<Record<string, CatalogEntry>>({});
   const [loadedFor, setLoadedFor] = useState('');
+  const [inventory, setInventory] = useState<InventoryStack[] | undefined>();
   const latest = sessions[0];
   const selected = sessions.find(s => s.id === sessionId) || latest;
   const snap = selected?.snapshot;
-  const signature = `${account}:${latest?.id}:${latest?.updated_at}`;
+  const signature = `${roblox}:${latest?.id}`;
+  const hasInventory = !!latest?.snapshot.has_inventory;
   useEffect(() => {
-    if (!latest) return;
-    trackstatFetch(`/api/trackstat/catalog?game=sae&account=${account}`, { cache: 'no-store' }).then(r => r.json()).then(b => setCatalog(b.catalog ?? {})).catch(() => {}).finally(() => setLoadedFor(signature));
+    if (!latest || !roblox) return;
+    let live = true;
+    const run = () => trackstatFetch(`/api/trackstat/catalog?game=sae&roblox=${roblox}`, { cache: 'no-store' }).then(r => r.json()).then(b => {
+      if (!live) return;
+      setCatalog(b.catalog ?? {});
+      if (b.inventory) setInventory(b.inventory);
+    }).catch(() => {}).finally(() => { if (live) setLoadedFor(signature); });
+    void run();
+    const timer = setInterval(() => { if (!document.hidden) void run(); }, 60000);
+    return () => { live = false; clearInterval(timer); };
   }, [signature]); // eslint-disable-line react-hooks/exhaustive-deps
   const images = useMemo(() => Object.fromEntries(Object.values(catalog).map(c => [c.name.toLowerCase(), c.stored ?? c.image])), [catalog]);
   const backups = useMemo(() => Object.fromEntries(Object.values(catalog).map(c => [c.name.toLowerCase(), c.image])), [catalog]);
   const recent = sessions.flatMap(s => s.snapshot.details.filter(d => d.gained > 0 && (recentCategory === 'all' || d.kind === recentCategory)).map(d => ({ ...d, at: s.updated_at }))).slice(0, 10);
-  const top = [...(snap?.inventory ?? [])].filter(s => s.k.startsWith('pet:')).sort((a, b) => (b.p ?? 0) - (a.p ?? 0)).slice(0, 6);
+  const top = [...(inventory ?? [])].filter(s => s.k.startsWith('pet:')).sort((a, b) => (b.p ?? 0) - (a.p ?? 0)).slice(0, 6);
 
   return (
     <>
@@ -151,7 +161,7 @@ export default function StealAnEggView({ sessions, daily = [], media, community,
             </div>
           )}
         </>
-      ) : tab === 'inventory' ? <InventoryView stacks={snap.inventory} catalog={catalog} loading={!!latest?.snapshot.inventory?.length && loadedFor !== signature && !Object.keys(catalog).length} />
+      ) : tab === 'inventory' ? <InventoryView stacks={inventory} catalog={catalog} loading={hasInventory && loadedFor !== signature} />
       : tab === 'gains' ? (
         <>
           <div className="mb-6 grid grid-cols-2 gap-3 xl:grid-cols-4">{metrics.map(k => <div key={k} className={`${card} p-4`}><p className="flex items-center gap-1 text-xs capitalize text-ts-fg/45">{k === 'gear' && <Swords size={12} />}{k}</p><p className="mt-2 font-mono text-2xl text-ts-fg" title={String(snap.owned[k])}>{compactCount(snap.owned[k] ?? 0)}</p><p className="mt-2 text-xs text-ts-accent">+{compactCount(snap.gained[k] ?? 0)} gained</p></div>)}</div>
