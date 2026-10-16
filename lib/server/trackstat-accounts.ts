@@ -11,7 +11,12 @@ export const bearer = (req: NextRequest) => req.headers.get('authorization')?.ma
 export type { TrackstatEntry } from '@/lib/trackstat-merge';
 export async function trackstatEntries(req: NextRequest) {
   const keys = readKeys(req);
-  const results = await Promise.allSettled(keys.map(key => trackstatRPC<TrackstatHistory>('trackstat_private', { p_key: key })));
+  const token = bearer(req);
+  // Both lookups run together; the email-linked read leaves out accounts these keys already load, so nothing is fetched twice
+  const [results, saved] = await Promise.all([
+    Promise.allSettled(keys.map(key => trackstatRPC<TrackstatHistory>('trackstat_private', { p_key: key }))),
+    token ? trackstatRPC<TrackstatHistory[]>('trackstat_user_accounts_read', { p_skip_keys: keys }, token).catch(error => { console.error('trackstat saved accounts failed:', error instanceof Error ? error.message : error); return null; }) : Promise.resolve<TrackstatHistory[]>([]),
+  ]);
   const found: { key?: string; history: TrackstatHistory }[] = [];
   let dropped = false;
   // Keys that failed for a temporary reason stay in the cookie; only invalid keys are dropped
@@ -19,16 +24,10 @@ export async function trackstatEntries(req: NextRequest) {
   results.forEach((result, i) => {
     if (result.status === 'fulfilled') found.push({ key: keys[i], history: result.value });
     else if (result.reason instanceof Error && result.reason.message === 'Invalid connection key') dropped = true;
-    else failed.push(keys[i]);
+    else { failed.push(keys[i]); console.error('trackstat key lookup failed:', result.reason instanceof Error ? result.reason.message : result.reason); }
   });
-  const token = bearer(req);
-  let savedFailed = false;
-  if (token) {
-    try {
-      const saved = await trackstatRPC<TrackstatHistory[]>('trackstat_user_accounts_read', {}, token);
-      for (const history of saved) if (!found.some(e => e.history.account.id === history.account.id)) found.push({ history });
-    } catch { savedFailed = true; }
-  }
+  for (const history of saved ?? []) if (!found.some(e => e.history.account.id === history.account.id)) found.push({ history });
+  const savedFailed = saved === null;
   const entries = mergeByRoblox(found);
   return { entries, dropped, token, failed, degraded: failed.length > 0 || savedFailed };
 }

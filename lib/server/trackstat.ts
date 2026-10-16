@@ -26,7 +26,7 @@ export async function trackstatRPC<T>(name: string, args: Record<string, unknown
     cache: 'no-store',
     signal: AbortSignal.timeout(12000),
   });
-  if (!response.ok) throw new Error(response.status === 400 ? 'Invalid connection key' : 'Trackstat is temporarily unavailable');
+  if (!response.ok) throw new Error(response.status === 400 ? 'Invalid connection key' : `Trackstat ${name} failed (${response.status})`);
   return response.json() as Promise<T>;
 }
 

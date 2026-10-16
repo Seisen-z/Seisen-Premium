@@ -36,7 +36,8 @@ export async function GET(req: NextRequest) {
     const response = new NextResponse(payload, { headers: { ...headers, 'Content-Type': 'application/json', ETag: etag } });
     if (dropped) writeKeys(response, [...valid.flatMap(v => v.keys), ...failed]);
     return response;
-  } catch {
+  } catch (error) {
+    console.error('trackstat read failed:', error instanceof Error ? error.message : error);
     return NextResponse.json({ error: 'Trackstat is temporarily unavailable. Try refreshing shortly.' }, { status: 503, headers });
   }
 }
