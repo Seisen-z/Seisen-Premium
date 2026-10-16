@@ -46,7 +46,7 @@ function InventoryCard({ stack, info }: { stack: InventoryStack; info?: CatalogE
   );
 }
 
-function InventoryView({ stacks, catalog, loading }: { stacks?: InventoryStack[]; catalog: Record<string, CatalogEntry>; loading: boolean }) {
+export function InventoryView({ stacks, catalog, loading }: { stacks?: InventoryStack[]; catalog: Record<string, CatalogEntry>; loading: boolean }) {
   const [q, setQ] = useState('');
   const [cat, setCat] = useState('all');
   const [limit, setLimit] = useState(60);

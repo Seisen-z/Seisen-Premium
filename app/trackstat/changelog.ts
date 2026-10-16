@@ -3,8 +3,7 @@ export const trackstatChangelog: { date: string; items: string[] }[] = [
   {
     date: 'Oct 16, 2026',
     items: [
-      'Discord alerts when a Huge, Titanic or Gargantuan pet drops (Settings)',
-      'Share links: a read-only page of your gains for friends (Settings)',
+      'Share links: a read-only page of your gains and inventory for friends (Settings)',
       'Settings page, a collapsible sidebar, and a phone-friendly layout',
       'Rename and reorder your accounts, and see when each last synced',
       'Live status shows how fresh the page is',

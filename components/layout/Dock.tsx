@@ -153,7 +153,7 @@ export default function Dock() {
 
   const isClient = pathname.startsWith('/client');
 
-  if (pathname === '/trackstat') return null;
+  if (pathname.startsWith('/trackstat')) return null;
 
   return (
     <>

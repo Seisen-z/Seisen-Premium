@@ -21,5 +21,5 @@ export default async function SharedPage({ params }: { params: Promise<{ token: 
     );
   }
   const media = await trackstatMedia([data.account.roblox_id]);
-  return <SharedView data={data} avatar={media.avatars[data.account.roblox_id] ?? null} initialTheme={theme} />;
+  return <SharedView data={data} avatar={media.avatars[data.account.roblox_id] ?? null} token={token} initialTheme={theme} />;
 }

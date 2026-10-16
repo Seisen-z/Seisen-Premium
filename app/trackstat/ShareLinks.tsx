@@ -41,7 +41,7 @@ export default function ShareLinks({ accounts, nameOf }: { accounts: TrackstatAc
   return (
     <div className={`${card} p-5`}>
       <h3 className="flex items-center gap-2 text-sm font-semibold text-ts-fg"><Link2 size={15} className="text-ts-accent" />Share links</h3>
-      <p className="mt-1 text-xs leading-5 text-ts-fg/45">Make a read-only page of an account&apos;s gains and status to send to a friend. They see no inventory and no key, and you can turn the link off at any time.</p>
+      <p className="mt-1 text-xs leading-5 text-ts-fg/45">Make a read-only page of an account&apos;s gains, status and inventory to send to a friend. They never see your connection key, and you can turn the link off at any time.</p>
       {accounts.length === 0 ? <p className="mt-4 text-xs text-ts-fg/40">Connect an account first.</p> : (
         <ul className="mt-4 space-y-3">
           {accounts.map(a => {
