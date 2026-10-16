@@ -25,7 +25,7 @@ function Kpi({ icon, label, value, hint, spark }: { icon: React.ReactNode; label
   );
 }
 
-export default function Dashboard({ accounts, avatarOf, nameOf }: { accounts: TrackstatAccount[]; avatarOf: (id?: string) => string | null | undefined; nameOf: (a: TrackstatAccount) => string }) {
+export default function Dashboard({ accounts, avatarOf, nameOf, single = false }: { accounts: TrackstatAccount[]; avatarOf: (id?: string) => string | null | undefined; nameOf: (a: TrackstatAccount) => string; single?: boolean }) {
   const [game, setGame] = useState('all');
   const [acct, setAcct] = useState<'all' | number>('all');
   const [days, setDays] = useState<1 | 7>(7);
@@ -90,10 +90,10 @@ export default function Dashboard({ accounts, avatarOf, nameOf }: { accounts: Tr
         <div><h2 className="flex items-center gap-2 text-xl font-semibold text-ts-fg">Dashboard<span title="Gains are items and pets added to your inventory while the library runs, including trades and rewards. Currency and regular pets are not counted." aria-label="What counts as a gain" tabIndex={0} className="text-ts-fg/35 hover:text-ts-fg"><Info size={15} /></span></h2><p className="mt-0.5 text-xs text-ts-fg/40">What your accounts gained. A new day starts at {resets} for you (midnight UTC).</p></div>
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex gap-1" role="group" aria-label="Game">{[['all', 'All games'], [PET_SIMULATOR_99, 'PS99'], [STEAL_AN_EGG, 'Steal an Egg']].map(([id, label]) => <button key={id} aria-pressed={game === id} onClick={() => setGame(id)} className={pill(game === id)}>{label}</button>)}</div>
-          <select aria-label="Account" value={acct} onChange={e => setAcct(e.target.value === 'all' ? 'all' : Number(e.target.value))} className="rounded-lg bg-ts-fg/[0.05] px-3 py-2 text-sm text-ts-fg outline-none focus-visible:ring-2 focus-visible:ring-ts-accent/40">
+          {!single && <select aria-label="Account" value={acct} onChange={e => setAcct(e.target.value === 'all' ? 'all' : Number(e.target.value))} className="rounded-lg bg-ts-fg/[0.05] px-3 py-2 text-sm text-ts-fg outline-none focus-visible:ring-2 focus-visible:ring-ts-accent/40">
             <option value="all" className="bg-ts-surface">All accounts</option>
             {accounts.map(a => <option key={a.index} value={a.index} className="bg-ts-surface">{nameOf(a)}</option>)}
-          </select>
+          </select>}
           <div className="flex gap-1" role="group" aria-label="Range">{([1, 7] as const).map(n => <button key={n} aria-pressed={days === n} onClick={() => setDays(n)} className={pill(days === n)}>{n}D</button>)}</div>
         </div>
       </div>

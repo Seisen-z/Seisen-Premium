@@ -3,6 +3,14 @@ export const trackstatChangelog: { date: string; items: string[] }[] = [
   {
     date: 'Oct 16, 2026',
     items: [
+      'Discord alerts when a Huge, Titanic or Gargantuan pet drops (Settings)',
+      'Share links: a read-only page of your gains for friends (Settings)',
+      'Settings page, a collapsible sidebar, and a phone-friendly layout',
+      'Rename and reorder your accounts, and see when each last synced',
+      'Live status shows how fresh the page is',
+      'Inventory sorting, a favorites filter, and a total value',
+      'A first-run guide for new users',
+      'Dashboard compares today with yesterday and explains what counts as a gain',
       'Email sign-in: open your accounts from any browser with a 6-digit code',
       'New dashboard with daily gains, gains by account and top gained items',
       'Dark and light themes with a new sidebar',

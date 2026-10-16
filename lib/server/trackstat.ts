@@ -44,3 +44,12 @@ export async function trackstatCacheImage(folder: 'stealanegg' | 'petsimulator99
     return stored.ok || stored.status === 409;
   } catch { return false; }
 }
+
+// Like trackstatRPC, but hands back the database's own answer (including its error message) instead of throwing
+export async function trackstatCall(name: string, args: Record<string, unknown>, token?: string) {
+  const response = await fetch(`${url}/rest/v1/rpc/${name}`, {
+    method: 'POST', cache: 'no-store', signal: AbortSignal.timeout(12000), body: JSON.stringify(args),
+    headers: { apikey: publishableKey, 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+  });
+  return { ok: response.ok, body: await response.json().catch(() => null) };
+}

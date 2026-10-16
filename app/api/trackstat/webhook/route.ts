@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { bearer, readKeys } from '@/lib/server/trackstat-accounts';
-import { TRACKSTAT_URL, TRACKSTAT_PUBLIC_KEY } from '@/lib/trackstat-config';
+import { trackstatCall as call } from '@/lib/server/trackstat';
 import { rateLimit, getClientIp, rateLimitResponse } from '@/lib/server/rate-limit';
 
 export const dynamic = 'force-dynamic';
@@ -8,15 +8,6 @@ const headers = { 'Cache-Control': 'private, no-store' };
 const robloxId = /^[0-9]{1,20}$/;
 // Messages the database sends on purpose; anything else is shown as a general failure
 const known = ['That is not a Discord webhook address', 'No webhook is set', 'Wait a few seconds before testing again', 'Invalid connection key'];
-
-async function call(name: string, args: Record<string, unknown>, token?: string) {
-  const response = await fetch(`${TRACKSTAT_URL}/rest/v1/rpc/${name}`, {
-    method: 'POST', cache: 'no-store', signal: AbortSignal.timeout(12000), body: JSON.stringify(args),
-    headers: { apikey: TRACKSTAT_PUBLIC_KEY, 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-  });
-  const body = await response.json().catch(() => null);
-  return { ok: response.ok, body };
-}
 
 // Whether a Discord webhook is set for a Roblox account (the address itself is never sent back)
 export async function GET(req: NextRequest) {
