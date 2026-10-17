@@ -58,6 +58,8 @@ local AstKind = {
 	SubExpression = "SubExpression";
 	MulExpression = "MulExpression";
 	DivExpression = "DivExpression";
+	FloorDivExpression = "FloorDivExpression";
+	IfElseExpression = "IfElseExpression";
 	ModExpression = "ModExpression";
 	NotExpression = "NotExpression";
 	LenExpression = "LenExpression";
@@ -97,6 +99,8 @@ local astKindExpressionLookup = {
 	[AstKind.SubExpression] = 8;
 	[AstKind.MulExpression] = 7;
 	[AstKind.DivExpression] = 7;
+	[AstKind.FloorDivExpression] = 7;
+	[AstKind.IfElseExpression] = 13;
 	[AstKind.ModExpression] = 7;
 	[AstKind.NotExpression] = 5;
 	[AstKind.LenExpression] = 5;
@@ -638,6 +642,25 @@ function Ast.DivExpression(lhs, rhs, simplify)
 		kind = AstKind.DivExpression,
 		lhs = lhs,
 		rhs = rhs,
+		isConstant = false,
+	}
+end
+
+function Ast.FloorDivExpression(lhs, rhs)
+	return {
+		kind = AstKind.FloorDivExpression,
+		lhs = lhs,
+		rhs = rhs,
+		isConstant = false,
+	}
+end
+
+function Ast.IfElseExpression(condition, ifTrue, ifFalse)
+	return {
+		kind = AstKind.IfElseExpression,
+		condition = condition,
+		ifTrue = ifTrue,
+		ifFalse = ifFalse,
 		isConstant = false,
 	}
 end

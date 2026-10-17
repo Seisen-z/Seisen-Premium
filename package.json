@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --test lib/*.test.ts"
+    "test": "node --test lib/*.test.ts && node scripts/test-prometheus.cjs",
+    "test:prometheus": "node scripts/test-prometheus.cjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.90.1",

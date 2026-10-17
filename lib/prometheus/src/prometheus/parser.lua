@@ -680,6 +680,12 @@ function Parser:expressionMulDivMod(scope)
 			found = true;
 		end
 
+		if(self.luaVersion == LuaVersion.LuaU and consume(self, TokenKind.Symbol, "//")) then
+			local rhs = self:expressionUnary(scope);
+			curr = Ast.FloorDivExpression(curr, rhs);
+			found = true;
+		end
+
 		if(consume(self, TokenKind.Symbol, "%")) then
 			local rhs = self:expressionUnary(scope);
 			curr = Ast.ModExpression(curr, rhs, true);
@@ -722,6 +728,9 @@ end
 
 -- Table Literals and Function Literals cannot directly be called or indexed
 function Parser:tableOrFunctionLiteral(scope)
+	if(self.luaVersion == LuaVersion.LuaU and is(self, TokenKind.Keyword, "if")) then
+		return self:expressionIfElse(scope);
+	end
 	
 	if(is(self, TokenKind.Symbol, "{")) then
 		return self:tableConstructor(scope);
@@ -732,6 +741,21 @@ function Parser:tableOrFunctionLiteral(scope)
 	end
 	
 	return self:expressionFunctionCall(scope);
+end
+
+function Parser:expressionIfElse(scope, isElseIf)
+	expect(self, TokenKind.Keyword, isElseIf and "elseif" or "if");
+	local condition = self:expression(scope);
+	expect(self, TokenKind.Keyword, "then");
+	local ifTrue = self:expression(scope);
+	local ifFalse;
+	if(is(self, TokenKind.Keyword, "elseif")) then
+		ifFalse = self:expressionIfElse(scope, true);
+	else
+		expect(self, TokenKind.Keyword, "else");
+		ifFalse = self:expression(scope);
+	end
+	return Ast.IfElseExpression(condition, ifTrue, ifFalse);
 end
 
 function Parser:expressionFunctionLiteral(parentScope)

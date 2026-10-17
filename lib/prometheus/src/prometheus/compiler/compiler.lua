@@ -50,6 +50,7 @@ function Compiler:new()
             AstKind.SubExpression,
             AstKind.MulExpression,
             AstKind.DivExpression,
+            AstKind.FloorDivExpression,
             AstKind.ModExpression,
             AstKind.PowExpression,
         };
@@ -136,6 +137,7 @@ function Compiler:compile(ast)
     self.envVar = self.scope:addVariable();
     self.containerFuncVar = self.scope:addVariable();
     self.unpackVar = self.scope:addVariable();
+    self.packVar = self.scope:addVariable();
     self.newproxyVar = self.scope:addVariable();
     self.setmetatableVar = self.scope:addVariable();
     self.getmetatableVar = self.scope:addVariable();
@@ -233,7 +235,7 @@ function Compiler:compile(ast)
                             Ast.ReturnStatement{
                                 Ast.FunctionCallExpression(Ast.VariableExpression(self.scope, self.containerFuncVar), {
                                     Ast.VariableExpression(createClosureScope, createClosurePosArg),
-                                    Ast.TableConstructorExpression({Ast.TableEntry(Ast.VarargExpression())}),
+                                    self:pack(createClosureSubScope, {Ast.TableEntry(Ast.VarargExpression())}),
                                     Ast.VariableExpression(createClosureScope, createClosureUpvalsArg), -- Upvalues
                                     Ast.VariableExpression(createClosureScope, createClosureProxyObject)
                                 })
@@ -291,6 +293,24 @@ function Compiler:compile(ast)
         assignmentStatRhs[i] = v.val;
     end
 
+    -- Explicit counts preserve a selected nil value through VM returns and varargs.
+    local rawUnpack = self.scope:addVariable();
+    local unpackScope, packScope = Scope:new(self.scope), Scope:new(self.scope);
+    local values, first, last = unpackScope:addVariable(), unpackScope:addVariable(), unpackScope:addVariable();
+    unpackScope:addReferenceToHigherScope(self.scope, rawUnpack);
+    packScope:addReferenceToHigherScope(self.scope, self.selectVar);
+    local packBody = Ast.Block({Ast.ReturnStatement({Ast.TableConstructorExpression({
+        Ast.KeyedTableEntry(Ast.StringExpression("n"), Ast.FunctionCallExpression(Ast.VariableExpression(self.scope, self.selectVar), {Ast.StringExpression("#"), Ast.VarargExpression()})),
+        Ast.TableEntry(Ast.VarargExpression()),
+    })})}, packScope);
+    local unpackBody = Ast.Block({Ast.ReturnStatement({Ast.FunctionCallExpression(Ast.VariableExpression(self.scope, rawUnpack), {
+        Ast.VariableExpression(unpackScope, values),
+        Ast.OrExpression(Ast.VariableExpression(unpackScope, first), Ast.NumberExpression(1)),
+        Ast.OrExpression(Ast.VariableExpression(unpackScope, last), Ast.OrExpression(
+            Ast.IndexExpression(Ast.VariableExpression(unpackScope, values), Ast.StringExpression("n")),
+            Ast.LenExpression(Ast.VariableExpression(unpackScope, values)))),
+    })})}, unpackScope);
+
     -- Emit Code
     local functionNode = Ast.FunctionLiteralExpression({
         Ast.VariableExpression(self.scope, self.envVar),
@@ -302,6 +322,11 @@ function Compiler:compile(ast)
         Ast.VariableExpression(self.scope, argVar),
         unpack(util.shuffle(tbl))
     }, Ast.Block({
+        Ast.LocalVariableDeclaration(self.scope, {rawUnpack}, {Ast.VariableExpression(self.scope, self.unpackVar)});
+        Ast.AssignmentStatement({Ast.AssignmentVariable(self.scope, self.unpackVar)}, {Ast.FunctionLiteralExpression({
+            Ast.VariableExpression(unpackScope, values), Ast.VariableExpression(unpackScope, first), Ast.VariableExpression(unpackScope, last),
+        }, unpackBody)});
+        Ast.LocalVariableDeclaration(self.scope, {self.packVar}, {Ast.FunctionLiteralExpression({Ast.VarargExpression()}, packBody)});
         Ast.AssignmentStatement(assignmentStatLhs, assignmentStatRhs);
         Ast.ReturnStatement{
             Ast.FunctionCallExpression(Ast.FunctionCallExpression(Ast.VariableExpression(self.scope, self.createVarargClosureVar), {
@@ -904,6 +929,13 @@ function Compiler:args(scope)
     return Ast.VariableExpression(self.containerFuncScope, self.argsVar);
 end
 
+function Compiler:pack(scope, entries)
+    scope:addReferenceToHigherScope(self.scope, self.packVar);
+    local args = {};
+    for i, entry in ipairs(entries) do args[i] = entry.value; end
+    return Ast.FunctionCallExpression(Ast.VariableExpression(self.scope, self.packVar), args);
+end
+
 function Compiler:unpack(scope)
     scope:addReferenceToHigherScope(self.scope, self.unpackVar);
     return Ast.VariableExpression(self.scope, self.unpackVar);
@@ -1072,7 +1104,7 @@ function Compiler:compileFunction(node, funcDepth)
             scope:addReferenceToHigherScope(self.containerFuncScope, self.argsVar);
             scope:addReferenceToHigherScope(self.scope, self.selectVar);
             scope:addReferenceToHigherScope(self.scope, self.unpackVar);
-            self:addStatement(self:setRegister(scope, self.varargReg, Ast.TableConstructorExpression({
+            self:addStatement(self:setRegister(scope, self.varargReg, self:pack(scope, {
                 Ast.TableEntry(Ast.FunctionCallExpression(Ast.VariableExpression(self.scope, self.selectVar), {
                     Ast.NumberExpression(i);
                     Ast.FunctionCallExpression(Ast.VariableExpression(self.scope, self.unpackVar), {
@@ -1170,7 +1202,7 @@ function Compiler:compileStatement(statement, funcDepth)
             self:freeRegister(reg, false);
         end
 
-        self:addStatement(self:setReturn(scope, Ast.TableConstructorExpression(entries)), {self.RETURN_REGISTER}, regs, false);
+        self:addStatement(self:setReturn(scope, self:pack(scope, entries)), {self.RETURN_REGISTER}, regs, false);
         self:addStatement(self:setPos(self.activeBlock.scope, nil), {self.POS_REGISTER}, {}, false);
         self.activeBlock.advanceToNextBlock = false;
         return;
@@ -2005,12 +2037,12 @@ function Compiler:compileExpression(expression, funcDepth, numReturns)
         end
 
         if(returnAll) then
-            self:addStatement(self:setRegister(scope, retRegs[1], Ast.TableConstructorExpression{Ast.TableEntry(Ast.FunctionCallExpression(self:register(scope, baseReg), args))}), {retRegs[1]}, {baseReg, unpack(regs)}, true);
+            self:addStatement(self:setRegister(scope, retRegs[1], self:pack(scope, {Ast.TableEntry(Ast.FunctionCallExpression(self:register(scope, baseReg), args))})), {retRegs[1]}, {baseReg, unpack(regs)}, true);
         else
             if(numReturns > 1) then
                 local tmpReg = self:allocRegister(false);
     
-                self:addStatement(self:setRegister(scope, tmpReg, Ast.TableConstructorExpression{Ast.TableEntry(Ast.FunctionCallExpression(self:register(scope, baseReg), args))}), {tmpReg}, {baseReg, unpack(regs)}, true);
+                self:addStatement(self:setRegister(scope, tmpReg, self:pack(scope, {Ast.TableEntry(Ast.FunctionCallExpression(self:register(scope, baseReg), args))})), {tmpReg}, {baseReg, unpack(regs)}, true);
     
                 for i, reg in ipairs(retRegs) do
                     self:addStatement(self:setRegister(scope, reg, Ast.IndexExpression(self:register(scope, tmpReg), Ast.NumberExpression(i))), {reg}, {tmpReg}, false);
@@ -2067,9 +2099,9 @@ function Compiler:compileExpression(expression, funcDepth, numReturns)
             self:addStatement(self:setRegister(scope, tmpReg, Ast.IndexExpression(self:register(scope, baseReg), self:register(scope, tmpReg))), {tmpReg}, {baseReg, tmpReg}, false);
 
             if returnAll then
-                self:addStatement(self:setRegister(scope, retRegs[1], Ast.TableConstructorExpression{Ast.TableEntry(Ast.FunctionCallExpression(self:register(scope, tmpReg), args))}), {retRegs[1]}, {tmpReg, unpack(regs)}, true);
+                self:addStatement(self:setRegister(scope, retRegs[1], self:pack(scope, {Ast.TableEntry(Ast.FunctionCallExpression(self:register(scope, tmpReg), args))})), {retRegs[1]}, {tmpReg, unpack(regs)}, true);
             else
-                self:addStatement(self:setRegister(scope, tmpReg, Ast.TableConstructorExpression{Ast.TableEntry(Ast.FunctionCallExpression(self:register(scope, tmpReg), args))}), {tmpReg}, {tmpReg, unpack(regs)}, true);
+                self:addStatement(self:setRegister(scope, tmpReg, self:pack(scope, {Ast.TableEntry(Ast.FunctionCallExpression(self:register(scope, tmpReg), args))})), {tmpReg}, {tmpReg, unpack(regs)}, true);
 
                 for i, reg in ipairs(retRegs) do
                     self:addStatement(self:setRegister(scope, reg, Ast.IndexExpression(self:register(scope, tmpReg), Ast.NumberExpression(i))), {reg}, {tmpReg}, false);
@@ -2108,6 +2140,50 @@ function Compiler:compileExpression(expression, funcDepth, numReturns)
             else
                self:addStatement(self:setRegister(scope, regs[i], Ast.NilExpression()), {regs[i]}, {}, false);
             end
+        end
+        return regs;
+    end
+
+    -- A conditional evaluates exactly one branch and produces one value, including false/nil.
+    if(expression.kind == AstKind.IfElseExpression) then
+        local posState = self.registers[self.POS_REGISTER];
+        self.registers[self.POS_REGISTER] = self.VAR_REGISTER;
+        local regs = {};
+        for i = 1, math.max(1, numReturns) do
+            regs[i] = self:allocRegister();
+            if i > 1 then
+                self:addStatement(self:setRegister(scope, regs[i], Ast.NilExpression()), {regs[i]}, {}, false);
+            end
+        end
+        local savedPos;
+        if posState then
+            savedPos = self:allocRegister(false);
+            self:addStatement(self:copyRegisters(scope, {savedPos}, {self.POS_REGISTER}), {savedPos}, {self.POS_REGISTER}, false);
+        end
+        local conditionReg = self:compileExpression(expression.condition, funcDepth, 1)[1];
+        local trueBlock, falseBlock, joinBlock = self:createBlock(), self:createBlock(), self:createBlock();
+        scope = self.activeBlock.scope;
+        self:addStatement(self:setRegister(scope, self.POS_REGISTER,
+            Ast.OrExpression(Ast.AndExpression(self:register(scope, conditionReg), Ast.NumberExpression(trueBlock.id)), Ast.NumberExpression(falseBlock.id))),
+            {self.POS_REGISTER}, {conditionReg}, false);
+        self:freeRegister(conditionReg, false);
+        for _, branch in ipairs({{trueBlock, expression.ifTrue}, {falseBlock, expression.ifFalse}}) do
+            self:setActiveBlock(branch[1]);
+            local valueReg = self:compileExpression(branch[2], funcDepth, 1)[1];
+            scope = self.activeBlock.scope;
+            self:addStatement(self:copyRegisters(scope, {regs[1]}, {valueReg}), {regs[1]}, {valueReg}, false);
+            self:freeRegister(valueReg, false);
+            self:addStatement(self:setRegister(scope, self.POS_REGISTER, Ast.NumberExpression(joinBlock.id)), {self.POS_REGISTER}, {}, false);
+        end
+        self.registers[self.POS_REGISTER] = posState;
+        self:setActiveBlock(joinBlock);
+        if savedPos then
+            self:addStatement(self:copyRegisters(joinBlock.scope, {self.POS_REGISTER}, {savedPos}), {self.POS_REGISTER}, {savedPos}, false);
+            self:freeRegister(savedPos, false);
+        end
+        if numReturns == 0 then
+            self:freeRegister(regs[1], false);
+            return {};
         end
         return regs;
     end

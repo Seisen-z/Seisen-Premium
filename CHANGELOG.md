@@ -28,5 +28,7 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- **Obfuscator**: Added Luau conditional expressions and floor division, preserving lazy branches and nil/vararg result counts. Added four-preset runtime regression tests.
+
 - **Admin Connection**: Resolved issues with admin replies not using the correct API.
 - **UI Consistency**: Standardized container widths and padding across the Client Area.

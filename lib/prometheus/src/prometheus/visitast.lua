@@ -182,6 +182,7 @@ local binaryExpressions = lookupify{
 	AstKind.SubExpression,
 	AstKind.MulExpression,
 	AstKind.DivExpression,
+	AstKind.FloorDivExpression,
 	AstKind.ModExpression,
 	AstKind.PowExpression,
 }
@@ -195,6 +196,12 @@ function visitExpression(expression, previsit, postvisit, data)
 		end
 	end
 	
+	if(expression.kind == AstKind.IfElseExpression) then
+		expression.condition = visitExpression(expression.condition, previsit, postvisit, data);
+		expression.ifTrue = visitExpression(expression.ifTrue, previsit, postvisit, data);
+		expression.ifFalse = visitExpression(expression.ifFalse, previsit, postvisit, data);
+	end
+
 	if(binaryExpressions[expression.kind]) then
 		expression.lhs = visitExpression(expression.lhs, previsit, postvisit, data);
 		expression.rhs = visitExpression(expression.rhs, previsit, postvisit, data);
