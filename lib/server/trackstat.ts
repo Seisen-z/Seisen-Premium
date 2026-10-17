@@ -10,12 +10,13 @@ async function thumbnail(path: string): Promise<string | null> {
 
 export async function trackstatMedia(robloxIds: string[]) {
   const icon = (universe: string) => thumbnail(`games/icons?universeIds=${universe}&size=512x512&format=Png&returnPolicy=PlaceHolder`);
-  const [avatarList, game, stealAnEgg] = await Promise.all([
+  const [avatarList, game, stealAnEgg, animeDice] = await Promise.all([
     Promise.all(robloxIds.map(async id => [id, /^\d+$/.test(id) ? await thumbnail(`users/avatar-headshot?userIds=${id}&size=150x150&format=Png`) : null] as const)),
     icon('3317771874'),
     icon('10563114921'),
+    icon('10708913337'),
   ]);
-  return { avatars: Object.fromEntries(avatarList), game, stealAnEgg };
+  return { avatars: Object.fromEntries(avatarList), game, stealAnEgg, animeDice };
 }
 
 export async function trackstatRPC<T>(name: string, args: Record<string, unknown> = {}, token?: string): Promise<T> {
@@ -31,7 +32,7 @@ export async function trackstatRPC<T>(name: string, args: Record<string, unknown
 }
 
 // Public Roblox images are copied once; private images are captured by the library.
-export async function trackstatCacheImage(folder: 'stealanegg' | 'petsimulator99', icon: string, image: string): Promise<boolean> {
+export async function trackstatCacheImage(folder: 'stealanegg' | 'petsimulator99' | 'animedice', icon: string, image: string): Promise<boolean> {
   if (!/^\d{1,20}$/.test(icon) || !/^https:\/\/[a-z0-9-]+\.rbxcdn\.com\//i.test(image)) return false;
   try {
     const response = await fetch(image, { next: { revalidate: 86400 }, signal: AbortSignal.timeout(8000) });

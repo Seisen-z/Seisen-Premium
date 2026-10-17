@@ -6,7 +6,7 @@ import { cacheGet, cacheNamespace, cacheSet } from './trackstat-cache';
 export type InventoryResult = { catalog: Record<string, CatalogEntry>; inventory: InventoryStack[] | null; updatedAt: string | null };
 
 // Shows the saved inventory at once and only asks the server when the account has synced since it was saved
-export async function loadInventory(roblox: string, game: 'ps' | 'sae', latestUpdatedAt: string | undefined, show: (result: InventoryResult) => void) {
+export async function loadInventory(roblox: string, game: 'ps' | 'sae' | 'ad', latestUpdatedAt: string | undefined, show: (result: InventoryResult) => void) {
   const key = `${await cacheNamespace()}:inventory:${game}:${roblox}`;
   const saved = await cacheGet<InventoryResult>(key);
   if (saved) show(saved);

@@ -14,14 +14,23 @@ async function icons(ids: string[]): Promise<Record<string, string>> {
   return out;
 }
 
+// Leading zero reserves these storage names for rendered models, not Roblox asset IDs.
+export function animeDiceModelIcon(key: string) {
+  let a = 5381, b = 0;
+  for (const byte of Buffer.from(key, 'utf8')) { a = (a * 33 + byte) % 4294967296; b = (b * 31 + byte) % 1000000000; }
+  return `0${String(a).padStart(10, '0')}${String(b).padStart(9, '0')}`;
+}
+
 // Names, rarity and pictures for the items in an inventory; Steal An Egg also looks up gained items by name
-export async function buildCatalog(inventory: InventoryStack[], stealAnEgg: boolean, names: string[] = []): Promise<Record<string, CatalogEntry>> {
-  const itemKeys = [...new Set(inventory.flatMap(entry => [entry.k, ...(!stealAnEgg ? entry.ch ?? [] : []).map(charm => `Charm:${charm}:1:`)]))];
-  const rows = itemKeys.length || names.length ? await trackstatRPC<Record<string, Omit<CatalogEntry, 'image'>>>(stealAnEgg ? 'trackstats_stealanegg_catalog_read' : 'trackstat_catalog_read', { p_keys: itemKeys, ...(stealAnEgg ? { p_names: names } : {}) }) : {};
-  const folder = stealAnEgg ? 'stealanegg' : 'petsimulator99';
+export async function buildCatalog(inventory: InventoryStack[], game: boolean | 'ad', names: string[] = []): Promise<Record<string, CatalogEntry>> {
+  const stealAnEgg = game === true, animeDice = game === 'ad';
+  const itemKeys = [...new Set(inventory.flatMap(entry => [entry.k, ...(!stealAnEgg && !animeDice ? entry.ch ?? [] : []).map(charm => `Charm:${charm}:1:`)]))];
+  const rows = itemKeys.length || names.length ? await trackstatRPC<Record<string, Omit<CatalogEntry, 'image'>>>(animeDice ? 'trackstats_animedice_catalog_read' : stealAnEgg ? 'trackstats_stealanegg_catalog_read' : 'trackstat_catalog_read', { p_keys: itemKeys, ...(stealAnEgg || animeDice ? { p_names: names } : {}) }) : {};
+  if (animeDice) for (const [key, row] of Object.entries(rows)) if (!row.icon && (row.kind === 'unit' || row.kind === 'gear')) row.icon = animeDiceModelIcon(key);
+  const folder = animeDice ? 'animedice' : stealAnEgg ? 'stealanegg' : 'petsimulator99';
   const ids = [...new Set(Object.values(rows).map(row => row.icon).filter((icon): icon is string => !!icon && /^\d{1,20}$/.test(icon)))];
   const cached = new Set(ids.length ? await trackstatRPC<string[]>('trackstat_image_manifest', { p_game: folder, p_icons: ids }) : []);
-  const images = await icons(ids.filter(icon => !cached.has(icon)).slice(0, 12));
+  const images = await icons(ids.filter(icon => !cached.has(icon) && !(animeDice && icon.startsWith('0'))).slice(0, 12));
   await Promise.all(Object.entries(images).map(async ([icon, image]) => {
     if (await trackstatCacheImage(folder, icon, image)) cached.add(icon);
   }));

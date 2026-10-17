@@ -1,10 +1,26 @@
 'use client';
 
-import { useMemo, useState, type ReactNode } from 'react';
+import { useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import { Gem, Search } from 'lucide-react';
+import inventoryStyles from './InventoryStats.module.css';
 import { compactCount, type Counts, type TrackstatDailyGains, type TrackstatSession } from '@/lib/trackstat';
 
-export const card = 'rounded-xl border border-ts-fg/[0.07] bg-ts-surface';
+export const card = 'ts-clay-card rounded-xl border border-ts-fg/[0.07] bg-ts-surface';
+export const inventoryStats = inventoryStyles.stats;
+const variantColors: Record<string, string> = { Silver: '#cbd5e1', Gold: '#fbbf24', Golden: '#fbbf24', Emerald: '#34d399', Ruby: '#f43f5e', Diamond: '#67e8f9', Shiny: '#fde68a' };
+export const variantStyle = (v: string): CSSProperties => v === 'Rainbow'
+  ? { backgroundImage: 'linear-gradient(90deg,#f87171,#fbbf24,#34d399,#60a5fa,#c084fc)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }
+  : { color: variantColors[v] ?? 'var(--ts-accent)' };
+export const VariantTag = ({ name }: { name: string }) => <span className="flex items-center gap-1 text-xs font-medium" style={variantStyle(name)}><span className="text-ts-fg/25">·</span><span>✦</span>{name}</span>;
+export function InventoryStat({ value, label, icon, tone, detail }: { value: string; label: string; icon: ReactNode; tone?: 'currency' | 'income'; detail?: string }) {
+  return <div className={inventoryStyles.stat} data-tone={tone}>
+    <span className={inventoryStyles.icon} aria-hidden="true">{icon}</span>
+    <div className={inventoryStyles.copy}>
+      <p className={inventoryStyles.value} title={detail ? `${value} (${detail})` : value}><span>{value}</span>{detail && <span className={inventoryStyles.detail}> ({detail})</span>}</p>
+      <p className={inventoryStyles.label}>{label}</p>
+    </div>
+  </div>;
+}
 export const button = 'rounded-lg border border-ts-fg/10 px-4 py-2.5 text-sm text-ts-fg/70 transition-colors hover:border-ts-accent/50 hover:text-ts-accent focus-visible:outline-2 focus-visible:outline-ts-accent disabled:opacity-40';
 export const total = (c: Counts) => Object.values(c).reduce((n, v) => n + v, 0);
 export const ago = (iso: string) => {

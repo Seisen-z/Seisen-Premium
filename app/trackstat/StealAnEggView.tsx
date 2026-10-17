@@ -6,7 +6,7 @@ import InventoryControls from './InventoryControls';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Activity, ArrowLeft, Boxes, ChevronRight, Clock, Coins, Egg, Gauge, PawPrint, Search, Star, Swords, TrendingUp, Users, Weight, Zap } from 'lucide-react';
 import { compactCount, type TrackstatDailyGains, type CatalogEntry, type InventoryStack, type TrackstatMedia, type TrackstatPublic, type TrackstatSession } from '@/lib/trackstat';
-import { CardSkeleton, DetailTable, GainChart, Img, Stat, ago, card, span, total } from './ui';
+import { CardSkeleton, DetailTable, GainChart, Img, Stat, ago, card, InventoryStat, inventoryStats, span, total, VariantTag } from './ui';
 
 type Tab = 'overview' | 'inventory' | 'gains' | 'history' | 'community';
 const tabs: { id: Tab; label: string; icon: typeof Activity }[] = [
@@ -17,29 +17,24 @@ const categories = [{ id: 'all', label: 'All' }, { id: 'pet', label: 'Pets' }, {
 const metrics = ['pets', 'eggs', 'gear', 'items'] as const;
 const kg = (value: number) => `${compactCount(value)} kg`;
 
-function MutationTags({ list }: { list?: string[] }) {
-  return list?.length ? <div className="flex flex-wrap gap-1">{list.map(m => <span key={m} className="rounded bg-ts-accent/15 px-1.5 py-0.5 text-[10px] text-ts-accent">{m}</span>)}</div> : null;
-}
-
 function InventoryCard({ stack, info }: { stack: InventoryStack; info?: CatalogEntry }) {
   const [kind, id] = stack.k.split(':');
   const color = info?.rarity_color ?? '#7458f5';
   return (
-    <div className={`${card} flex flex-col overflow-hidden`}>
-      <div className="relative grid h-28 place-items-center" style={{ background: `radial-gradient(circle at 50% 60%, ${color}33, transparent 70%)` }}>
+    <div className={`${card} relative flex flex-col`}>
+      {stack.a > 1 && <span className="absolute -right-2 -top-3 z-10 font-mono text-lg font-extrabold leading-none text-ts-fg [text-shadow:0_2px_4px_rgba(0,0,0,0.9)]" title={String(stack.a)}><span className="mr-px text-xs font-bold opacity-70">x</span>{compactCount(stack.a)}</span>}
+      <div className="relative grid h-28 place-items-center overflow-hidden rounded-t-xl" style={{ background: `radial-gradient(circle at 50% 60%, ${color}33, transparent 70%)` }}>
         <Img src={info?.stored} backup={info?.image} className="h-20 w-20 object-contain" fallback={<PawPrint size={28} className="text-ts-fg/25" />} />
         {stack.f && <Star size={16} className="absolute left-3 top-3 fill-ts-accent text-ts-accent" aria-label="Favorite" />}
-        {stack.a > 1 && <span className="absolute right-3 top-3 rounded-md bg-black/50 px-2 py-0.5 font-mono text-xs text-ts-fg" title={String(stack.a)}>x{compactCount(stack.a)}</span>}
         {stack.pl ? <span className="absolute bottom-2 right-3 rounded-md bg-black/50 px-2 py-0.5 text-[10px] uppercase tracking-wide text-ts-fg/70">Placed</span> : null}
       </div>
       <div className="flex flex-1 flex-col gap-2 p-4">
         <p className="break-words text-sm font-semibold leading-tight text-ts-fg">{info?.name ?? id}</p>
-        <p className="text-xs font-medium" style={{ color }}>{info?.rarity ?? kind}</p>
-        <MutationTags list={stack.m} />
+        <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs font-medium"><span style={{ color }}>{info?.rarity ?? kind}</span>{stack.m?.map(m => <VariantTag key={m} name={m} />)}</p>
         {kind !== 'pet' && kind !== 'egg' && info?.description && <p className="line-clamp-2 text-xs leading-5 text-ts-fg/45">{info.description}</p>}
-        <div className="mt-auto space-y-1 border-t border-ts-fg/[0.06] pt-3 text-xs">
-          {stack.w ? <p className="flex items-center gap-1 text-ts-fg/60"><Weight size={12} />{kg(stack.w)}</p> : null}
-          {stack.p ? <p className="flex items-center gap-1 text-ts-pos"><Coins size={12} />${compactCount(stack.p)}/s</p> : null}
+        <div className={inventoryStats}>
+          {stack.w ? <InventoryStat value={kg(stack.w)} label="Weight" icon={<Weight />} /> : null}
+          {stack.p ? <InventoryStat value={`$${compactCount(stack.p)}/s`} label="Income" icon={<Coins />} tone="income" /> : null}
         </div>
       </div>
     </div>
@@ -74,7 +69,7 @@ export function InventoryView({ stacks, catalog, loading }: { stacks?: Inventory
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">{Array.from({ length: 10 }, (_, i) => <CardSkeleton key={i} />)}</div>
       ) : shown.length ? (
         <>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">{shown.slice(0, limit).map((s, i) => <InventoryCard key={`${s.k}:${i}`} stack={s} info={catalog[s.k]} />)}</div>
+          <div className="grid grid-cols-2 gap-3 pt-3 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">{shown.slice(0, limit).map((s, i) => <InventoryCard key={`${s.k}:${i}`} stack={s} info={catalog[s.k]} />)}</div>
           {shown.length > limit && <button onClick={() => setLimit(l => l + 60)} className="mx-auto mt-6 block rounded-lg border border-ts-fg/10 px-4 py-2.5 text-sm text-ts-fg/70 hover:border-ts-accent/50 hover:text-ts-accent">Show more ({shown.length - limit})</button>}
         </>
       ) : <p className={`${card} p-8 text-sm text-ts-fg/40`}>Nothing matches.</p>}
@@ -157,7 +152,7 @@ export default function StealAnEggView({ sessions, daily = [], media, community,
           </div>
           {!!top.length && (
             <div className={`${card} mt-4 p-5`}>
-              <div className="mb-4 flex items-center justify-between"><h3 className="text-sm font-semibold text-ts-fg">Top Earners</h3><button onClick={() => setTab('inventory')} className="flex items-center gap-1 text-xs text-ts-accent hover:underline">Open inventory <ChevronRight size={12} /></button></div>
+              <div className="mb-4 flex items-center justify-between"><h3 className="text-sm font-semibold text-ts-fg">Most Valuable</h3><button onClick={() => setTab('inventory')} className="flex items-center gap-1 text-xs text-ts-accent hover:underline">Open inventory <ChevronRight size={12} /></button></div>
               <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
                 {top.map((t, i) => {
                   const info = catalog[t.k];
@@ -173,6 +168,7 @@ export default function StealAnEggView({ sessions, daily = [], media, community,
               </div>
             </div>
           )}
+          <p className="mt-4 text-xs text-ts-fg/40"><Clock className="mr-1 inline" size={12} />Inventory refreshes every 15 seconds from the library. Activity is retained for 8 days; the latest inventory is kept.</p>
         </>
       ) : tab === 'inventory' ? <InventoryView stacks={inventory} catalog={catalog} loading={hasInventory && loadedFor !== signature} />
       : tab === 'gains' ? (

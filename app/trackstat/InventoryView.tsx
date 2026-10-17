@@ -1,9 +1,9 @@
 "use client";
 import { useMemo, useState } from 'react';
-import { Gem, Search, Star } from 'lucide-react';
+import { Gem, Globe, Search, Star, TrendingUp } from 'lucide-react';
 import { compactCount, type CatalogEntry, type InventoryStack } from '@/lib/trackstat';
 import InventoryControls from './InventoryControls';
-import { CardSkeleton, Img, button, card } from './ui';
+import { CardSkeleton, Img, button, card, InventoryStat, inventoryStats, VariantTag } from './ui';
 
 export const categories = [
   { id: 'all', label: 'All', classes: [] as string[] }, { id: 'pets', label: 'Pets', classes: ['Pet'] }, { id: 'gems', label: 'Gems', classes: ['Currency'] },
@@ -17,17 +17,15 @@ function InventoryCard({ stack, info, catalog }: { stack: InventoryStack; info?:
   const color = info?.rarity_color ?? '#7458f5';
   const exclusive = info?.rarity === 'Exclusive' || !!stack.e;
   return (
-    <div className={`${card} flex flex-col overflow-hidden`}>
-      <div className="relative grid h-28 place-items-center" style={{ background: `radial-gradient(circle at 50% 60%, ${color}33, transparent 70%)` }}>
+    <div className={`${card} relative flex flex-col`}>
+      <span className="absolute -right-2 -top-3 z-10 font-mono text-lg font-extrabold leading-none text-ts-fg [text-shadow:0_2px_4px_rgba(0,0,0,0.9)]" title={String(stack.a)}><span className="mr-px text-xs font-bold opacity-70">x</span>{compactCount(stack.a)}</span>
+      <div className="relative grid h-28 place-items-center overflow-hidden rounded-t-xl" style={{ background: `radial-gradient(circle at 50% 60%, ${color}33, transparent 70%)` }}>
         <Img src={info?.stored} backup={info?.image} className="h-20 w-20 object-contain" fallback={<Gem size={28} className="text-ts-fg/25" />} />
         {stack.f && <Star size={16} className="absolute left-3 top-3 fill-ts-accent text-ts-accent" aria-label="Favorite" />}
-        <span className="absolute right-3 top-3 rounded-md bg-black/50 px-2 py-0.5 font-mono text-xs text-ts-fg" title={String(stack.a)}>x{compactCount(stack.a)}</span>
-        {stack.l ? <span className="absolute bottom-2 left-3 rounded-md bg-black/50 px-2 py-0.5 text-xs text-emerald-300">Lv {stack.l}</span> : null}
-        {variants[variant] && <span className="absolute bottom-2 right-3 rounded-md bg-black/50 px-2 py-0.5 text-[10px] uppercase tracking-wide text-ts-fg/70">{variants[variant]}</span>}
       </div>
       <div className="flex flex-1 flex-col gap-2 p-4">
         <p className="break-words text-sm font-semibold leading-tight text-ts-fg">{info?.name ?? id}</p>
-        <p className="text-xs font-medium" style={{ color }}>{info?.rarity ?? cls}{exclusive && ' ★'}</p>
+        <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs font-medium"><span style={{ color }}>{info?.rarity ?? cls}{exclusive && ' ★'}</span>{variants[variant] && <VariantTag name={variants[variant]} />}</p>
         {cls === 'Pet' && !!stack.cs && (
           <div className="flex flex-wrap gap-1" aria-label="Charm slots">{Array.from({ length: stack.cs }, (_, i) => {
             const charm = stack.ch?.[i];
@@ -37,9 +35,10 @@ function InventoryCard({ stack, info, catalog }: { stack: InventoryStack; info?:
           })}</div>
         )}
         {cls !== 'Pet' && info?.description && <p className="line-clamp-2 text-xs leading-5 text-ts-fg/45">{info.description}</p>}
-        <div className="mt-auto border-t border-ts-fg/[0.06] pt-3 text-xs">
-          {stack.x ? <p className="text-ts-fg/45">{compactCount(stack.x)} Exist</p> : null}
-          {stack.r ? <p className="mt-1 flex items-center gap-1 text-ts-cyan"><Gem size={12} />{compactCount(stack.r * stack.a)}{stack.a > 1 && <span className="text-ts-fg/40">({compactCount(stack.r)}/ea)</span>}</p> : null}
+        <div className={inventoryStats}>
+          {stack.l ? <InventoryStat value={String(stack.l)} label="Level" icon={<TrendingUp />} tone="income" /> : null}
+          {stack.x ? <InventoryStat value={compactCount(stack.x)} label="Exist" icon={<Globe />} /> : null}
+          {stack.r ? <InventoryStat value={compactCount(stack.r * stack.a)} label="RAP" icon={<Gem />} tone="currency" detail={stack.a > 1 ? `${compactCount(stack.r)}/ea` : undefined} /> : null}
         </div>
       </div>
     </div>
@@ -78,7 +77,7 @@ export default function InventoryView({ stacks, catalog, loading }: { stacks?: I
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">{Array.from({ length: 10 }, (_, i) => <CardSkeleton key={i} />)}</div>
       ) : shown.length ? (
         <>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">{shown.slice(0, limit).map((s, i) => <InventoryCard key={`${s.k}:${i}`} stack={s} info={catalog[s.k]} catalog={catalog} />)}</div>
+          <div className="grid grid-cols-2 gap-3 pt-3 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">{shown.slice(0, limit).map((s, i) => <InventoryCard key={`${s.k}:${i}`} stack={s} info={catalog[s.k]} catalog={catalog} />)}</div>
           {shown.length > limit && <button onClick={() => setLimit(l => l + 60)} className={`${button} mx-auto mt-6 block`}>Show more ({shown.length - limit})</button>}
         </>
       ) : <p className={`${card} p-8 text-sm text-ts-fg/40`}>Nothing matches.</p>}

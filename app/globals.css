@@ -205,3 +205,71 @@ body::after {
 }
 [data-ts-theme='dark'] { --ts-c1: #7458f5; --ts-c2: #22d3ee; --ts-c3: #34d399; --ts-c4: #fbbf24; --ts-c5: #fb7185; --ts-c6: #60a5fa; }
 [data-ts-theme='light'] { --ts-c1: #4f3be0; --ts-c2: #0891b2; --ts-c3: #16a34a; --ts-c4: #d97706; --ts-c5: #e11d48; --ts-c6: #2563eb; }
+
+/* ─── Trackstat claymorphism (BEGIN: remove this block and the "ts-clay-card" class in app/trackstat/ui.tsx to revert) ───
+   --clay is the strength: 0 = flat, 1 = full clay. */
+[data-ts-theme] { --clay: 0.2; }
+[data-ts-theme] .ts-clay-card {
+  border-color: color-mix(in srgb, var(--ts-fg) 4%, transparent);
+  background-image: linear-gradient(150deg, color-mix(in srgb, var(--ts-fg) calc(var(--clay) * 6%), transparent), transparent 60%);
+  box-shadow:
+    calc(var(--clay) * 14px) calc(var(--clay) * 18px) calc(var(--clay) * 40px) var(--ts-shadow),
+    calc(var(--clay) * -8px) calc(var(--clay) * -8px) calc(var(--clay) * 22px) color-mix(in srgb, var(--ts-fg) calc(var(--clay) * 8%), transparent),
+    inset 0 calc(var(--clay) * 6px) calc(var(--clay) * 14px) color-mix(in srgb, var(--ts-fg) calc(var(--clay) * 22%), transparent),
+    inset 0 calc(var(--clay) * -8px) calc(var(--clay) * 16px) color-mix(in srgb, var(--ts-shadow) 55%, transparent);
+}
+[data-ts-theme] .rounded-xl { border-radius: calc(0.75rem + var(--clay) * 1.25rem); }
+[data-ts-theme] .rounded-lg { border-radius: calc(0.5rem + var(--clay) * 0.75rem); }
+[data-ts-theme] .rounded-md { border-radius: calc(0.375rem + var(--clay) * 0.5rem); }
+[data-ts-theme] button[aria-pressed='false'] {
+  box-shadow:
+    calc(var(--clay) * 5px) calc(var(--clay) * 6px) calc(var(--clay) * 14px) var(--ts-shadow),
+    inset 0 calc(var(--clay) * 3px) calc(var(--clay) * 6px) color-mix(in srgb, var(--ts-fg) calc(var(--clay) * 22%), transparent);
+}
+[data-ts-theme] button[aria-pressed='true'] {
+  box-shadow:
+    calc(var(--clay) * 5px) calc(var(--clay) * 6px) calc(var(--clay) * 14px) color-mix(in srgb, var(--ts-accent) 35%, transparent),
+    inset 0 calc(var(--clay) * 3px) calc(var(--clay) * 6px) rgb(255 255 255 / calc(var(--clay) * 0.45)),
+    inset 0 calc(var(--clay) * -4px) calc(var(--clay) * 8px) rgb(0 0 0 / calc(var(--clay) * 0.35));
+}
+[data-ts-theme] input:not([type='checkbox']):not([type='radio']),
+[data-ts-theme] select {
+  box-shadow: inset 0 calc(var(--clay) * 5px) calc(var(--clay) * 10px) var(--ts-shadow), inset 0 calc(var(--clay) * -2px) calc(var(--clay) * 4px) color-mix(in srgb, var(--ts-fg) calc(var(--clay) * 8%), transparent);
+}
+[data-ts-theme] .ts-clay-side {
+  position: relative; z-index: 1;
+  background-image: linear-gradient(160deg, color-mix(in srgb, var(--ts-fg) calc(var(--clay) * 40%), transparent), transparent 45%);
+  box-shadow:
+    calc(var(--clay) * 14px) 0 calc(var(--clay) * 40px) var(--ts-shadow),
+    inset calc(var(--clay) * -6px) 0 calc(var(--clay) * 14px) color-mix(in srgb, var(--ts-fg) calc(var(--clay) * 45%), transparent),
+    inset 0 calc(var(--clay) * 6px) calc(var(--clay) * 12px) color-mix(in srgb, var(--ts-fg) calc(var(--clay) * 40%), transparent);
+}
+[data-ts-theme] .ts-clay-side .ts-clay-active {
+  box-shadow:
+    inset 0 calc(var(--clay) * 8px) calc(var(--clay) * 14px) var(--ts-shadow),
+    inset 0 calc(var(--clay) * -4px) calc(var(--clay) * 8px) color-mix(in srgb, var(--ts-fg) calc(var(--clay) * 45%), transparent);
+}
+[data-ts-theme] .ts-clay-side button[aria-label='Open Account'] {
+  box-shadow:
+    calc(var(--clay) * 5px) calc(var(--clay) * 7px) calc(var(--clay) * 14px) var(--ts-shadow),
+    inset 0 calc(var(--clay) * 4px) calc(var(--clay) * 7px) color-mix(in srgb, var(--ts-fg) calc(var(--clay) * 45%), transparent),
+    inset 0 calc(var(--clay) * -4px) calc(var(--clay) * 8px) color-mix(in srgb, var(--ts-shadow) 40%, transparent);
+}
+[data-ts-theme] .ts-clay-side .bg-ts-accent:not(.w-0\.5) {
+  box-shadow:
+    calc(var(--clay) * 3px) calc(var(--clay) * 4px) calc(var(--clay) * 10px) color-mix(in srgb, var(--ts-accent) 40%, transparent),
+    inset 0 calc(var(--clay) * 4px) calc(var(--clay) * 6px) rgb(255 255 255 / calc(var(--clay) * 0.5)),
+    inset 0 calc(var(--clay) * -4px) calc(var(--clay) * 8px) rgb(0 0 0 / calc(var(--clay) * 0.35));
+}
+[data-ts-theme] .ts-clay-card { transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), border-color 0.25s ease, box-shadow 0.25s ease; }
+[data-ts-theme] .ts-clay-card:hover {
+  transform: translateY(-6px) scale(1.012);
+  border-color: color-mix(in srgb, var(--ts-accent) 45%, transparent);
+  box-shadow:
+    0 18px 34px -8px var(--ts-shadow),
+    0 6px 14px color-mix(in srgb, var(--ts-accent) 18%, transparent),
+    inset 0 calc(var(--clay) * 6px) calc(var(--clay) * 14px) color-mix(in srgb, var(--ts-fg) calc(var(--clay) * 30%), transparent),
+    inset 0 calc(var(--clay) * -8px) calc(var(--clay) * 16px) color-mix(in srgb, var(--ts-shadow) 55%, transparent);
+}
+@media (prefers-reduced-motion: reduce) { [data-ts-theme] .ts-clay-card { transition: none; } }
+/* ─── Trackstat claymorphism (END) ─── */

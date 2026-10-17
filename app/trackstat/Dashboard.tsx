@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { Clock, Gauge, Info, Layers, Trophy, Users, Zap } from 'lucide-react';
-import { PET_SIMULATOR_99, STEAL_AN_EGG, compactCount, type TrackstatAccount } from '@/lib/trackstat';
+import { PET_SIMULATOR_99, STEAL_AN_EGG, ANIME_DICE, compactCount, type TrackstatAccount } from '@/lib/trackstat';
 import { AreaChart, ArcsChart, ChartCard, Empty, HBars, Sparkline, type AreaPoint } from './charts';
 import { Avatar, card, total } from './ui';
+import DashboardMostValuable from './DashboardMostValuable';
 
 const DAY = 86400e3;
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -84,7 +85,7 @@ export default function Dashboard({ accounts, avatarOf, nameOf, single = false }
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div><h2 className="flex items-center gap-2 text-xl font-semibold text-ts-fg">Dashboard<span title="Gains are items and pets added to your inventory while the library runs, including trades and rewards. Currency and regular pets are not counted." aria-label="What counts as a gain" tabIndex={0} className="text-ts-fg/35 hover:text-ts-fg"><Info size={15} /></span></h2><p className="mt-0.5 text-xs text-ts-fg/40">What your accounts gained. A new day starts at {resets} for you (midnight UTC).</p></div>
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex gap-1" role="group" aria-label="Game">{[['all', 'All games'], [PET_SIMULATOR_99, 'PS99'], [STEAL_AN_EGG, 'Steal an Egg']].map(([id, label]) => <button key={id} aria-pressed={game === id} onClick={() => setGame(id)} className={pill(game === id)}>{label}</button>)}</div>
+          <div className="flex gap-1" role="group" aria-label="Game">{[['all', 'All games'], [PET_SIMULATOR_99, 'PS99'], [STEAL_AN_EGG, 'Steal an Egg'], [ANIME_DICE, 'Anime Dice']].map(([id, label]) => <button key={id} aria-pressed={game === id} onClick={() => setGame(id)} className={pill(game === id)}>{label}</button>)}</div>
           {!single && <select aria-label="Account" value={acct} onChange={e => setAcct(e.target.value === 'all' ? 'all' : Number(e.target.value))} className="rounded-lg bg-ts-fg/[0.05] px-3 py-2 text-sm text-ts-fg outline-none focus-visible:ring-2 focus-visible:ring-ts-accent/40">
             <option value="all" className="bg-ts-surface">All accounts</option>
             {accounts.map(a => <option key={a.index} value={a.index} className="bg-ts-surface">{nameOf(a)}</option>)}
@@ -122,6 +123,7 @@ export default function Dashboard({ accounts, avatarOf, nameOf, single = false }
           <HBars rows={d.topItems.map(([id, it]) => ({ id, label: <span className="truncate">{it.name}<span className="ml-1.5 text-ts-fg/35">{it.kind}</span></span>, value: it.gained }))} empty="No item gains in this range." />
         </ChartCard>
       </div>
+      {!single && <DashboardMostValuable accounts={accounts} game={game} avatarOf={avatarOf} nameOf={nameOf} />}
     </div>
   );
 }

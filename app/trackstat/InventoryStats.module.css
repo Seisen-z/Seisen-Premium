@@ -1,0 +1,51 @@
+.stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: auto;
+  border-top: 1px solid color-mix(in srgb, var(--ts-fg) 6%, transparent);
+  padding-top: 0.75rem;
+}
+
+.stat {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  min-width: 0;
+  padding-inline: 0.75rem;
+}
+
+.stat:first-child { padding-inline-start: 0; }
+.stat:last-child { padding-inline-end: 0; }
+.stat + .stat { border-inline-start: 1px solid color-mix(in srgb, var(--ts-fg) 12%, transparent); }
+.stats:has(> .stat:nth-child(3)) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.stats:has(> .stat:nth-child(3)) > .stat { justify-content: center; padding-inline: 0.5rem; }
+.stats:has(> .stat:only-child) { grid-template-columns: minmax(0, 1fr); }
+.copy { min-width: 0; }
+.value, .label, .detail { margin: 0; }
+
+.value {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 0.25rem;
+  color: color-mix(in srgb, var(--ts-fg) 45%, transparent);
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1rem;
+}
+
+.value > span { white-space: nowrap; }
+
+.label {
+  margin-top: 0.2rem;
+  color: color-mix(in srgb, var(--ts-fg) 50%, transparent);
+  font-size: 0.625rem;
+  font-weight: 400;
+  line-height: 1.3;
+}
+
+.icon { display: flex; flex-shrink: 0; color: color-mix(in srgb, var(--ts-fg) 55%, transparent); }
+.icon > svg { width: 1rem; height: 1rem; }
+.stat[data-tone='currency'] .icon, .stat[data-tone='currency'] .value { color: var(--ts-cyan); }
+.stat[data-tone='income'] .icon, .stat[data-tone='income'] .value { color: var(--ts-pos); }
+.detail { color: color-mix(in srgb, var(--ts-fg) 45%, transparent); font-size: 0.625rem; line-height: 1rem; }

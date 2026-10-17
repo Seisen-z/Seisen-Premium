@@ -1,5 +1,6 @@
 // Shown on the What's new page, newest first. Keep each line short and plain.
 export const trackstatChangelog: { date: string; items: string[] }[] = [
+  { date: 'Oct 17, 2026', items: ['Anime Dice: inventory, unit details, money, rolls, rebirths and daily gains', 'Anime Dice layout matches the other games', 'Anime Dice unit and gear thumbnails', 'Inventory stats: clearer icons, spacing and inline RAP per-item prices', 'Dashboard: Most Valuable across your connected accounts'] },
   {
     date: 'Oct 16, 2026',
     items: [

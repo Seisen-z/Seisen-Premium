@@ -9,8 +9,9 @@ import Link from 'next/link';
 import { Activity, ArrowLeft, Boxes, CalendarDays, ChevronRight, Clock, Gem, LayoutGrid, Link2, List, PawPrint, RefreshCw, Search, TrendingUp, Users, Egg, Plus, Sun, Moon, LayoutDashboard, Settings as SettingsIcon, Sparkles, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useTrackstatTheme } from './theme';
 import type { Theme } from './themeConfig';
-import { PET_SIMULATOR_99, STEAL_AN_EGG, compactCount, type CatalogEntry, type Counts, type InventoryStack, type TrackstatAccount, type TrackstatResponse } from '@/lib/trackstat';
+import { PET_SIMULATOR_99, STEAL_AN_EGG, ANIME_DICE, compactCount, type CatalogEntry, type Counts, type InventoryStack, type TrackstatAccount, type TrackstatResponse } from '@/lib/trackstat';
 import StealAnEggView from './StealAnEggView';
+import AnimeDiceView from './AnimeDiceView';
 import AccountPopover from './AccountPopover';
 import Dashboard from './Dashboard';
 import Welcome from './Welcome';
@@ -37,7 +38,7 @@ export default function TrackstatPanel({ initialTheme }: { initialTheme: Theme }
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [page, setPage] = useState<'games' | 'connection' | 'dashboard' | 'settings' | 'whatsnew'>('games');
-  const [game, setGame] = useState<'ps99' | 'sae' | null>(null);
+  const [game, setGame] = useState<'ps99' | 'sae' | 'ad' | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [accountQuery, setAccountQuery] = useState('');
   const { settings, update } = useSettings();
@@ -144,6 +145,8 @@ export default function TrackstatPanel({ initialTheme }: { initialTheme: Theme }
   const allSessions = history?.sessions ?? [];
   const sessions = allSessions.filter(s => s.game_id === PET_SIMULATOR_99);
   const saeSessions = allSessions.filter(s => s.game_id === STEAL_AN_EGG);
+  const adSessions = allSessions.filter(s => s.game_id === ANIME_DICE);
+  const liveAd = history?.activeGames?.includes(ANIME_DICE) ?? false;
   const lastAny = allSessions[0];
   const gamesTracked = new Set(allSessions.map(s => s.game_id)).size;
   const selected = sessions.find(s => s.id === sessionId) || sessions[0];
@@ -223,6 +226,7 @@ export default function TrackstatPanel({ initialTheme }: { initialTheme: Theme }
             <Img src={data?.media?.stealAnEgg} className="h-14 w-14 shrink-0 rounded-lg bg-gradient-to-br from-ts-accent/25 to-ts-raised" fallback={<Egg size={24} className="text-ts-accent" />} />
             <div className="min-w-0"><p className="text-sm font-medium text-ts-fg">Steal an Egg</p><p className="mt-1 text-xs text-ts-fg/45">Money, speed, pets with weight and mutations, eggs, gear and items.</p></div>
           </div>
+          <div className="mt-3 flex items-center gap-4 rounded-lg border border-ts-fg/[0.06] p-3"><Img src={data?.media?.animeDice} className="h-14 w-14 shrink-0 rounded-lg" fallback={<Boxes size={24} />} /><div><p className="text-sm font-medium text-ts-fg">Anime Dice</p><p className="mt-1 text-xs text-ts-fg/45">Units, boosts, gear, tokens, money, rolls, rebirths and session gains.</p></div></div>
           <p className="mt-3 text-xs text-ts-fg/35">More games will be added over time.</p>
         </div>
       </div>
@@ -249,7 +253,7 @@ export default function TrackstatPanel({ initialTheme }: { initialTheme: Theme }
           )}
         </div>)}
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <h3 className="text-lg font-semibold text-ts-fg">Supported Games (2)</h3>
+          <h3 className="text-lg font-semibold text-ts-fg">Supported Games (3)</h3>
           <div className="flex items-center gap-2">
             <label className="relative"><Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ts-fg/35" /><input aria-label="Search game" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search game…" className="w-48 rounded-lg border border-ts-fg/10 bg-ts-surface py-2 pl-9 pr-3 text-sm text-ts-fg outline-none focus:border-ts-accent" /></label>
             {([false, true] as const).map(l => <button key={String(l)} aria-label={l ? 'List view' : 'Grid view'} aria-pressed={listView === l} onClick={() => setListView(l)} className={`grid h-9 w-9 place-items-center rounded-lg border ${listView === l ? 'border-ts-accent/50 bg-ts-accent/10 text-ts-accent' : 'border-ts-fg/10 text-ts-fg/50'}`}>{l ? <List size={16} /> : <LayoutGrid size={16} />}</button>)}
@@ -259,6 +263,7 @@ export default function TrackstatPanel({ initialTheme }: { initialTheme: Theme }
           const list = [
             { id: 'ps99' as const, name: 'Pet Simulator 99', image: data?.media?.game, icon: <PawPrint size={36} className="text-ts-accent" />, live, played: !!latest },
             { id: 'sae' as const, name: 'Steal an Egg', image: data?.media?.stealAnEgg, icon: <Egg size={36} className="text-ts-accent" />, live: liveSae, played: saeSessions.length > 0 },
+            { id: 'ad' as const, name: 'Anime Dice', image: data?.media?.animeDice, icon: <Boxes size={36} className="text-ts-accent" />, live: liveAd, played: adSessions.length > 0 },
           ].filter(g => g.name.toLowerCase().includes(search.trim().toLowerCase()));
           return list.length ? (
             <div className={listView ? 'space-y-3' : 'grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4'}>
@@ -276,6 +281,8 @@ export default function TrackstatPanel({ initialTheme }: { initialTheme: Theme }
         })()}
       </>
     );
+  } else if (game === 'ad') {
+    main = <AnimeDiceView sessions={adSessions} daily={(history?.daily ?? []).filter(day => day.game_id === ANIME_DICE)} media={data?.media} community={data?.publicAnimeDice} live={liveAd} roblox={history?.account.roblox_id ?? ''} onBack={() => setGame(null)} />;
   } else if (game === 'sae') {
     main = <StealAnEggView sessions={saeSessions} daily={(history?.daily ?? []).filter(day => day.game_id === STEAL_AN_EGG)} media={data.media} community={data.publicStealAnEgg} live={liveSae} roblox={history?.account.roblox_id ?? ''} onBack={() => setGame(null)} />;
   } else {
@@ -330,6 +337,7 @@ export default function TrackstatPanel({ initialTheme }: { initialTheme: Theme }
                 </div>
               </div>
             )}
+            <p className="mt-4 text-xs text-ts-fg/40"><Clock className="mr-1 inline" size={12} />Inventory refreshes every 15 seconds from the library. Activity is retained for 8 days; the latest inventory is kept.</p>
           </>
         ) : tab === 'inventory' ? <InventoryView stacks={stacks} catalog={catalog} loading={hasInventory && loadedFor !== inventoryKey} />
         : tab === 'gains' ? (
@@ -348,7 +356,7 @@ export default function TrackstatPanel({ initialTheme }: { initialTheme: Theme }
   }
 
   const collapsed = settings.collapsed;
-  const row = (active: boolean, compact = false) => `relative flex w-full items-center rounded-lg px-3 text-left transition-colors ${compact ? 'gap-2.5 py-1.5 text-[13px]' : 'gap-3 py-2.5 text-sm'} ${collapsed ? 'md:justify-center md:px-0' : ''} ${active ? 'bg-ts-fg/[0.07] font-medium text-ts-fg' : 'text-ts-fg/70 hover:bg-ts-fg/[0.04] hover:text-ts-fg'}`;
+  const row = (active: boolean, compact = false) => `relative flex w-full items-center rounded-lg px-3 text-left transition-colors ${compact ? 'gap-2.5 py-1.5 text-[13px]' : 'gap-3 py-2.5 text-sm'} ${collapsed ? 'md:justify-center md:px-0' : ''} ${active ? 'ts-clay-active bg-ts-fg/[0.07] font-medium text-ts-fg' : 'text-ts-fg/70 hover:bg-ts-fg/[0.04] hover:text-ts-fg'}`;
   const bar = <span className="absolute bottom-2 left-0 top-2 w-0.5 rounded-full bg-ts-accent" />;
   const divider = <div className="my-3 h-px bg-ts-fg/[0.07]" />;
   const shown = ordered.filter(a => nameOf(a).toLowerCase().includes(accountQuery.trim().toLowerCase()));
@@ -359,7 +367,7 @@ export default function TrackstatPanel({ initialTheme }: { initialTheme: Theme }
   );
   return (
     <div data-ts-theme={theme} className={`fixed inset-0 z-[200] overflow-auto bg-ts-bg md:grid ${collapsed ? 'md:grid-cols-[72px_minmax(0,1fr)]' : 'md:grid-cols-[270px_minmax(0,1fr)]'} md:overflow-hidden`}>
-      <aside className={`hidden flex-col bg-ts-side py-5 md:flex md:h-full md:overflow-auto ${collapsed ? 'px-3' : 'px-4'}`}>
+      <aside className={`ts-clay-side hidden flex-col bg-ts-side py-5 md:flex md:h-full md:overflow-auto ${collapsed ? 'px-3' : 'px-4'}`}>
         <div className={`flex items-center ${collapsed ? 'flex-col gap-3' : 'gap-3 px-1'}`}>
           <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-ts-accent text-ts-accent-fg"><Activity size={20} /></span>
           {!collapsed && <div className="min-w-0 flex-1"><h1 className="truncate text-base font-semibold leading-tight text-ts-fg">Trackstat</h1><p className="truncate text-xs text-ts-fg/45">Pet Simulator 99</p></div>}
