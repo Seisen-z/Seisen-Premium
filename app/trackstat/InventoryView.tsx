@@ -17,7 +17,7 @@ function InventoryCard({ stack, info, catalog }: { stack: InventoryStack; info?:
   const color = info?.rarity_color ?? '#7458f5';
   const exclusive = info?.rarity === 'Exclusive' || !!stack.e;
   return (
-    <div className={`${card} relative flex flex-col`}>
+    <div className={`${card} ts-hover relative flex flex-col`}>
       <span className="absolute -right-2 -top-3 z-10 font-mono text-lg font-extrabold leading-none text-ts-fg [text-shadow:0_2px_4px_rgba(0,0,0,0.9)]" title={String(stack.a)}><span className="mr-px text-xs font-bold opacity-70">x</span>{compactCount(stack.a)}</span>
       <div className="relative grid h-28 place-items-center overflow-hidden rounded-t-xl" style={{ background: `radial-gradient(circle at 50% 60%, ${color}33, transparent 70%)` }}>
         <Img src={info?.stored} backup={info?.image} className="h-20 w-20 object-contain" fallback={<Gem size={28} className="text-ts-fg/25" />} />

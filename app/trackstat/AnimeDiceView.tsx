@@ -5,7 +5,7 @@ import { Activity, ArrowLeft, Boxes, Gauge, Heart, Shirt, Swords, Timer, Chevron
 import { compactCount, type CatalogEntry, type InventoryStack, type TrackstatDailyGains, type TrackstatMedia, type TrackstatPublic, type TrackstatSession } from '@/lib/trackstat';
 import { loadInventory, type InventoryResult } from '@/lib/client/trackstat-inventory';
 import InventoryControls from './InventoryControls';
-import { CardSkeleton, DetailTable, GainChart, Img, Stat, ago, card, InventoryStat, inventoryStats, span, total, variantStyle } from './ui';
+import { CardSkeleton, DetailTable, GainChart, Img, Stat, ago, card, InventoryStat, inventoryStats, span, total, variantStyle, PlacedTag } from './ui';
 
 const categories = [['all', 'All'], ['unit', 'Units'], ['boost', 'Boosts'], ['gear', 'Gear'], ['token', 'Tokens'], ['spin', 'Spins']] as const;
 const metrics = ['units', 'boosts', 'gear', 'items'];
@@ -35,13 +35,13 @@ export function AnimeDiceInventory({ stacks, catalog, loading }: { stacks?: Inve
     {loading && !stacks ? <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">{[0, 1, 2, 3].map(i => <CardSkeleton key={i} />)}</div> : !stacks ? <p className={`${card} p-8 text-ts-fg/45`}>Inventory appears after the next sync.</p> : !shown.length ? <p className={`${card} p-8 text-ts-fg/45`}>Nothing matches.</p> : <>
       <div className="grid grid-cols-2 gap-3 pt-3 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">{shown.slice(0, limit).map((s, i) => {
         const info = catalog[s.k];
-        return <div key={`${s.k}:${i}`} className={`${card} relative flex flex-col`}>
+        return <div key={`${s.k}:${i}`} className={`${card} ts-hover relative flex flex-col`}>
           <span className="absolute -right-2 -top-3 z-10 font-mono text-lg font-extrabold leading-none text-ts-fg [text-shadow:0_2px_4px_rgba(0,0,0,0.9)]"><span className="mr-px text-xs font-bold opacity-70">x</span>{compactCount(s.a)}</span>
           <div className="relative grid h-28 place-items-center overflow-hidden rounded-t-xl" style={{ background: `radial-gradient(circle at 50% 60%, ${info?.rarity_color ?? '#bca275'}33, transparent 70%)` }}>
             <Img src={info?.stored} backup={info?.image} className="h-20 w-20 object-contain" fallback={<Dices size={28} className="text-ts-accent/60" />} />
             {s.lk && <Lock size={14} className="absolute left-2 top-2 text-ts-accent" aria-label="Locked" />}
           </div>
-          <div className="flex flex-1 flex-col gap-2 p-4"><div className="flex items-start justify-between gap-2"><p className="break-words text-sm font-semibold leading-tight text-ts-fg">{name(s)}</p>{s.pl ? <span className="flex shrink-0 items-center gap-1 rounded-full bg-ts-pos/10 px-2 py-0.5 text-[10px] font-medium text-ts-pos"><span className="h-1.5 w-1.5 rounded-full bg-ts-pos" />Placed</span> : null}</div>
+          <div className="flex flex-1 flex-col gap-2 p-4"><div className="flex items-start justify-between gap-2"><p className="break-words text-sm font-semibold leading-tight text-ts-fg">{name(s)}</p>{s.pl ? <PlacedTag /> : null}</div>
             <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs"><span style={{ color: info?.rarity_color ?? undefined }}>{info?.rarity ?? info?.kind}</span>{[...(s.m ?? []).map(m => ({ t: m, v: true })), ...(s.gr ? [{ t: `Grade ${s.gr}`, v: false }] : []), ...(s.tr ? [{ t: `Trait ${s.tr}`, v: false }] : [])].map((tag, n) => <span key={n} className={`flex items-center gap-1 font-medium ${tag.v ? '' : 'text-ts-fg/60'}`} style={tag.v ? variantStyle(tag.t) : undefined}><span className="text-ts-fg/25">·</span>{tag.v && <span>✦</span>}{tag.t}</span>)}</p>
             {info?.description && <p className="line-clamp-2 text-xs leading-5 text-ts-fg/45">{info.description}</p>}
             <div className={inventoryStats}>

@@ -268,7 +268,7 @@ export default function TrackstatPanel({ initialTheme }: { initialTheme: Theme }
           return list.length ? (
             <div className={listView ? 'space-y-3' : 'grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4'}>
               {list.map(g => (
-                <button key={g.id} onClick={() => setGame(g.id)} className={`${card} group w-full ${listView ? 'flex items-center' : ''} overflow-hidden text-left transition-colors hover:border-ts-accent/40 focus-visible:outline-2 focus-visible:outline-ts-accent`}>
+                <button key={g.id} onClick={() => setGame(g.id)} className={`${card} ts-hover group w-full ${listView ? 'flex items-center' : ''} overflow-hidden text-left transition-colors hover:border-ts-accent/40 focus-visible:outline-2 focus-visible:outline-ts-accent`}>
                   <Img src={g.image} className={`bg-gradient-to-br from-ts-accent/25 to-ts-raised ${listView ? 'h-20 w-32 shrink-0' : 'h-36 w-full'}`} fallback={g.icon} />
                   <div className="flex min-w-0 flex-1 items-center justify-between p-4">
                     <div><p className="text-sm font-medium text-ts-fg">{g.name}</p><p className={`mt-1 flex items-center gap-2 text-xs ${g.live ? 'text-ts-pos' : 'text-ts-fg/40'}`}><span className={`h-1.5 w-1.5 rounded-full ${g.live ? 'bg-ts-pos' : 'bg-ts-fg/30'}`} />{g.live ? 'Tracking' : history && g.played ? 'Not tracking' : 'Not played'}</p></div>

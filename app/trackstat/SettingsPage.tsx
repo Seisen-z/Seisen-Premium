@@ -18,7 +18,7 @@ function Row({ title, hint, children }: { title: string; hint: string; children:
 export default function SettingsPage({ settings, update, onClearData, children }: { settings: Settings; update: (change: Partial<Settings>) => void; onClearData: () => void; children?: ReactNode }) {
   const [cleared, setCleared] = useState(false);
   return (
-    <div className="max-w-2xl space-y-5">
+    <div className="mx-auto max-w-2xl space-y-5">
       <div><h2 className="text-xl font-semibold text-ts-fg">Settings</h2><p className="mt-0.5 text-xs text-ts-fg/40">Saved in this browser only.</p></div>
       <div className={`${card} divide-y divide-ts-fg/[0.06] px-5`}>
         <Row title="Number format" hint="Show large numbers as 1.5K or in full, like 1,500.">

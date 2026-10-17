@@ -4,7 +4,7 @@ import { trackstatChangelog } from './changelog';
 
 export default function WhatsNew() {
   return (
-    <div className="max-w-2xl space-y-5">
+    <div className="mx-auto max-w-2xl space-y-5">
       <div><h2 className="text-xl font-semibold text-ts-fg">What&apos;s new</h2><p className="mt-0.5 text-xs text-ts-fg/40">Recent changes to Trackstat.</p></div>
       {trackstatChangelog.map(entry => (
         <div key={entry.date} className={`${card} p-5`}>

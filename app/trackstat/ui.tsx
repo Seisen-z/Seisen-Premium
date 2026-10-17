@@ -11,6 +11,7 @@ const variantColors: Record<string, string> = { Silver: '#cbd5e1', Gold: '#fbbf2
 export const variantStyle = (v: string): CSSProperties => v === 'Rainbow'
   ? { backgroundImage: 'linear-gradient(90deg,#f87171,#fbbf24,#34d399,#60a5fa,#c084fc)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }
   : { color: variantColors[v] ?? 'var(--ts-accent)' };
+export const PlacedTag = () => <span className="flex shrink-0 items-center gap-1 rounded-full bg-ts-pos/10 px-2 py-0.5 text-[10px] font-medium text-ts-pos"><span className="h-1.5 w-1.5 rounded-full bg-ts-pos" />Placed</span>;
 export const VariantTag = ({ name }: { name: string }) => <span className="flex items-center gap-1 text-xs font-medium" style={variantStyle(name)}><span className="text-ts-fg/25">·</span><span>✦</span>{name}</span>;
 export function InventoryStat({ value, label, icon, tone, detail }: { value: string; label: string; icon: ReactNode; tone?: 'currency' | 'income'; detail?: string }) {
   return <div className={inventoryStyles.stat} data-tone={tone}>

@@ -262,8 +262,8 @@ body::after {
     inset 0 calc(var(--clay) * -4px) calc(var(--clay) * 8px) rgb(0 0 0 / calc(var(--clay) * 0.35));
 }
 [data-ts-theme] .ts-clay-card { transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), border-color 0.25s ease, box-shadow 0.25s ease; }
-[data-ts-theme] .ts-clay-card:hover {
-  transform: translateY(-6px) scale(1.012);
+[data-ts-theme] .ts-clay-card.ts-hover:hover {
+  transform: translateY(-4px) scale(1.009);
   border-color: color-mix(in srgb, var(--ts-accent) 45%, transparent);
   box-shadow:
     0 18px 34px -8px var(--ts-shadow),

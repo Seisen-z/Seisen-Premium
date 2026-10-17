@@ -6,7 +6,7 @@ import InventoryControls from './InventoryControls';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Activity, ArrowLeft, Boxes, ChevronRight, Clock, Coins, Egg, Gauge, PawPrint, Search, Star, Swords, TrendingUp, Users, Weight, Zap } from 'lucide-react';
 import { compactCount, type TrackstatDailyGains, type CatalogEntry, type InventoryStack, type TrackstatMedia, type TrackstatPublic, type TrackstatSession } from '@/lib/trackstat';
-import { CardSkeleton, DetailTable, GainChart, Img, Stat, ago, card, InventoryStat, inventoryStats, span, total, VariantTag } from './ui';
+import { CardSkeleton, DetailTable, GainChart, Img, Stat, ago, card, InventoryStat, inventoryStats, span, total, VariantTag, PlacedTag } from './ui';
 
 type Tab = 'overview' | 'inventory' | 'gains' | 'history' | 'community';
 const tabs: { id: Tab; label: string; icon: typeof Activity }[] = [
@@ -21,15 +21,14 @@ function InventoryCard({ stack, info }: { stack: InventoryStack; info?: CatalogE
   const [kind, id] = stack.k.split(':');
   const color = info?.rarity_color ?? '#7458f5';
   return (
-    <div className={`${card} relative flex flex-col`}>
+    <div className={`${card} ts-hover relative flex flex-col`}>
       {stack.a > 1 && <span className="absolute -right-2 -top-3 z-10 font-mono text-lg font-extrabold leading-none text-ts-fg [text-shadow:0_2px_4px_rgba(0,0,0,0.9)]" title={String(stack.a)}><span className="mr-px text-xs font-bold opacity-70">x</span>{compactCount(stack.a)}</span>}
       <div className="relative grid h-28 place-items-center overflow-hidden rounded-t-xl" style={{ background: `radial-gradient(circle at 50% 60%, ${color}33, transparent 70%)` }}>
         <Img src={info?.stored} backup={info?.image} className="h-20 w-20 object-contain" fallback={<PawPrint size={28} className="text-ts-fg/25" />} />
         {stack.f && <Star size={16} className="absolute left-3 top-3 fill-ts-accent text-ts-accent" aria-label="Favorite" />}
-        {stack.pl ? <span className="absolute bottom-2 right-3 rounded-md bg-black/50 px-2 py-0.5 text-[10px] uppercase tracking-wide text-ts-fg/70">Placed</span> : null}
       </div>
       <div className="flex flex-1 flex-col gap-2 p-4">
-        <p className="break-words text-sm font-semibold leading-tight text-ts-fg">{info?.name ?? id}</p>
+        <div className="flex items-start justify-between gap-2"><p className="break-words text-sm font-semibold leading-tight text-ts-fg">{info?.name ?? id}</p>{stack.pl ? <PlacedTag /> : null}</div>
         <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs font-medium"><span style={{ color }}>{info?.rarity ?? kind}</span>{stack.m?.map(m => <VariantTag key={m} name={m} />)}</p>
         {kind !== 'pet' && kind !== 'egg' && info?.description && <p className="line-clamp-2 text-xs leading-5 text-ts-fg/45">{info.description}</p>}
         <div className={inventoryStats}>
