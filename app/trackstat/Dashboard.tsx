@@ -103,22 +103,22 @@ export default function Dashboard({ accounts, avatarOf, nameOf, single = false }
         <Kpi icon={<Trophy size={14} />} label="Best day" value={d.best ? compactCount(d.best.v) : '—'} hint={d.best ? shortDay(d.best.day) : 'No gains yet'} />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
+      <div className={single ? '' : 'grid gap-4 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]'}>
         <ChartCard title="Overview" hint="Gains per day, last 7 days (UTC)" info="Gains are items and pets added to your inventory while the library runs, including trades and rewards.">
           {d.weekPoints.some(p => p.value > 0) ? <AreaChart points={d.weekPoints} label="Gains per day over the last 7 days" /> : <Empty>No gains recorded in the last 7 days.</Empty>}
         </ChartCard>
-        <ChartCard title={byAccount ? 'Share of gains' : 'Gains by type'} hint={byAccount ? `Per account, ${range}` : range}>
+        {!single && <ChartCard title={byAccount ? 'Share of gains' : 'Gains by type'} hint={byAccount ? `Per account, ${range}` : range}>
           {structure.some(r => r.value > 0) ? <ArcsChart rows={structure} label={byAccount ? 'Gains by account' : 'Gains by type'} /> : <Empty>No gains recorded in this range.</Empty>}
-        </ChartCard>
+        </ChartCard>}
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <ChartCard title="Gains by account" hint={range}>
+      <div className={single ? '' : 'grid gap-4 lg:grid-cols-2'}>
+        {!single && <ChartCard title="Gains by account" hint={range}>
           <HBars rows={[...d.perAccount].sort((x, y) => y.gained - x.gained).map(x => ({
             id: String(x.a.index), value: x.gained,
             label: <><Avatar src={avatarOf(x.a.account.roblox_id)} name={x.a.account.username} small /><span className="truncate">{nameOf(x.a)}</span>{x.live && <span title="Library running" className="h-1.5 w-1.5 shrink-0 rounded-full bg-ts-pos" />}</>,
           }))} empty="No accounts connected." />
-        </ChartCard>
+        </ChartCard>}
         <ChartCard title="Top gained" hint="Most gained items and pets">
           <HBars rows={d.topItems.map(([id, it]) => ({ id, label: <span className="truncate">{it.name}<span className="ml-1.5 text-ts-fg/35">{it.kind}</span></span>, value: it.gained }))} empty="No item gains in this range." />
         </ChartCard>

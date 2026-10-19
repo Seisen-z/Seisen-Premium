@@ -2,7 +2,7 @@ export type Counts = Record<string, number>;
 export type TrackstatSnapshot = {
   owned: Counts;
   gained: Counts;
-  details: { name: string; kind: string; owned: number; gained: number }[];
+  details: { name: string; kind: string; owned: number; gained: number; t?: number }[];
   inventory?: InventoryStack[];
   // Reads leave the inventory out; the newest session says whether it has one and what it is worth
   inventory_value?: number | null;

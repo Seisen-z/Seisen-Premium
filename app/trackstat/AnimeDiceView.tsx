@@ -5,7 +5,7 @@ import { Activity, ArrowLeft, Boxes, Gauge, Heart, Shirt, Swords, Timer, Chevron
 import { compactCount, type CatalogEntry, type InventoryStack, type TrackstatDailyGains, type TrackstatMedia, type TrackstatPublic, type TrackstatSession } from '@/lib/trackstat';
 import { loadInventory, type InventoryResult } from '@/lib/client/trackstat-inventory';
 import InventoryControls from './InventoryControls';
-import { CardSkeleton, DetailTable, GainChart, Img, Stat, ago, card, InventoryStat, inventoryStats, span, total, variantStyle, PlacedTag } from './ui';
+import { CardSkeleton, DetailTable, GainChart, Img, Stat, ago, gainAt, card, InventoryStat, inventoryStats, span, total, variantStyle, PlacedTag } from './ui';
 
 const categories = [['all', 'All'], ['unit', 'Units'], ['boost', 'Boosts'], ['gear', 'Gear'], ['token', 'Tokens'], ['spin', 'Spins']] as const;
 const metrics = ['units', 'boosts', 'gear', 'items'];
@@ -82,7 +82,7 @@ export default function AnimeDiceView({ sessions, daily, media, community, live,
   const images = useMemo(() => Object.fromEntries(Object.values(catalog).map(c => [c.name.toLowerCase(), c.stored ?? c.image])), [catalog]);
   const backups = useMemo(() => Object.fromEntries(Object.values(catalog).map(c => [c.name.toLowerCase(), c.image])), [catalog]);
   const top = [...(inventory ?? [])].filter(s => s.p).sort((x, y) => (y.p ?? 0) - (x.p ?? 0)).slice(0, 6);
-  const recent = sessions.flatMap(s => s.snapshot.details.filter(d => d.gained > 0 && (recentCategory === 'all' || d.kind === recentCategory)).map(d => ({ ...d, at: s.updated_at }))).slice(0, 10);
+  const recent = sessions.flatMap(s => s.snapshot.details.filter(d => d.gained > 0 && (recentCategory === 'all' || d.kind === recentCategory)).map(d => ({ ...d, at: gainAt(d, s.updated_at) }))).sort((x, y) => Date.parse(y.at) - Date.parse(x.at)).slice(0, 10);
   return <>
       <div className={`${card} mb-4 p-5`}>
         <div className="flex items-center gap-4">

@@ -1,4 +1,4 @@
-import { bearer, trackstatEntries, cookieName, cookieOptions, readKeys, keyPattern, maxKeys } from '@/lib/server/trackstat-accounts';
+import { bearer, trackstatEntries, cookieName, cookieOptions, readKeys, keyPattern, maxKeys, markSeen } from '@/lib/server/trackstat-accounts';
 import { NextRequest, NextResponse } from 'next/server';
 import { trackstatMedia, trackstatRPC } from '@/lib/server/trackstat';
 import { rateLimit, getClientIp, rateLimitResponse } from '@/lib/server/rate-limit';
@@ -17,6 +17,7 @@ export async function GET(req: NextRequest) {
   const limit = rateLimit(`trackstat:read:${getClientIp(req)}`, 60, 60000);
   if (!limit.allowed) return rateLimitResponse(limit);
   try {
+    void markSeen(readKeys(req));
     // A short fingerprint of everything shown (plus a 30 minute step for the community totals); an unchanged page downloads nothing
     const fingerprint = trackstatRPC<string>('trackstat_version', { p_keys: readKeys(req) }, bearer(req)).then(version => `"v2-${version}-${Math.floor(Date.now() / 1800000)}"`).catch(() => null);
     const known = req.headers.get('if-none-match');
@@ -57,6 +58,7 @@ export async function POST(req: NextRequest) {
     const claim = await trackstatRPC<{ claimed: boolean; mine: boolean }>('trackstat_key_claim', { p_key: key }, token);
     if (claim.claimed && !claim.mine) return NextResponse.json({ error: 'This key is linked to an email account. Sign in with that email to use it.' }, { status: 403, headers });
     const connected = await trackstatRPC<TrackstatHistory>('trackstat_private', { p_key: key });
+    await markSeen([key]);
     const current = await trackstatEntries(req);
     const same = current.entries.findIndex(e => e.history.account.roblox_id === connected.account.roblox_id);
     if (current.entries.length >= maxAccounts && same < 0) return NextResponse.json({ error: 'You can connect up to 10 accounts.' }, { status: 400, headers });

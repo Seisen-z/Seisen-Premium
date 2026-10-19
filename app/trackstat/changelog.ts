@@ -1,5 +1,6 @@
 // Shown on the What's new page, newest first. Keep each line short and plain.
 export const trackstatChangelog: { date: string; items: string[] }[] = [
+  { date: 'Oct 20, 2026', items: ['Gentler refresh: the library and page sync every 30 seconds', 'History is kept for 7 days', 'Shared page: full width, only Overview and Top gained', 'Recent activity shows when each item was really gained'] },
   { date: 'Oct 17, 2026', items: ['Anime Dice: inventory, unit details, money, rolls, rebirths and daily gains', 'Anime Dice layout matches the other games', 'Anime Dice unit and gear thumbnails', 'Inventory stats: clearer icons, spacing and inline RAP per-item prices', 'Dashboard: Most Valuable across your connected accounts', 'Dashboard: Most Valuable follows the game you pick, one row', 'Most Valuable section on every game', 'Anime Dice: gear, boost and spin stats on cards', 'Cards: quantity on the corner, new variant and level tags, same look in every game', 'Softer clay look and a lift effect when you hover cards'] },
   {
     date: 'Oct 16, 2026',

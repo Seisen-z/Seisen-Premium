@@ -46,7 +46,7 @@ export default function SharedView({ data, avatar, token, initialTheme }: { data
   const current = shown ? loaded[shown] : undefined;
   return (
     <div data-ts-theme={theme} className="fixed inset-0 z-[200] overflow-auto bg-ts-bg">
-      <div className="mx-auto max-w-5xl p-5 md:p-8">
+      <div className="p-5 md:p-8">
         <header className="mb-6 flex flex-wrap items-center gap-4">
           <Avatar src={avatar} name={data.account.username} />
           <div className="min-w-0 flex-1">

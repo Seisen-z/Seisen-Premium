@@ -25,7 +25,7 @@ export default function SettingsPage({ settings, update, onClearData, children }
           <button aria-pressed={!settings.fullNumbers} onClick={() => update({ fullNumbers: false })} className={pill(!settings.fullNumbers)}>1.5K</button>
           <button aria-pressed={settings.fullNumbers} onClick={() => update({ fullNumbers: true })} className={pill(settings.fullNumbers)}>1,500</button>
         </Row>
-        <Row title="Refresh speed" hint="While a library is running the page refreshes every 15 seconds. Relaxed uses every 30 seconds and downloads half as much.">
+        <Row title="Refresh speed" hint="While a library is running the page refreshes every 30 seconds. Relaxed uses every 60 seconds and downloads half as much.">
           <button aria-pressed={!settings.relaxedRefresh} onClick={() => update({ relaxedRefresh: false })} className={pill(!settings.relaxedRefresh)}>Normal</button>
           <button aria-pressed={settings.relaxedRefresh} onClick={() => update({ relaxedRefresh: true })} className={pill(settings.relaxedRefresh)}>Relaxed</button>
         </Row>

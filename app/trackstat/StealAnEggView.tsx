@@ -6,7 +6,7 @@ import InventoryControls from './InventoryControls';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Activity, ArrowLeft, Boxes, ChevronRight, Clock, Coins, Egg, Gauge, PawPrint, Search, Star, Swords, TrendingUp, Users, Weight, Zap } from 'lucide-react';
 import { compactCount, type TrackstatDailyGains, type CatalogEntry, type InventoryStack, type TrackstatMedia, type TrackstatPublic, type TrackstatSession } from '@/lib/trackstat';
-import { CardSkeleton, DetailTable, GainChart, Img, Stat, ago, card, InventoryStat, inventoryStats, span, total, VariantTag, PlacedTag } from './ui';
+import { CardSkeleton, DetailTable, GainChart, Img, Stat, ago, gainAt, card, InventoryStat, inventoryStats, span, total, VariantTag, PlacedTag } from './ui';
 
 type Tab = 'overview' | 'inventory' | 'gains' | 'history' | 'community';
 const tabs: { id: Tab; label: string; icon: typeof Activity }[] = [
@@ -104,7 +104,7 @@ export default function StealAnEggView({ sessions, daily = [], media, community,
   }, [signature]); // eslint-disable-line react-hooks/exhaustive-deps
   const images = useMemo(() => Object.fromEntries(Object.values(catalog).map(c => [c.name.toLowerCase(), c.stored ?? c.image])), [catalog]);
   const backups = useMemo(() => Object.fromEntries(Object.values(catalog).map(c => [c.name.toLowerCase(), c.image])), [catalog]);
-  const recent = sessions.flatMap(s => s.snapshot.details.filter(d => d.gained > 0 && (recentCategory === 'all' || d.kind === recentCategory)).map(d => ({ ...d, at: s.updated_at }))).slice(0, 10);
+  const recent = sessions.flatMap(s => s.snapshot.details.filter(d => d.gained > 0 && (recentCategory === 'all' || d.kind === recentCategory)).map(d => ({ ...d, at: gainAt(d, s.updated_at) }))).sort((x, y) => Date.parse(y.at) - Date.parse(x.at)).slice(0, 10);
   const top = [...(inventory ?? [])].filter(s => s.k.startsWith('pet:')).sort((a, b) => (b.p ?? 0) - (a.p ?? 0)).slice(0, 6);
 
   return (

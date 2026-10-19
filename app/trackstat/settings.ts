@@ -10,7 +10,7 @@ export type Settings = {
   names: Record<string, string>;
   order: string[];
 };
-const defaults: Settings = { fullNumbers: false, collapsed: false, relaxedRefresh: false, names: {}, order: [] };
+const defaults: Settings = { fullNumbers: false, collapsed: false, relaxedRefresh: true, names: {}, order: [] };
 const storageKey = 'trackstat-settings';
 const listeners = new Set<() => void>();
 let current: Settings | null = null;

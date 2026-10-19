@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { trackstatRPC } from '@/lib/server/trackstat';
+import { serverInventory } from '@/lib/server/trackstat-inventory';
 import { buildCatalog } from '@/lib/server/trackstat-catalog';
 import { rateLimit, getClientIp, rateLimitResponse } from '@/lib/server/rate-limit';
 import { PET_SIMULATOR_99, STEAL_AN_EGG, ANIME_DICE, type InventoryStack } from '@/lib/trackstat';
@@ -17,7 +18,8 @@ export async function GET(req: NextRequest) {
   const gameId = animeDice ? ANIME_DICE : stealAnEgg ? STEAL_AN_EGG : PET_SIMULATOR_99;
   if (!/^[A-Za-z0-9_-]{20,64}$/.test(token)) return NextResponse.json({ catalog: {}, inventory: null }, { headers });
   try {
-    const found = await trackstatRPC<{ inventory: InventoryStack[] | null }>('trackstat_shared_inventory', { p_token: token, p_game: gameId });
+    const moved = await serverInventory(await trackstatRPC<string>('trackstat_shared_account', { p_token: token }), gameId);
+    const found = moved ?? await trackstatRPC<{ inventory: InventoryStack[] | null }>('trackstat_shared_inventory', { p_token: token, p_game: gameId });
     return NextResponse.json({ catalog: await buildCatalog(found.inventory ?? [], animeDice ? 'ad' : stealAnEgg), inventory: found.inventory }, { headers });
   } catch { return NextResponse.json({ catalog: {}, inventory: null }, { headers }); }
 }

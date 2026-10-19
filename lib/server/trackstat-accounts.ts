@@ -9,6 +9,18 @@ export const cookieOptions = { httpOnly: true, secure: process.env.NODE_ENV === 
 export const readKeys = (req: NextRequest) => [...new Set((req.cookies.get(cookieName)?.value ?? '').split(',').filter(key => keyPattern.test(key)))].slice(0, maxKeys);
 export const bearer = (req: NextRequest) => req.headers.get('authorization')?.match(/^Bearer ([A-Za-z0-9_.-]{20,8192})$/)?.[1];
 export type { TrackstatEntry } from '@/lib/trackstat-merge';
+
+const seenAt = new Map<string, number>();
+// Tells the database these keys were used on the website, which is what keeps an account's data stored.
+// This server asks at most once an hour per key, and the database throttles it again.
+export function markSeen(keys: string[]) {
+  const now = Date.now();
+  if (seenAt.size > 5000) seenAt.clear();
+  const fresh = keys.filter(key => now - (seenAt.get(key) ?? 0) > 3600e3).slice(0, 60);
+  if (!fresh.length) return Promise.resolve();
+  fresh.forEach(key => seenAt.set(key, now));
+  return trackstatRPC('trackstat_site_seen', { p_keys: fresh }).then(() => undefined, () => { fresh.forEach(key => seenAt.delete(key)); });
+}
 export async function trackstatEntries(req: NextRequest) {
   const keys = readKeys(req);
   const token = bearer(req);

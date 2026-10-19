@@ -24,6 +24,8 @@ export function InventoryStat({ value, label, icon, tone, detail }: { value: str
 }
 export const button = 'rounded-lg border border-ts-fg/10 px-4 py-2.5 text-sm text-ts-fg/70 transition-colors hover:border-ts-accent/50 hover:text-ts-accent focus-visible:outline-2 focus-visible:outline-ts-accent disabled:opacity-40';
 export const total = (c: Counts) => Object.values(c).reduce((n, v) => n + v, 0);
+// When an item last increased (unix seconds, from the library); older saves have none, so the session's last sync time stands in
+export const gainAt = (d: { t?: number }, fallback: string) => (d.t ? new Date(d.t * 1000).toISOString() : fallback);
 export const ago = (iso: string) => {
   const m = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
   return m < 1 ? 'just now' : m < 60 ? `${m} min ago` : m < 1440 ? `${Math.floor(m / 60)}h ago` : `${Math.floor(m / 1440)}d ago`;

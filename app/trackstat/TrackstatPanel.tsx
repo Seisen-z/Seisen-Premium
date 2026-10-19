@@ -22,7 +22,7 @@ import SettingsPage from './SettingsPage';
 import WhatsNew from './WhatsNew';
 import ShareLinks from './ShareLinks';
 import { sortAccounts, useSettings } from './settings';
-import { Avatar, DetailTable, GainChart, Img, PageSkeleton, Stat, ago, card, span, total } from './ui';
+import { Avatar, DetailTable, GainChart, Img, PageSkeleton, Stat, ago, gainAt, card, span, total } from './ui';
 
 type Tab = 'overview' | 'inventory' | 'gains' | 'history' | 'community';
 
@@ -81,8 +81,8 @@ export default function TrackstatPanel({ initialTheme }: { initialTheme: Theme }
     if (clear) { setData(current => (current ? { ...current, accounts: [], reconnect: false, degraded: false } : current)); setCatalog({}); setInventoryData(null); setGame(null); etag.current = ''; void cacheClear(); }
     void load();
   }, [load]);
-  // The library syncs every 15 seconds while it runs; with nothing running there is nothing new to fetch that often
-  const pollMs = (data?.accounts.some(a => a.activeGames.length > 0) ?? true) ? (settings.relaxedRefresh ? 30000 : 15000) : 60000;
+  // The library syncs every 30 seconds while it runs; with nothing running there is nothing new to fetch that often
+  const pollMs = (data?.accounts.some(a => a.activeGames.length > 0) ?? true) ? (settings.relaxedRefresh ? 60000 : 30000) : 60000;
   useEffect(() => {
     let live = true;
     void (async () => {
@@ -175,7 +175,7 @@ export default function TrackstatPanel({ initialTheme }: { initialTheme: Theme }
   }, [game, robloxId, hasInventory, tab, inventoryKey]);
   const images = useMemo(() => Object.fromEntries(Object.values(catalog).map(c => [c.name.toLowerCase(), c.stored ?? c.image])), [catalog]);
   const recentClasses = categories.find(c => c.id === recentCategory)?.classes ?? [];
-  const recent = sessions.flatMap(s => s.snapshot.details.filter(d => d.gained > 0 && (!recentClasses.length || recentClasses.includes(d.kind) || recentCategory === 'pets' && ['huge', 'titanic', 'gargantuan'].includes(d.kind))).map(d => ({ ...d, at: s.updated_at }))).slice(0, 10);
+  const recent = sessions.flatMap(s => s.snapshot.details.filter(d => d.gained > 0 && (!recentClasses.length || recentClasses.includes(d.kind) || recentCategory === 'pets' && ['huge', 'titanic', 'gargantuan'].includes(d.kind))).map(d => ({ ...d, at: gainAt(d, s.updated_at) }))).sort((x, y) => Date.parse(y.at) - Date.parse(x.at)).slice(0, 10);
   const stacks = inventoryData?.roblox === robloxId ? inventoryData?.stacks : undefined;
   const totalValue = (stacks ?? []).reduce((n, x) => n + (x.r ?? 0) * x.a, 0);
   const topStacks = [...(stacks ?? [])].sort((a, b) => (b.r ?? 0) * b.a - (a.r ?? 0) * a.a).slice(0, 6);
