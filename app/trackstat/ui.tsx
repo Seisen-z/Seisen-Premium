@@ -1,8 +1,9 @@
 'use client';
 
-import { useMemo, useState, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import { Gem, Search } from 'lucide-react';
 import inventoryStyles from './InventoryStats.module.css';
+import { thumbnailBlob } from '@/lib/client/trackstat-images';
 import { compactCount, type Counts, type TrackstatDailyGains, type TrackstatSession } from '@/lib/trackstat';
 
 export const card = 'ts-clay-card rounded-xl border border-ts-fg/[0.07] bg-ts-surface';
@@ -56,9 +57,22 @@ export function Img(props: ImageProps) {
 function ImageWithFallback({ src, backup, className, fallback }: ImageProps) {
   const [failures, setFailures] = useState(0);
   const [loaded, setLoaded] = useState(false);
-  const shown = [src, backup].filter((url): url is string => !!url)[failures];
+  const shown = [...new Set([src, backup].filter((url): url is string => !!url))][failures];
+  const [cached, setCached] = useState<{ src: string; url: string } | null>(null);
+  useEffect(() => {
+    if (!shown) return;
+    let live = true;
+    let objectUrl: string | undefined;
+    void thumbnailBlob(shown).then(blob => {
+      if (!live) return;
+      if (blob) objectUrl = URL.createObjectURL(blob);
+      setCached({ src: shown, url: objectUrl ?? shown });
+    }).catch(() => { if (live) { setLoaded(false); setFailures(n => n + 1); } });
+    return () => { live = false; if (objectUrl) URL.revokeObjectURL(objectUrl); };
+  }, [shown]);
+  const source = cached?.src === shown ? cached.url : null;
   // eslint-disable-next-line @next/next/no-img-element
-  return shown ? <img src={shown} alt="" referrerPolicy="no-referrer" onLoad={() => setLoaded(true)} onError={() => { setLoaded(false); setFailures(n => n + 1); }} className={`${className} object-cover ${loaded ? '' : 'animate-pulse'}`} /> : <span className={`${className} grid place-items-center`}>{fallback}</span>;
+  return shown ? source ? <img src={source} alt="" referrerPolicy="no-referrer" onLoad={() => setLoaded(true)} onError={() => { setLoaded(false); setFailures(n => n + 1); }} className={`${className} object-cover ${loaded ? '' : 'animate-pulse'}`} /> : <span aria-hidden className={`${className} animate-pulse`} /> : <span className={`${className} grid place-items-center`}>{fallback}</span>;
 }
 
 export function Avatar({ src, name, small, tiny }: { src?: string | null; name: string; small?: boolean; tiny?: boolean }) {

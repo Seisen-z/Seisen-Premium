@@ -30,7 +30,7 @@ export async function buildCatalog(inventory: InventoryStack[], game: boolean | 
   const folder = animeDice ? 'animedice' : stealAnEgg ? 'stealanegg' : 'petsimulator99';
   const ids = [...new Set(Object.values(rows).map(row => row.icon).filter((icon): icon is string => !!icon && /^\d{1,20}$/.test(icon)))];
   const cached = new Set(ids.length ? await trackstatRPC<string[]>('trackstat_image_manifest', { p_game: folder, p_icons: ids }).catch(() => []) : []);
-  const images = await icons(ids.filter(icon => !(animeDice && icon.startsWith('0'))));
+  const images = await icons(ids.filter(icon => !cached.has(icon) && !(animeDice && icon.startsWith('0'))));
   await Promise.all(Object.entries(images).filter(([icon]) => !cached.has(icon)).slice(0, 12).map(async ([icon, image]) => {
     if (await trackstatCacheImage(folder, icon, image)) cached.add(icon);
   }));
