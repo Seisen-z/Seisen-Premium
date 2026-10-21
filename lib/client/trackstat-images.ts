@@ -4,6 +4,21 @@ import { imageGet, imageSet } from './trackstat-cache';
 const pending = new Map<string, Promise<Blob | null>>();
 const waiting: (() => void)[] = [];
 let downloads = 0;
+const started: number[] = [];
+let wake: ReturnType<typeof setTimeout> | undefined;
+
+function drain() {
+  const now = Date.now();
+  while (started.length && started[0] <= now - 3000) started.shift();
+  while (waiting.length && downloads < 4 && started.length < 20) {
+    downloads++;
+    started.push(now);
+    waiting.shift()?.();
+  }
+  if (waiting.length && started.length >= 20 && wake === undefined) {
+    wake = setTimeout(() => { wake = undefined; drain(); }, Math.max(1, started[0] + 3000 - Date.now()));
+  }
+}
 
 // PNG URLs are versioned by their asset/content identity; read bytes locally before any network request.
 export function thumbnailBlob(url: string): Promise<Blob | null> {
@@ -13,8 +28,8 @@ export function thumbnailBlob(url: string): Promise<Blob | null> {
     const cached = await imageGet(url);
     if (cached instanceof Blob) return cached;
     await new Promise<void>(resolve => {
-      const start = () => { downloads++; resolve(); };
-      if (downloads < 4) start(); else waiting.push(start);
+      waiting.push(resolve);
+      drain();
     });
     try {
       const response = await fetch(url, { credentials: 'omit', cache: 'force-cache', signal: AbortSignal.timeout(12000) });
@@ -29,7 +44,7 @@ export function thumbnailBlob(url: string): Promise<Blob | null> {
       throw error;
     } finally {
       downloads--;
-      waiting.shift()?.();
+      drain();
     }
   };
   const request = load().finally(() => pending.delete(url));
