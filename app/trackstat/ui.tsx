@@ -70,7 +70,7 @@ function ImageWithFallback({ src, backup, className, fallback }: ImageProps) {
     }).catch(() => { if (live) { setLoaded(false); setFailures(n => n + 1); } });
     return () => { live = false; if (objectUrl) URL.revokeObjectURL(objectUrl); };
   }, [shown]);
-  const source = cached?.src === shown ? cached.url : null;
+  const source = cached && cached.src === shown ? cached.url : null;
   // eslint-disable-next-line @next/next/no-img-element
   return shown ? source ? <img src={source} alt="" referrerPolicy="no-referrer" onLoad={() => setLoaded(true)} onError={() => { setLoaded(false); setFailures(n => n + 1); }} className={`${className} object-cover ${loaded ? '' : 'animate-pulse'}`} /> : <span aria-hidden className={`${className} animate-pulse`} /> : <span className={`${className} grid place-items-center`}>{fallback}</span>;
 }
