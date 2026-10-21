@@ -55,20 +55,18 @@ export default function Dashboard({ accounts, avatarOf, nameOf, single = false }
     const perAccount = picked.map(a => ({ a, gained: daily.filter(r => r.a === a).reduce((n, r) => n + total(r.gained), 0), live: (a.activeGames ?? []).some(g => okGame(g)) }));
     const inside = (x: { start: number; end: number }) => Math.max(0, x.end - Math.max(x.start, cutoff));
     const minutes = sessions.reduce((n, x) => n + inside(x) / 60000, 0);
-    const sessionGains = sessions.reduce((n, x) => n + total(x.s.snapshot.gained) * (x.end > x.start ? inside(x) / (x.end - x.start) : 1), 0);
 
-    // Item lists come from sessions that began inside the window, so older sessions are not counted twice
     const items = new Map<string, { name: string; kind: string; gained: number }>();
-    for (const { s, start } of sessions) if (start >= cutoff) for (const it of s.snapshot.details) if (it.gained > 0) {
+    for (const row of daily) for (const it of row.details ?? []) if (it.gained > 0) {
       const id = `${it.kind}:${it.name}`;
       items.set(id, { name: it.name, kind: it.kind, gained: (items.get(id)?.gained ?? 0) + it.gained });
     }
     return {
       yesterday, weekPoints, metricTotals,
       topItems: [...items.entries()].sort((x, y) => y[1].gained - x[1].gained).slice(0, 8), gained: perDay.reduce((n, v) => n + v, 0), best: best > 0 ? { v: best, day: keys[perDay.indexOf(best)] } : null,
-      perDay, perAccount, live: perAccount.filter(x => x.live).length, minutes, sessionCount: sessions.length,
-      perHour: minutes > 0 ? sessionGains / (minutes / 60) : 0,
-      sessionsPerDay: keys.map(day => sessions.filter(x => utcDay(x.end) === day).length),
+      perDay, perAccount, live: perAccount.filter(x => x.live).length, minutes, sessionCount: new Set(daily.map(row => row.day)).size,
+      perHour: minutes > 0 ? perDay.reduce((n, v) => n + v, 0) / (minutes / 60) : 0,
+      sessionsPerDay: keys.map(day => daily.filter(row => row.day === day).length),
     };
   }, [accounts, game, acct, days, now]);
 
@@ -97,9 +95,9 @@ export default function Dashboard({ accounts, avatarOf, nameOf, single = false }
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 2xl:grid-cols-6">
         <Kpi icon={<Zap size={14} />} label="Total gained" value={compactCount(d.gained)} hint={compare} spark={days > 1 ? d.perDay : undefined} />
         <Kpi icon={<Users size={14} />} label="Active now" value={`${d.live} / ${d.perAccount.length}`} hint="Accounts with the library running" />
-        <Kpi icon={<Layers size={14} />} label="Sessions" value={String(d.sessionCount)} hint={range} spark={days > 1 ? d.sessionsPerDay : undefined} />
+        <Kpi icon={<Layers size={14} />} label="Tracked days" value={String(d.sessionCount)} hint={range} spark={days > 1 ? d.sessionsPerDay : undefined} />
         <Kpi icon={<Clock size={14} />} label="Play time" value={hours(d.minutes)} hint="Tracked while the library ran" />
-        <Kpi icon={<Gauge size={14} />} label="Gains / hour" value={compactCount(Math.round(d.perHour))} hint="Across tracked sessions" />
+        <Kpi icon={<Gauge size={14} />} label="Gains / hour" value={compactCount(Math.round(d.perHour))} hint="Across tracked days" />
         <Kpi icon={<Trophy size={14} />} label="Best day" value={d.best ? compactCount(d.best.v) : '—'} hint={d.best ? shortDay(d.best.day) : 'No gains yet'} />
       </div>
 

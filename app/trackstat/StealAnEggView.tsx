@@ -1,17 +1,18 @@
 'use client';
 
+import { dailySnapshot } from '@/lib/trackstat-daily';
 import { loadInventory } from '@/lib/client/trackstat-inventory';
 import InventoryControls from './InventoryControls';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Activity, ArrowLeft, Boxes, ChevronRight, Clock, Coins, Egg, Gauge, PawPrint, Search, Star, Swords, TrendingUp, Users, Weight, Zap } from 'lucide-react';
 import { compactCount, type TrackstatDailyGains, type CatalogEntry, type InventoryStack, type TrackstatMedia, type TrackstatPublic, type TrackstatSession } from '@/lib/trackstat';
-import { CardSkeleton, DetailTable, GainChart, Img, Stat, ago, gainAt, card, InventoryStat, inventoryStats, span, total, VariantTag, PlacedTag } from './ui';
+import { CardSkeleton, DetailTable, GainChart, Img, Stat, ago, gainAt, card, InventoryStat, inventoryStats, DailyPicker, total, VariantTag, PlacedTag } from './ui';
 
-type Tab = 'overview' | 'inventory' | 'gains' | 'history' | 'community';
+type Tab = 'overview' | 'inventory' | 'gains' | 'community';
 const tabs: { id: Tab; label: string; icon: typeof Activity }[] = [
   { id: 'overview', label: 'Overview', icon: Activity }, { id: 'inventory', label: 'Inventory', icon: Boxes },
-  { id: 'gains', label: 'Session Gains', icon: TrendingUp }, { id: 'history', label: 'History', icon: Clock }, { id: 'community', label: 'Community', icon: Users },
+  { id: 'gains', label: 'Daily Gains', icon: TrendingUp }, { id: 'community', label: 'Community', icon: Users },
 ];
 const categories = [{ id: 'all', label: 'All' }, { id: 'pet', label: 'Pets' }, { id: 'egg', label: 'Eggs' }, { id: 'gear', label: 'Gear' }, { id: 'item', label: 'Items' }];
 const metrics = ['pets', 'eggs', 'gear', 'items'] as const;
@@ -78,14 +79,14 @@ export function InventoryView({ stacks, catalog, loading }: { stacks?: Inventory
 
 export default function StealAnEggView({ sessions, daily = [], media, community, live, roblox, onBack }: { sessions: TrackstatSession[]; daily?: TrackstatDailyGains[]; roblox: string; media: TrackstatMedia | undefined; community: TrackstatPublic | null | undefined; live: boolean; onBack: () => void }) {
   const [tab, setTab] = useState<Tab>('overview');
-  const [sessionId, setSessionId] = useState('');
+  const [day, setDay] = useState('');
+  const shownDay = day || new Date().toISOString().slice(0, 10);
   const [recentCategory, setRecentCategory] = useState('all');
   const [catalog, setCatalog] = useState<Record<string, CatalogEntry>>({});
   const [loadedFor, setLoadedFor] = useState('');
   const [inventory, setInventory] = useState<InventoryStack[] | undefined>();
   const latest = sessions[0];
-  const selected = sessions.find(s => s.id === sessionId) || latest;
-  const snap = selected?.snapshot;
+  const snap = dailySnapshot(sessions, daily, shownDay);
   const signature = `${roblox}:${latest?.id}`;
   const hasInventory = !!latest?.snapshot.has_inventory;
   const latestUpdated = useRef<string>(undefined);
@@ -104,7 +105,7 @@ export default function StealAnEggView({ sessions, daily = [], media, community,
   }, [signature]); // eslint-disable-line react-hooks/exhaustive-deps
   const images = useMemo(() => Object.fromEntries(Object.values(catalog).map(c => [c.name.toLowerCase(), c.stored ?? c.image])), [catalog]);
   const backups = useMemo(() => Object.fromEntries(Object.values(catalog).map(c => [c.name.toLowerCase(), c.image])), [catalog]);
-  const recent = sessions.flatMap(s => s.snapshot.details.filter(d => d.gained > 0 && (recentCategory === 'all' || d.kind === recentCategory)).map(d => ({ ...d, at: gainAt(d, s.updated_at) }))).sort((x, y) => Date.parse(y.at) - Date.parse(x.at)).slice(0, 10);
+  const recent = (snap?.details ?? []).filter(d => d.gained > 0 && (recentCategory === 'all' || d.kind === recentCategory)).map(d => ({ ...d, at: gainAt(d, `${shownDay}T00:00:00Z`) })).sort((x, y) => Date.parse(y.at) - Date.parse(x.at)).slice(0, 10);
   const top = [...(inventory ?? [])].filter(s => s.k.startsWith('pet:')).sort((a, b) => (b.p ?? 0) - (a.p ?? 0)).slice(0, 6);
 
   return (
@@ -119,18 +120,19 @@ export default function StealAnEggView({ sessions, daily = [], media, community,
           {tabs.map(t => <button key={t.id} role="tab" aria-selected={tab === t.id} onClick={() => setTab(t.id)} className={`flex shrink-0 items-center gap-2 border-b-2 px-4 pb-2 pt-1 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-ts-accent ${tab === t.id ? 'border-ts-accent text-ts-accent' : 'border-transparent text-ts-fg/45 hover:text-ts-fg'}`}><t.icon size={14} />{t.label}</button>)}
         </div>
       </div>
+      {tab !== 'community' && tab !== 'inventory' && <DailyPicker value={day} onChange={setDay} />}
       {tab === 'community' ? (
         community ? (
           <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
             <Stat icon={<Users size={20} />} label="Accounts" value={compactCount(community.accounts)} />
             <Stat icon={<Activity size={20} />} label="Active now" value={compactCount(community.live)} />
-            <Stat icon={<Clock size={20} />} label="Sessions" value={compactCount(community.sessions)} />
+            <Stat icon={<Clock size={20} />} label="Daily records" value={compactCount(community.sessions)} />
             <Stat icon={<TrendingUp size={20} />} label="Total gained" value={compactCount(total(community.gained))} />
             {metrics.map(k => <div key={k} className={`${card} p-4`}><p className="text-xs capitalize text-ts-fg/45">{k} collected</p><p className="mt-2 font-mono text-2xl text-ts-fg" title={String(community.gained[k])}>{compactCount(community.gained[k] ?? 0)}</p></div>)}
           </div>
         ) : <p className="text-sm text-ts-fg/40">Community totals are unavailable right now.</p>
       ) : !snap ? (
-        <div className={`${card} p-10`}><Activity className="mb-4 text-ts-accent" size={28} /><h3 className="text-lg font-semibold text-ts-fg">No sessions yet</h3><p className="mt-3 max-w-md text-sm leading-7 text-ts-fg/45">Open the Trackstat tab in the library while playing Steal an Egg and turn on Track this account.</p></div>
+        <div className={`${card} p-10`}><Activity className="mb-4 text-ts-accent" size={28} /><h3 className="text-lg font-semibold text-ts-fg">No daily activity yet</h3><p className="mt-3 max-w-md text-sm leading-7 text-ts-fg/45">Open the Trackstat tab in the library while playing Steal an Egg and turn on Track this account.</p></div>
       ) : tab === 'overview' ? (
         <>
           <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-3 2xl:grid-cols-6">
@@ -139,13 +141,13 @@ export default function StealAnEggView({ sessions, daily = [], media, community,
             <Stat icon={<Zap size={20} />} label="Money / second" value={`$${compactCount(snap.per_second ?? 0)}/s`} hint={String(snap.per_second ?? 0)} />
             <Stat icon={<PawPrint size={20} />} label="Pets" value={compactCount(snap.owned.pets ?? 0)} />
             <Stat icon={<Egg size={20} />} label="Eggs" value={compactCount(snap.owned.eggs ?? 0)} />
-            <Stat icon={<TrendingUp size={20} />} label="Session gains" value={`+${compactCount(total(snap.gained))}`} />
+            <Stat icon={<TrendingUp size={20} />} label="Daily gains" value={`+${compactCount(total(snap.gained))}`} />
           </div>
           <div className="grid items-stretch gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
             <div className={`${card} p-5`}>
-              <div className="mb-4 flex items-center justify-between"><h3 className="text-sm font-semibold text-ts-fg">Recent Activity</h3><button onClick={() => setTab('gains')} className="flex items-center gap-1 text-xs text-ts-accent hover:underline">View All <ChevronRight size={12} /></button></div>
-              <div className="mb-3 flex flex-wrap gap-1" role="group" aria-label="Recent activity category">{categories.map(c => <button key={c.id} aria-pressed={recentCategory === c.id} onClick={() => setRecentCategory(c.id)} className={`rounded-lg px-3 py-1.5 text-sm transition-colors ${recentCategory === c.id ? 'bg-ts-accent font-medium text-ts-accent-fg' : 'bg-ts-fg/[0.04] text-ts-fg/55 hover:text-ts-fg'}`}>{c.label}</button>)}</div>
-              {recent.length ? <ul className="divide-y divide-ts-fg/[0.05]">{recent.map((r, i) => <li key={`${r.name}:${i}`} className="flex items-center gap-3 py-2.5 text-sm"><Img src={images[r.name.toLowerCase()]} backup={backups[r.name.toLowerCase()]} className="h-9 w-9 shrink-0 object-contain" fallback={<PawPrint size={14} className="text-ts-fg/25" />} /><span className="min-w-0 flex-1"><span className="block truncate text-ts-fg/85">{r.name}</span><span className="text-xs capitalize text-ts-fg/35">{r.kind} · {ago(r.at)}</span></span><span className="shrink-0 rounded-md bg-ts-pos/10 px-2 py-0.5 font-mono text-xs text-ts-pos">+{compactCount(r.gained)}</span></li>)}</ul> : <p className="text-sm text-ts-fg/40">{recentCategory === 'all' ? 'No gains recorded yet.' : 'No recent activity in this category.'}</p>}
+              <div className="mb-4 flex items-center justify-between"><h3 className="text-sm font-semibold text-ts-fg">Daily Activity</h3><button onClick={() => setTab('gains')} className="flex items-center gap-1 text-xs text-ts-accent hover:underline">View All <ChevronRight size={12} /></button></div>
+              <div className="mb-3 flex flex-wrap gap-1" role="group" aria-label="Daily activity category">{categories.map(c => <button key={c.id} aria-pressed={recentCategory === c.id} onClick={() => setRecentCategory(c.id)} className={`rounded-lg px-3 py-1.5 text-sm transition-colors ${recentCategory === c.id ? 'bg-ts-accent font-medium text-ts-accent-fg' : 'bg-ts-fg/[0.04] text-ts-fg/55 hover:text-ts-fg'}`}>{c.label}</button>)}</div>
+              {recent.length ? <ul className="divide-y divide-ts-fg/[0.05]">{recent.map((r, i) => <li key={`${r.name}:${i}`} className="flex items-center gap-3 py-2.5 text-sm"><Img src={images[r.name.toLowerCase()]} backup={backups[r.name.toLowerCase()]} className="h-9 w-9 shrink-0 object-contain" fallback={<PawPrint size={14} className="text-ts-fg/25" />} /><span className="min-w-0 flex-1"><span className="block truncate text-ts-fg/85">{r.name}</span><span className="text-xs capitalize text-ts-fg/35">{r.kind} · {ago(r.at)}</span></span><span className="shrink-0 rounded-md bg-ts-pos/10 px-2 py-0.5 font-mono text-xs text-ts-pos">+{compactCount(r.gained)}</span></li>)}</ul> : <p className="text-sm text-ts-fg/40">{recentCategory === 'all' ? 'No gains recorded yet.' : 'No daily activity in this category.'}</p>}
             </div>
             <div className={`${card} flex flex-col p-5`}><h3 className="-mb-6 text-sm font-semibold text-ts-fg">Gains Chart</h3><GainChart daily={daily} /></div>
           </div>
@@ -167,20 +169,16 @@ export default function StealAnEggView({ sessions, daily = [], media, community,
               </div>
             </div>
           )}
-          <p className="mt-4 text-xs text-ts-fg/40"><Clock className="mr-1 inline" size={12} />Inventory refreshes every 15 seconds from the library. Activity is retained for 8 days; the latest inventory is kept.</p>
+          <p className="mt-4 text-xs text-ts-fg/40"><Clock className="mr-1 inline" size={12} />Inventory refreshes every 15 seconds from the library. Activity is retained for 7 days; the latest inventory is kept.</p>
         </>
       ) : tab === 'inventory' ? <InventoryView stacks={inventory} catalog={catalog} loading={hasInventory && loadedFor !== signature} />
       : tab === 'gains' ? (
         <>
           <div className="mb-6 grid grid-cols-2 gap-3 xl:grid-cols-4">{metrics.map(k => <div key={k} className={`${card} p-4`}><p className="flex items-center gap-1 text-xs capitalize text-ts-fg/45">{k === 'gear' && <Swords size={12} />}{k}</p><p className="mt-2 font-mono text-2xl text-ts-fg" title={String(snap.owned[k])}>{compactCount(snap.owned[k] ?? 0)}</p><p className="mt-2 text-xs text-ts-accent">+{compactCount(snap.gained[k] ?? 0)} gained</p></div>)}</div>
-          <DetailTable rows={snap.details} gainedOnly images={images} backups={backups} empty="Nothing gained in this session yet." />
+          <DetailTable rows={snap.details} gainedOnly images={images} backups={backups} empty="Nothing gained on this day yet." />
           <p className="mt-5 text-xs leading-6 text-ts-fg/35">Gains count inventory increases while tracking, including trades and rewards. Stats are client-reported.</p>
         </>
-      ) : (
-        <div className={`${card} divide-y divide-ts-fg/[0.05]`}>
-          {sessions.filter(s => !s.history_expired).map(s => <button key={s.id} onClick={() => { setSessionId(s.id); setTab('gains'); }} className={`flex w-full items-center justify-between gap-4 px-4 py-3 text-left text-sm hover:bg-ts-fg/[0.03] ${s.id === selected?.id ? 'bg-ts-accent/[0.06]' : ''}`}><span><span className="block text-ts-fg/80">{new Date(s.started_at).toLocaleString()}</span><span className="text-xs text-ts-fg/40">{span(s)} · ${compactCount(s.snapshot.money ?? 0)}</span></span><span className="font-mono text-ts-pos">+{compactCount(total(s.snapshot.gained))}</span></button>)}
-        </div>
-      )}
+      ) : null}
     </>
   );
 }

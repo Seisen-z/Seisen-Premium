@@ -134,3 +134,28 @@ assert not hasattr(store, 'backup')
 assert not os.path.exists(os.path.join(os.path.dirname(main.DB_PATH), 'backups'))
 assert os.path.isfile(main.DB_PATH)
 print('all checks passed')
+
+# Seven-day activity cleanup must leave the current inventory intact, including old inactive accounts.
+import time  # noqa: E402
+cutoff = int(time.time()) - 7 * 86400
+store.save(main.db, other, GAME, [{'k': 'retained', 'a': 1}], at=cutoff-100)
+store.save(main.db, other, GAME, [{'k': 'retained', 'a': 2}], at=cutoff-2)
+store.save(main.db, other, GAME, [{'k': 'retained', 'a': 3}], at=cutoff+10)
+before = store.load(main.db, other, GAME)
+assert main.RETENTION_DAYS == 7
+store.prune(main.db, main.RETENTION_DAYS)
+assert store.load(main.db, other, GAME) == before
+assert all(row['at'] >= cutoff for row in store.history(main.db, other, GAME, 0, 100))
+store.save(main.db, other, GAME, [{'k': 'retained', 'a': 4}, {'k': 'new', 'a': 1}])
+assert len(store.load(main.db, other, GAME)['inventory']) == 2
+# Remove legacy backups at actual application startup, never the adjacent live database.
+backup_dir = os.path.join(os.path.dirname(main.DB_PATH), 'backups')
+os.makedirs(backup_dir)
+with open(os.path.join(backup_dir, 'old.db'), 'wb') as f:
+    f.write(b'legacy backup')
+before = store.load(main.db, other, GAME)
+with TestClient(main.app):
+    assert not os.path.exists(backup_dir)
+    assert store.load(main.db, other, GAME) == before
+assert os.path.isfile(main.DB_PATH)
+print('PASS seven-day retention, retained inventory, new items, removed legacy backups, no new backups')

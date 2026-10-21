@@ -25,7 +25,7 @@ This server keeps: each account's inventory per game, plus a history of only wha
 
 ## Daily jobs (start-up, then every 24 h)
 - Reconcile: asks Supabase `trackstat_existing_accounts` which accounts still exist and deletes the rest here (covers key reset and inactive-account cleanup). Never deletes if Supabase cannot answer or if over half of the accounts look gone.
-- Automatic database backups are disabled. Cleanup still runs; the service does not create or delete a backups folder.
+- Automatic database backups are disabled. Changes older than 7 days are pruned hourly; current inventory never expires. Startup deletes only the old backups directory beside DB_PATH; no new backups are created.
 
 ## Rules
 - The library never gets `SITE_TOKEN` or `BOT_TOKEN`. The bot only reads.

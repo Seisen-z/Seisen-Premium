@@ -4,6 +4,7 @@ import hmac
 import math
 import os
 import re
+import shutil
 import time
 from contextlib import asynccontextmanager
 
@@ -21,7 +22,7 @@ SUPABASE_ANON_KEY = os.environ.get('SUPABASE_ANON_KEY', '')
 SITE_TOKEN = os.environ.get('SITE_TOKEN', '')
 BOT_TOKEN = os.environ.get('BOT_TOKEN', '')
 DB_PATH = os.environ.get('DB_PATH', 'data/trackstat.db')
-RETENTION_DAYS = int(os.environ.get('CHANGE_RETENTION_DAYS', '30'))
+RETENTION_DAYS = 7
 MAX_BODY = 1_000_000
 MIN_PUSH_SECONDS = 10
 UUID = re.compile(r'^[0-9a-f-]{36}$')
@@ -82,6 +83,9 @@ async def sweeper():
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    backup_dir = os.path.join(os.path.dirname(os.path.abspath(DB_PATH)), 'backups')
+    if os.path.isdir(backup_dir) and not os.path.islink(backup_dir):
+        await asyncio.to_thread(shutil.rmtree, backup_dir)
     task = asyncio.create_task(sweeper())
     yield
     task.cancel()

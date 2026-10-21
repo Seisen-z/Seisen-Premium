@@ -31,11 +31,6 @@ export const ago = (iso: string) => {
   const m = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
   return m < 1 ? 'just now' : m < 60 ? `${m} min ago` : m < 1440 ? `${Math.floor(m / 60)}h ago` : `${Math.floor(m / 1440)}d ago`;
 };
-export const span = (s: TrackstatSession) => {
-  const m = Math.max(0, Math.round((new Date(s.updated_at).getTime() - new Date(s.started_at).getTime()) / 60000));
-  return m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m`;
-};
-
 export function Stat({ icon, label, value, hint }: { icon: ReactNode; label: string; value: string; hint?: string }) {
   return (
     <div className={`${card} flex items-center gap-4 p-4`}>
@@ -104,6 +99,13 @@ export function PageSkeleton() {
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">{[0, 1].map(i => <div key={i} className={`${card} overflow-hidden`}><Skeleton className="h-36 rounded-none" /><div className="space-y-2 p-4"><Skeleton className="h-4 w-32" /><Skeleton className="h-3 w-16" /></div></div>)}</div>
     </div>
   );
+}
+
+export function DailyPicker({ value, onChange }: { value: string; onChange: (day: string) => void }) {
+  const today = new Date().toISOString().slice(0, 10);
+  return <label className="mb-4 flex items-center gap-3 text-sm text-ts-fg/60">Day (UTC)<select aria-label="Daily activity date" value={value} onChange={e => onChange(e.target.value)} className="rounded-lg bg-ts-surface px-3 py-2 text-ts-fg">
+    {Array.from({ length: 7 }, (_, i) => { const day = new Date(Date.parse(`${today}T00:00:00Z`) - i * 86400e3).toISOString().slice(0, 10); return <option key={day} value={i ? day : ''}>{i ? day : 'Today'}</option>; })}
+  </select></label>;
 }
 
 export function GainChart({ daily }: { daily: TrackstatDailyGains[] }) {
