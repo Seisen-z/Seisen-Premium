@@ -3,7 +3,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { ArrowDown, ArrowUp, Pencil } from 'lucide-react';
 import { trackstatAuth } from '@/lib/client/trackstat-auth';
 import { STEAL_AN_EGG, PET_SIMULATOR_99, ANIME_DICE, type TrackstatAccount } from '@/lib/trackstat';
-import { Avatar, ago, button } from './ui';
+import { Avatar, button } from './ui';
 
 const gameName: Record<string, string> = { [PET_SIMULATOR_99]: 'PS99', [STEAL_AN_EGG]: 'Steal an Egg', [ANIME_DICE]: 'Anime Dice' };
 
@@ -40,8 +40,9 @@ export default function ConnectionPage({ accounts, avatarOf, nameOf, rename, mov
                       : <span className="flex items-center gap-1.5 text-sm text-ts-fg"><span className="truncate">{nameOf(a)}</span><button onClick={() => setEditing(robloxId)} aria-label={`Rename ${a.account.username}`} className="text-ts-fg/35 hover:text-ts-fg"><Pencil size={12} /></button></span>}
                     <span className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-ts-fg/40">
                       <span>ID {robloxId}</span>
-                      <span className={`flex items-center gap-1.5 ${live ? 'text-ts-pos' : ''}`}><span className={`h-1.5 w-1.5 rounded-full ${live ? 'bg-ts-pos' : 'bg-ts-fg/30'}`} />{live ? 'Syncing now' : a.sessions[0] ? `Last sync ${ago(a.sessions[0].updated_at)}` : 'Never synced'}</span>
+                      <span className={`flex items-center gap-1.5 ${live ? 'text-ts-pos' : ''}`}><span className={`h-1.5 w-1.5 rounded-full ${live ? 'bg-ts-pos' : 'bg-ts-fg/30'}`} />{a.connectionStatus === 'reset' ? 'Key reset' : live ? 'Connected' : 'Offline'}</span>
                     </span>
+                    {a.connectionStatus === 'reset' && <span className="mt-1 block text-xs text-ts-warn">Add the new key from the library to reconnect.</span>}
                     {games.length > 0 && <span className="mt-0.5 block text-xs text-ts-fg/35">{games.map(g => gameName[g] ?? g).join(' / ')}</span>}
                   </span>
                   <span className="flex shrink-0 flex-col">

@@ -116,10 +116,14 @@ export default function TrackstatPanel({ initialTheme }: { initialTheme: Theme }
     finally { setBusy(false); }
   }
   async function removeAccount(index: number) {
-    setBusy(true);
+    const robloxId = data?.accounts.find(account => account.index === index)?.account.roblox_id;
+    if (!robloxId) return;
+    setBusy(true); setError('');
     try {
-      const response = await trackstatFetch('/api/trackstat', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ index }) });
+      const response = await trackstatFetch('/api/trackstat', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ robloxId }) });
       if (!response.ok) throw new Error('Could not remove the account. Try again.');
+      etag.current = '';
+      void cacheClear();
       setSessionId(''); setGame(null); setActiveIndex(0);
       await load();
     } catch (e) { setError(e instanceof Error ? e.message : 'Could not remove the account.'); }
@@ -235,13 +239,13 @@ export default function TrackstatPanel({ initialTheme }: { initialTheme: Theme }
   else if (!game) {
     main = (
       <>
-        {!history ? <div className="mb-6"><Welcome onConnect={() => setPage('connection')} /></div> : !allSessions.length ? <div className="mb-6"><Welcome waiting onConnect={() => setPage('connection')} /></div> : (
+        {!history ? <div className="mb-6"><Welcome onConnect={() => setPage('connection')} /></div> : !allSessions.length && history.connectionStatus !== 'reset' ? <div className="mb-6"><Welcome waiting onConnect={() => setPage('connection')} /></div> : (
         <div className={`${card} mb-6 flex flex-wrap items-center gap-5 p-5`}>
           {history ? <Avatar src={avatarOf(history.account.roblox_id)} name={history.account.username} /> : <span className="grid h-16 w-16 place-items-center rounded-full bg-ts-fg/[0.05] text-2xl text-ts-fg/40">?</span>}
           <div className="min-w-0 flex-1 basis-56">
             <h2 className="break-words text-2xl font-semibold text-ts-fg">{history ? nameOf(history) : 'Not connected'}</h2>
-            <p className={`mt-1 flex items-center gap-2 text-sm ${libraryLive ? 'text-ts-pos' : 'text-ts-fg/40'}`}><span className={`h-2 w-2 rounded-full ${libraryLive ? 'bg-ts-pos' : 'bg-ts-fg/30'}`} />{history ? libraryLive ? 'Connected' : 'Offline' : 'Not connected'}</p>
-            <p className="mt-2 text-xs text-ts-fg/45">{history ? libraryLive ? 'Your inventory, session gains, and history are being tracked.' : 'Library offline. Your saved inventory and history are still available.' : 'Open Connection and paste your library key to start.'}</p>
+            <p className={`mt-1 flex items-center gap-2 text-sm ${libraryLive ? 'text-ts-pos' : 'text-ts-fg/40'}`}><span className={`h-2 w-2 rounded-full ${libraryLive ? 'bg-ts-pos' : 'bg-ts-fg/30'}`} />{history?.connectionStatus === 'reset' ? 'Key reset' : history ? libraryLive ? 'Connected' : 'Offline' : 'Not connected'}</p>
+            <p className="mt-2 text-xs text-ts-fg/45">{history?.connectionStatus === 'reset' ? 'This key was reset in the library. Add the new connection key to reconnect.' : history ? libraryLive ? 'The library is running and tracking your account.' : 'Your account is linked, but the library is not currently running.' : 'Open Connection and paste your library key to start.'}</p>
           </div>
           {history && (
             <div className="grid w-full grid-cols-2 gap-3 xl:w-auto xl:grid-cols-4">

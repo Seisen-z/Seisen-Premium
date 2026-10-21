@@ -23,6 +23,7 @@ export type CatalogEntry = { class?: string; kind?: string; name: string; icon: 
 export type TrackstatSession = { history_expired?: boolean; id: string; game_id: string; started_at: string; updated_at: string; snapshot: TrackstatSnapshot };
 export type TrackstatDailyGains = { day: string; game_id: string; gained: Counts };
 export type TrackstatHistory = {
+  connectionStatus?: 'reset';
   daily?: TrackstatDailyGains[];
   activeGames?: string[];
   account: { id?: string; username: string; roblox_id: string };

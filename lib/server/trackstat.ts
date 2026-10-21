@@ -28,7 +28,8 @@ export async function trackstatRPC<T>(name: string, args: Record<string, unknown
     signal: AbortSignal.timeout(12000),
   });
   if (!response.ok) throw new Error(response.status === 400 ? 'Invalid connection key' : `Trackstat ${name} failed (${response.status})`);
-  return response.json() as Promise<T>;
+  const body = await response.text();
+  return (body ? JSON.parse(body) : null) as T;
 }
 
 // Public Roblox images are copied once; private images are captured by the library.

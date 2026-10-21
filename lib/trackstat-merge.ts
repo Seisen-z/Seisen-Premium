@@ -12,6 +12,8 @@ export function mergeByRoblox(found: { key?: string; history: TrackstatHistory }
     if (key) entry.keys.push(key);
     if (history.account.id) entry.ids.push(history.account.id);
     const merged = entry.history;
+    // A valid device connection takes precedence over an old reset marker.
+    if (merged.connectionStatus === 'reset' && history.connectionStatus !== 'reset') { merged.account = history.account; merged.connectionStatus = undefined; }
     merged.sessions = [...merged.sessions, ...history.sessions].sort((a, b) => b.updated_at.localeCompare(a.updated_at));
     merged.activeGames = [...new Set([...merged.activeGames ?? [], ...history.activeGames ?? []])];
     for (const day of history.daily ?? []) {

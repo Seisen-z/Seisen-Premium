@@ -63,8 +63,8 @@ export async function POST(req: NextRequest) {
     const same = current.entries.findIndex(e => e.history.account.roblox_id === connected.account.roblox_id);
     if (current.entries.length >= maxAccounts && same < 0) return NextResponse.json({ error: 'You can connect up to 10 accounts.' }, { status: 400, headers });
     if (token) await trackstatRPC('trackstat_user_account_save', { p_key: key }, token);
-    // Keys that were reset are dropped; every other connected key stays, even for the same Roblox account on another device
-    const others = [...current.entries.flatMap(entry => entry.keys), ...current.failed].filter(other => other !== key);
+    // A new key replaces reset markers for this Roblox account; other device keys stay.
+    const others = [...current.entries.flatMap(entry => entry.history.connectionStatus === 'reset' && entry.history.account.roblox_id === connected.account.roblox_id ? [] : entry.keys), ...current.failed].filter(other => other !== key);
     if (others.length >= maxKeys) return NextResponse.json({ error: `You can connect up to ${maxKeys} keys. Remove an account first.` }, { status: 400, headers });
     const response = NextResponse.json({ connected: true, index: same < 0 ? current.entries.filter(entry => entry.keys.length).length : same }, { headers });
     writeKeys(response, [...others, key]);
@@ -75,15 +75,17 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// Body { index } removes one account; no body removes them all
+// Body { robloxId } removes one account by stable identity; legacy { index } is also accepted.
 export async function DELETE(req: NextRequest) {
   if (req.headers.get('origin') && req.headers.get('origin') !== req.nextUrl.origin) return new NextResponse(null, { status: 403 });
   const text = await req.text();
   const response = NextResponse.json({ connected: false }, { headers });
-  let index: unknown;
-  try { index = text ? JSON.parse(text).index : undefined; } catch { return new NextResponse(null, { status: 400 }); }
+  let index: unknown, robloxId: unknown;
+  try { ({ index, robloxId } = text ? JSON.parse(text) : {}); } catch { return new NextResponse(null, { status: 400 }); }
   try {
-    const { entries, token } = await trackstatEntries(req);
+    const { entries, token, degraded } = await trackstatEntries(req);
+    if (degraded) return NextResponse.json({ error: 'Accounts could not be refreshed. Try again.' }, { status: 503, headers });
+    if (robloxId !== undefined) index = entries.findIndex(entry => entry.history.account.roblox_id === robloxId);
     if (index !== undefined && (!Number.isInteger(index) || Number(index) < 0 || Number(index) >= entries.length)) return NextResponse.json({ error: 'Invalid account.' }, { status: 400, headers });
     const removed = index === undefined ? entries : [entries[Number(index)]];
     if (token) for (const id of removed.flatMap(entry => entry.ids)) await trackstatRPC('trackstat_user_account_remove', { p_account: id }, token);
