@@ -29,11 +29,13 @@ export async function buildCatalog(inventory: InventoryStack[], game: boolean | 
   if (animeDice) for (const [key, row] of Object.entries(rows)) if (!row.icon && (row.kind === 'unit' || row.kind === 'gear')) row.icon = animeDiceModelIcon(key);
   const folder = animeDice ? 'animedice' : stealAnEgg ? 'stealanegg' : 'petsimulator99';
   const ids = [...new Set(Object.values(rows).map(row => row.icon).filter((icon): icon is string => !!icon && /^\d{1,20}$/.test(icon)))];
-  const cached = new Set(ids.length ? await trackstatRPC<string[]>('trackstat_image_manifest', { p_game: folder, p_icons: ids }).catch(() => []) : []);
-  const images = await icons(ids.filter(icon => !cached.has(icon) && !(animeDice && icon.startsWith('0'))));
+  const manifest = ids.length ? await trackstatRPC<string[]>('trackstat_image_manifest', { p_game: folder, p_icons: ids }).catch(() => null) : [];
+  const cached = new Set(manifest ?? []);
+  const images = manifest ? await icons(ids.filter(icon => !cached.has(icon) && !(animeDice && icon.startsWith('0')))) : {};
   await Promise.all(Object.entries(images).filter(([icon]) => !cached.has(icon)).slice(0, 12).map(async ([icon, image]) => {
     if (await trackstatCacheImage(folder, icon, image)) cached.add(icon);
   }));
-  const stored = (icon: string | null) => icon && cached.has(icon) ? `https://xsygxfeutjcwmqejslbv.supabase.co/storage/v1/object/public/trackstats-images/${folder}/${icon}.png` : null;
+  // A failed manifest lookup must not hide existing stored PNGs or their browser-cached bytes.
+  const stored = (icon: string | null) => icon && /^\d{1,20}$/.test(icon) ? `https://xsygxfeutjcwmqejslbv.supabase.co/storage/v1/object/public/trackstats-images/${folder}/${icon}.png` : null;
   return Object.fromEntries(Object.entries(rows).map(([k, row]) => [k, { ...row, image: row.icon ? images[row.icon] ?? null : null, stored: stored(row.icon) }]));
 }

@@ -20,6 +20,11 @@ export async function loadInventory(roblox: string, game: 'ps' | 'sae' | 'ad', l
   if (!response.ok) throw new Error('Inventory could not be refreshed.');
   const body = await response.json();
   const result: InventoryResult = { catalog: body.catalog ?? {}, inventory: body.inventory ?? null, updatedAt: body.updatedAt ?? null, cachedAt: Date.now() };
+  result.catalog = { ...saved?.catalog, ...result.catalog };
+  for (const [key, info] of Object.entries(result.catalog)) {
+    const previous = saved?.catalog[key];
+    if (previous && previous.icon === info.icon) result.catalog[key] = { ...info, stored: info.stored || previous.stored, image: info.image || previous.image };
+  }
   if (result.inventory) void cacheSet(key, result);
   show(result);
 }
