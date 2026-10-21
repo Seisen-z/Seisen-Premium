@@ -77,6 +77,14 @@ def save(db: sqlite3.Connection, account: str, game: str, stacks: list[dict], at
     return {'added': added, 'changed': changed, 'removed': removed, 'baseline': first}
 
 
+def matches(db: sqlite3.Connection, account: str, game: str, stacks: list[dict]) -> bool:
+    with _lock:
+        if db.execute('select 1 from meta where account=? and game=?', (account, game)).fetchone() is None:
+            return False
+        known = {i: json.loads(d) for i, d in db.execute('select id, data from stacks where account=? and game=?', (account, game))}
+    return known == identify(stacks)
+
+
 def load(db: sqlite3.Connection, account: str, game: str) -> dict | None:
     with _lock:  # one connection is shared by every request thread
         meta = db.execute('select updated from meta where account=? and game=?', (account, game)).fetchone()

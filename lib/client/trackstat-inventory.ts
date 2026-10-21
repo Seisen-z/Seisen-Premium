@@ -3,17 +3,23 @@ import type { CatalogEntry, InventoryStack } from '@/lib/trackstat';
 import { trackstatFetch } from './trackstat-auth';
 import { cacheGet, cacheNamespace, cacheSet } from './trackstat-cache';
 
-export type InventoryResult = { catalog: Record<string, CatalogEntry>; inventory: InventoryStack[] | null; updatedAt: string | null };
+export type InventoryResult = { catalog: Record<string, CatalogEntry>; inventory: InventoryStack[] | null; updatedAt: string | null; cachedAt?: number };
 
-// Shows the saved inventory at once and only asks the server when the account has synced since it was saved
+// Shows saved inventory at once and refreshes pictures that can arrive after the last sync.
 export async function loadInventory(roblox: string, game: 'ps' | 'sae' | 'ad', latestUpdatedAt: string | undefined, show: (result: InventoryResult) => void) {
-  const key = `${await cacheNamespace()}:inventory:${game}:${roblox}`;
+  const key = `${await cacheNamespace()}:inventory:v2:${game}:${roblox}`;
   const saved = await cacheGet<InventoryResult>(key);
   if (saved) show(saved);
-  if (saved?.updatedAt && latestUpdatedAt && Date.parse(saved.updatedAt) >= Date.parse(latestUpdatedAt)) return;
+  // Pictures can arrive after an unchanged inventory was cached.
+  const picturesReady = saved?.inventory?.every(stack => {
+    const info = saved.catalog[stack.k];
+    return !!(info?.stored || info?.image);
+  });
+  if (picturesReady && saved?.cachedAt && Date.now() - saved.cachedAt < 300000 && saved.updatedAt && latestUpdatedAt && Date.parse(saved.updatedAt) >= Date.parse(latestUpdatedAt)) return;
   const response = await trackstatFetch(`/api/trackstat/catalog?roblox=${roblox}&game=${game}`, { cache: 'no-store' });
+  if (!response.ok) throw new Error('Inventory could not be refreshed.');
   const body = await response.json();
-  const result: InventoryResult = { catalog: body.catalog ?? {}, inventory: body.inventory ?? null, updatedAt: body.updatedAt ?? null };
-  if (response.ok && result.inventory) void cacheSet(key, result);
+  const result: InventoryResult = { catalog: body.catalog ?? {}, inventory: body.inventory ?? null, updatedAt: body.updatedAt ?? null, cachedAt: Date.now() };
+  if (result.inventory) void cacheSet(key, result);
   show(result);
 }

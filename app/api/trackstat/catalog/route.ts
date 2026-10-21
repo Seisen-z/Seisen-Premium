@@ -32,6 +32,6 @@ export async function GET(req: NextRequest) {
     }
     return NextResponse.json({ catalog: await buildCatalog(found.inventory ?? [], animeDice ? 'ad' : stealAnEgg, names), inventory: found.inventory, updatedAt: found.updated_at ?? null }, { headers });
   } catch {
-    return NextResponse.json({ catalog: {} }, { headers });
+    return NextResponse.json({ error: 'Inventory could not be refreshed.' }, { status: 503, headers });
   }
 }

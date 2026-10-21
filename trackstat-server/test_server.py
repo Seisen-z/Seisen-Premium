@@ -100,4 +100,17 @@ assert st['accounts'] >= 1 and GAME in st['games'] and st['games'][GAME]['stacks
 assert client.get('/v1/stats').status_code == 401
 assert client.delete(f'/v1/account/{ACCOUNT}', headers=site).json() == {'ok': True}
 assert client.get('/v1/inventory', params={'account': ACCOUNT, 'game': GAME}, headers=site).json()['inventory'] is None
+# Duplicate uploads are idempotent during the limit; changed uploads keep a per-account/game limit.
+main.MIN_PUSH_SECONDS = 10
+main.last_push.clear()
+assert push([{'k': 'rate-test', 'a': 1}]).status_code == 200
+before = store.load(main.db, ACCOUNT, GAME)
+assert push([{'k': 'rate-test', 'a': 1}]).json() == {'ok': True, 'unchanged': True}
+assert store.load(main.db, ACCOUNT, GAME) == before
+assert store.history(main.db, ACCOUNT, GAME, 0, 100) == []
+limited = push([{'k': 'rate-test', 'a': 2}])
+assert limited.status_code == 429 and 1 <= int(limited.headers['Retry-After']) <= 10
+main.last_push[(ACCOUNT, GAME)] -= 11
+assert push([{'k': 'rate-test', 'a': 2}]).status_code == 200
+assert store.history(main.db, ACCOUNT, GAME, 0, 100)[0]['kind'] == 'change'
 print('all checks passed')

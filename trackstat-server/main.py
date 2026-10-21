@@ -1,6 +1,7 @@
 import asyncio
 import hashlib
 import hmac
+import math
 import os
 import re
 import time
@@ -147,8 +148,11 @@ async def push(body: Push, x_connection_key: str = Header('')):
     if body.game not in store.GAMES or any(not isinstance(s.get('k'), str) or not isinstance(s.get('a'), (int, float)) for s in body.inventory):
         raise HTTPException(400, 'Invalid inventory')
     now = time.time()
-    if now - last_push.get((account, body.game), 0) < MIN_PUSH_SECONDS:
-        raise HTTPException(429, 'Slow down', headers={'Retry-After': str(MIN_PUSH_SECONDS)})
+    retry = MIN_PUSH_SECONDS - (now - last_push.get((account, body.game), 0))
+    if retry > 0:
+        if store.matches(db, account, body.game, body.inventory):
+            return {'ok': True, 'unchanged': True}
+        raise HTTPException(429, 'Slow down', headers={'Retry-After': str(math.ceil(retry))})
     last_push[(account, body.game)] = now
     return {'ok': True, **store.save(db, account, body.game, body.inventory)}
 
