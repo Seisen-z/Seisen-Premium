@@ -19,7 +19,7 @@ export type TrackstatSnapshot = {
 // Anime Dice items: bf = buffs as [name, value] pairs, d = boost seconds, sl = gear slot, lm = spin luck multiplier
 // Steal An Egg: k = catalog key, a = amount, w = weight in kg, m = mutations, p = money per second, f = favorite, pl = egg is placed
 export type InventoryStack = { k: string; a: number; r?: number; x?: number; l?: number; f?: boolean; e?: number; cs?: number; ch?: string[]; w?: number; m?: string[]; p?: number; pl?: number; c?: number; gr?: string; tr?: string; lk?: boolean; bf?: [string, string][]; d?: number; sl?: string; lm?: number };
-export type CatalogEntry = { class?: string; kind?: string; name: string; icon: string | null; image: string | null; stored?: string | null; rarity: string | null; rarity_num: number | null; rarity_color: string | null; description: string | null };
+export type CatalogEntry = { class?: string; kind?: string; name: string; icon: string | null; image: string | null; stored?: string | null; pending?: boolean; rarity: string | null; rarity_num: number | null; rarity_color: string | null; description: string | null };
 export type TrackstatSession = { history_expired?: boolean; id: string; game_id: string; started_at: string; updated_at: string; snapshot: TrackstatSnapshot };
 export type TrackstatDailyGains = { day: string; game_id: string; gained: Counts; details?: TrackstatSnapshot['details'] };
 export type TrackstatHistory = {

@@ -1,5 +1,6 @@
 'use client';
 import { imageGet, imageSet } from './trackstat-cache';
+import { TRACKSTAT_URL } from '@/lib/trackstat-config';
 
 const pending = new Map<string, Promise<Blob | null>>();
 const waiting: (() => void)[] = [];
@@ -22,21 +23,29 @@ function drain() {
 
 // PNG URLs are versioned by their asset/content identity; read bytes locally before any network request.
 export function thumbnailBlob(url: string): Promise<Blob | null> {
+  let key = url;
+  if (url.startsWith('/api/trackstat/thumbnail?')) {
+    const query = new URL(url, 'https://trackstat.invalid').searchParams;
+    const game = query.get('game'), icon = query.get('icon');
+    if (['petsimulator99', 'stealanegg', 'animedice'].includes(game ?? '') && /^[1-9][0-9]{0,19}$/.test(icon ?? '')) key = `${TRACKSTAT_URL}/storage/v1/object/public/trackstats-images/${game}/${icon}.png`;
+  }
   const existing = pending.get(url);
   if (existing) return existing;
   const load = async () => {
-    const cached = await imageGet(url);
+    const cached = await imageGet(key);
     if (cached instanceof Blob) return cached;
-    await new Promise<void>(resolve => {
-      waiting.push(resolve);
-      drain();
-    });
+    await new Promise<void>(resolve => { waiting.push(resolve); drain(); });
     try {
       const response = await fetch(url, { credentials: 'omit', cache: 'force-cache', signal: AbortSignal.timeout(12000) });
+      if (url.startsWith('/api/trackstat/thumbnail?') && (response.status === 202 || response.status === 429)) {
+        const error = new Error('Thumbnail queued') as Error & { retryAfter: number };
+        error.retryAfter = Math.min(30, Math.max(3, Number(response.headers.get('Retry-After')) || 3)) * 1000;
+        throw error;
+      }
       if (!response.ok) throw new Error('Thumbnail download failed.');
       const blob = await response.blob();
       if (!blob.size || blob.size > 1024 * 1024 || new Uint8Array(await blob.slice(0, 8).arrayBuffer()).join(',') !== '137,80,78,71,13,10,26,10') throw new Error('Invalid thumbnail PNG.');
-      await imageSet(url, blob);
+      await imageSet(key, blob);
       return blob;
     } catch (error) {
       // A non-CORS image can still load through an ordinary img element.

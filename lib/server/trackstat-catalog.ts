@@ -1,18 +1,6 @@
-import { trackstatRPC, trackstatCacheImage } from './trackstat';
+import { trackstatRPC } from './trackstat';
+import { queueThumbnails } from './trackstat-inventory';
 import type { CatalogEntry, InventoryStack } from '@/lib/trackstat';
-
-async function icons(ids: string[]): Promise<Record<string, string>> {
-  const out: Record<string, string> = {};
-  const chunks = Array.from({ length: Math.ceil(ids.length / 100) }, (_, i) => ids.slice(i * 100, i * 100 + 100));
-  await Promise.all(chunks.map(async chunk => {
-    try {
-      const response = await fetch(`https://thumbnails.roblox.com/v1/assets?assetIds=${chunk.join(',')}&size=150x150&format=Png&returnPolicy=PlaceHolder`, { next: { revalidate: 300 }, signal: AbortSignal.timeout(8000) });
-      if (!response.ok) return;
-      for (const image of (await response.json()).data ?? []) if (image.state === 'Completed' && image.imageUrl && !image.imageUrl.includes('/PrivateImage/')) out[String(image.targetId)] = image.imageUrl;
-    } catch { /* icons are optional; cards fall back to a placeholder */ }
-  }));
-  return out;
-}
 
 // Leading zero reserves these storage names for rendered models, not Roblox asset IDs.
 export function animeDiceModelIcon(key: string) {
@@ -31,11 +19,9 @@ export async function buildCatalog(inventory: InventoryStack[], game: boolean | 
   const ids = [...new Set(Object.values(rows).map(row => row.icon).filter((icon): icon is string => !!icon && /^\d{1,20}$/.test(icon)))];
   const manifest = ids.length ? await trackstatRPC<string[]>('trackstat_image_manifest', { p_game: folder, p_icons: ids }).catch(() => null) : [];
   const cached = new Set(manifest ?? []);
-  const images = manifest ? await icons(ids.filter(icon => !cached.has(icon) && !(animeDice && icon.startsWith('0')))) : {};
-  await Promise.all(Object.entries(images).filter(([icon]) => !cached.has(icon)).slice(0, 12).map(async ([icon, image]) => {
-    if (await trackstatCacheImage(folder, icon, image)) cached.add(icon);
-  }));
+  const missing = new Set(manifest ? ids.filter(icon => !cached.has(icon) && !(animeDice && icon.startsWith('0'))) : []);
+  await queueThumbnails(folder, [...missing]);
   // A failed manifest lookup must not hide existing stored PNGs or their browser-cached bytes.
   const stored = (icon: string | null) => icon && /^\d{1,20}$/.test(icon) ? `https://xsygxfeutjcwmqejslbv.supabase.co/storage/v1/object/public/trackstats-images/${folder}/${icon}.png` : null;
-  return Object.fromEntries(Object.entries(rows).map(([k, row]) => [k, { ...row, image: row.icon ? images[row.icon] ?? null : null, stored: stored(row.icon) }]));
+  return Object.fromEntries(Object.entries(rows).map(([k, row]) => [k, { ...row, image: row.icon && missing.has(row.icon) ? `/api/trackstat/thumbnail?game=${folder}&icon=${row.icon}` : null, stored: stored(row.icon), pending: !!row.icon && !cached.has(row.icon) }]));
 }

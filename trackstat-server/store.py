@@ -1,6 +1,7 @@
 import hashlib
 import json
 import os
+import shutil
 import sqlite3
 import threading
 import time
@@ -25,7 +26,16 @@ def connect(path: str) -> sqlite3.Connection:
         create table if not exists meta(account text not null, game text not null, updated integer not null, primary key(account, game)) without rowid;
         create table if not exists changes(id integer primary key, account text not null, game text not null, k text not null, kind text not null, old_a real, new_a real, at integer not null);
         create index if not exists changes_by_account on changes(account, game, at);
+        create index if not exists changes_by_time on changes(at);
+        create table if not exists thumbnail_jobs(game text not null, icon text not null, due real not null default 0, attempts integer not null default 0, created integer not null, primary key(game,icon)) without rowid;
+        create index if not exists thumbnail_due on thumbnail_jobs(due);
+        create table if not exists thumbnail_starts(at real not null);
     ''')
+    if not any(row[1] == 'version' for row in db.execute('pragma table_info(meta)')):
+        db.execute("alter table meta add column version text not null default ''")
+        db.execute("update meta set version=lower(hex(randomblob(16)))")
+    db.execute('pragma optimize')
+    db.commit()
     return db
 
 
@@ -73,7 +83,7 @@ def save(db: sqlite3.Connection, account: str, game: str, stacks: list[dict], at
             db.execute('delete from stacks where account=? and game=? and id=?', (account, game, ident))
             db.execute(log, (account, game, old['k'], 'remove', float(old['a']), None, now))
         if touched:
-            db.execute('insert into meta values(?,?,?) on conflict(account,game) do update set updated=excluded.updated', (account, game, now))
+            db.execute('insert into meta(account,game,updated,version) values(?,?,?,lower(hex(randomblob(16)))) on conflict(account,game) do update set updated=excluded.updated, version=excluded.version', (account, game, now))
     return {'added': added, 'changed': changed, 'removed': removed, 'baseline': first}
 
 
@@ -85,13 +95,19 @@ def matches(db: sqlite3.Connection, account: str, game: str, stacks: list[dict])
     return known == identify(stacks)
 
 
-def load(db: sqlite3.Connection, account: str, game: str) -> dict | None:
+def load(db: sqlite3.Connection, account: str, game: str, if_none_match: str | None = None) -> dict | None:
     with _lock:  # one connection is shared by every request thread
-        meta = db.execute('select updated from meta where account=? and game=?', (account, game)).fetchone()
+        meta = db.execute('select updated,version from meta where account=? and game=?', (account, game)).fetchone()
+        etag = f'"inventory-{account}-{game}-{meta[1]}"' if meta else ''
+        if meta and if_none_match and any(tag.strip().removeprefix('W/') in (etag, '*') for tag in if_none_match.split(',')):
+            return {'not_modified': True, 'etag': etag}
         rows = db.execute('select data from stacks where account=? and game=?', (account, game)).fetchall() if meta else []
     if meta is None:
         return None
-    return {'updated': meta[0], 'inventory': [json.loads(r[0]) for r in rows]}
+    result = {'updated': meta[0], 'inventory': [json.loads(r[0]) for r in rows]}
+    if if_none_match is not None:
+        result['etag'] = etag
+    return result
 
 
 def history(db: sqlite3.Connection, account: str, game: str, since: int, limit: int) -> list[dict]:
@@ -102,6 +118,7 @@ def history(db: sqlite3.Connection, account: str, game: str, since: int, limit: 
 
 def prune(db: sqlite3.Connection, retention_days: int) -> int:
     with _lock, db:
+        db.execute('delete from thumbnail_jobs where created<?', (int(time.time()) - retention_days * 86400,))
         return db.execute('delete from changes where at<?', (int(time.time()) - retention_days * 86400,)).rowcount
 
 
@@ -111,7 +128,7 @@ def stats(db: sqlite3.Connection, path: str) -> dict:
         games = {g: {'accounts': a, 'stacks': s, 'last_update': u} for g, a, s, u in db.execute(
             'select m.game, count(*), coalesce(sum((select count(*) from stacks k where k.account=m.account and k.game=m.game)),0), max(m.updated) from meta m group by m.game')}
         accounts = db.execute('select count(distinct account) from meta').fetchone()[0]
-        changes = db.execute('select count(*), min(at) from changes').fetchone()
+        changes = db.execute('select (select count(*) from changes), (select min(at) from changes)').fetchone()
     size = sum(os.path.getsize(p) for p in (path, path + '-wal', path + '-shm') if os.path.exists(p))
     return {'accounts': accounts, 'games': games, 'changes': changes[0], 'oldest_change': changes[1], 'bytes': size}
 
@@ -125,3 +142,59 @@ def forget(db: sqlite3.Connection, account: str) -> None:
     with _lock, db:
         for table in ('stacks', 'meta', 'changes'):
             db.execute(f'delete from {table} where account=?', (account,))
+
+
+def compact(db: sqlite3.Connection, path: str) -> dict:
+    with _lock:
+        pages = db.execute('pragma page_count').fetchone()[0]
+        free = db.execute('pragma freelist_count').fetchone()[0]
+        size = db.execute('pragma page_size').fetchone()[0]
+        if not os.path.isfile(path) or free * size < 16 * 1024 * 1024 or free < pages / 4:
+            return {'compacted': False, 'reason': 'little free space'}
+        if shutil.disk_usage(os.path.dirname(os.path.abspath(path))).free < pages * size * 2 + 64 * 1024 * 1024:
+            return {'compacted': False, 'reason': 'disk headroom'}
+        try:
+            db.execute('pragma wal_checkpoint(passive)')
+            db.execute('vacuum')
+            db.execute('pragma wal_checkpoint(truncate)')
+            db.execute('pragma optimize')
+            return {'compacted': True, 'reclaimed': free * size}
+        except sqlite3.OperationalError:
+            return {'compacted': False, 'reason': 'database busy'}
+
+
+def enqueue_thumbnails(db: sqlite3.Connection, game: str, icons: list[str]) -> None:
+    with _lock, db:
+        db.executemany('insert into thumbnail_jobs(game,icon,created) select ?,?,? where (select count(*) from thumbnail_jobs)<10000 on conflict do nothing', ((game, icon, int(time.time())) for icon in set(icons)))
+
+
+def claim_thumbnails(db: sqlite3.Connection, now: float) -> list[tuple[str, str, int]]:
+    with _lock, db:
+        db.execute('begin immediate')
+        jobs = db.execute('select game,icon,attempts+1 from thumbnail_jobs where due<=? order by due,created limit 20', (now,)).fetchall()
+        db.executemany('update thumbnail_jobs set due=?,attempts=attempts+1 where game=? and icon=?', ((now + 300, game, icon) for game, icon, _ in jobs))
+        return jobs
+
+
+def finish_thumbnail(db: sqlite3.Connection, game: str, icon: str, retry_at: float | None = None) -> None:
+    with _lock, db:
+        if retry_at is None:
+            db.execute('delete from thumbnail_jobs where game=? and icon=?', (game, icon))
+        else:
+            db.execute('update thumbnail_jobs set due=? where game=? and icon=?', (retry_at, game, icon))
+
+
+def thumbnail_pending(db: sqlite3.Connection, game: str, icon: str) -> bool:
+    with _lock:
+        return db.execute('select 1 from thumbnail_jobs where game=? and icon=?', (game, icon)).fetchone() is not None
+
+
+def thumbnail_slot(db: sqlite3.Connection, now: float) -> float:
+    with _lock, db:
+        db.execute('begin immediate')
+        db.execute('delete from thumbnail_starts where at<=?', (now - 3,))
+        count, oldest = db.execute('select count(*),min(at) from thumbnail_starts').fetchone()
+        if count >= 20:
+            return max(0.01, oldest + 3 - now)
+        db.execute('insert into thumbnail_starts values(?)', (now,))
+        return 0

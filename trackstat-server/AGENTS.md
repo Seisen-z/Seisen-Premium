@@ -22,10 +22,21 @@ This server keeps: each account's inventory per game, plus a history of only wha
 - `POST /v1/import` - website token only. Copies an inventory that already exists elsewhere, keeping its saved time (used once to move inventories over from Supabase).
 - `GET /v1/stats` - same auth. Totals per game, change-history size and file size (admin page).
 - `GET /health`.
+- `POST /v1/thumbnails` - website token only; `{game: folder, icons: [...]}` queues confirmed storage misses.
+- `GET /v1/thumbnail?game&icon` - reader token; returns stored PNG or 202/Retry-After: 3 while queued, never fetches Roblox itself.
+- Inventory GET supports ETag/If-None-Match; unchanged responses are empty 304s. Versions change on real changes, including same-second changes.
 
-## Daily jobs (start-up, then every 24 h)
+## Shared thumbnail worker
+- Upload `thumbnails.py` alongside `main.py` and `store.py`. A lifecycle-managed task checks shared storage before Roblox, deduplicates jobs in SQLite, and persists every successful PNG to existing shared object storage.
+- The SQLite ledger enforces a shared rolling maximum of 20 uncached PNG downloads per 3 seconds; the worker uses at most four concurrent downloads.
+- Storage lookup failures never count as missing. Failed jobs back off; leases survive restarts. Pending work expires after 7 days and is capped at 10,000 game/icon pairs.
+- No local PNG copies or backup directories are created. Private model icons beginning with zero remain library-captured.
+
+## Maintenance (hourly cleanup; daily reconciliation/compaction checks)
 - Reconcile: asks Supabase `trackstat_existing_accounts` which accounts still exist and deletes the rest here (covers key reset and inactive-account cleanup). Never deletes if Supabase cannot answer or if over half of the accounts look gone.
 - Automatic database backups are disabled. Changes older than 7 days are pruned hourly; current inventory never expires. Startup deletes only the old backups directory beside DB_PATH; no new backups are created.
+- Admin statistics are cached for 30 seconds. Timestamp cleanup uses `changes_by_time`.
+- Compaction runs only if at least 16 MiB and 25 percent of pages are free and temporary disk headroom is sufficient. It reuses the daily job and creates no persistent backup file.
 
 ## Rules
 - The library never gets `SITE_TOKEN` or `BOT_TOKEN`. The bot only reads.

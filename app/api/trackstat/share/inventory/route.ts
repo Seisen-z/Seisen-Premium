@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createHash } from 'node:crypto';
 import { trackstatRPC } from '@/lib/server/trackstat';
 import { serverInventory } from '@/lib/server/trackstat-inventory';
 import { buildCatalog } from '@/lib/server/trackstat-catalog';
@@ -20,6 +21,9 @@ export async function GET(req: NextRequest) {
   try {
     const moved = await serverInventory(await trackstatRPC<string>('trackstat_shared_account', { p_token: token }), gameId);
     const found = moved ?? await trackstatRPC<{ inventory: InventoryStack[] | null }>('trackstat_shared_inventory', { p_token: token, p_game: gameId });
-    return NextResponse.json({ catalog: await buildCatalog(found.inventory ?? [], animeDice ? 'ad' : stealAnEgg), inventory: found.inventory }, { headers });
+    const catalog = await buildCatalog(found.inventory ?? [], animeDice ? 'ad' : stealAnEgg);
+    const etag = `"${createHash('sha256').update(JSON.stringify([moved?.etag || found.inventory, catalog])).digest('hex')}"`;
+    if (req.headers.get('if-none-match') === etag) return new NextResponse(null, { status: 304, headers: { ...headers, ETag: etag } });
+    return NextResponse.json({ catalog, inventory: found.inventory }, { headers: { ...headers, ETag: etag } });
   } catch { return NextResponse.json({ catalog: {}, inventory: null }, { headers }); }
 }

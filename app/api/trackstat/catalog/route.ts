@@ -1,5 +1,6 @@
 import { bearer, readKeys, trackstatEntries } from '@/lib/server/trackstat-accounts';
 import { NextRequest, NextResponse } from 'next/server';
+import { createHash } from 'node:crypto';
 import { trackstatRPC } from '@/lib/server/trackstat';
 import { serverInventory } from '@/lib/server/trackstat-inventory';
 import { buildCatalog } from '@/lib/server/trackstat-catalog';
@@ -27,10 +28,13 @@ export async function GET(req: NextRequest) {
     let names: string[] = [];
     if (stealAnEgg || animeDice) {
       const { entries } = await trackstatEntries(req);
-      const sessions = entries.find(entry => entry.history.account.roblox_id === roblox)?.history.sessions.filter(session => session.game_id === gameId) ?? [];
-      names = [...new Set(sessions.flatMap(session => session.snapshot.details.map(detail => detail.name.toLowerCase())))].slice(0, 2000);
+      const daily = entries.find(entry => entry.history.account.roblox_id === roblox)?.history.daily?.filter(day => day.game_id === gameId) ?? [];
+      names = [...new Set(daily.flatMap(day => (day.details ?? []).map(detail => detail.name.toLowerCase())))].slice(0, 2000);
     }
-    return NextResponse.json({ catalog: await buildCatalog(found.inventory ?? [], animeDice ? 'ad' : stealAnEgg, names), inventory: found.inventory, updatedAt: found.updated_at ?? null }, { headers });
+    const catalog = await buildCatalog(found.inventory ?? [], animeDice ? 'ad' : stealAnEgg, names);
+    const etag = `"${createHash('sha256').update(JSON.stringify([moved?.etag || found.inventory, catalog])).digest('hex')}"`;
+    if (req.headers.get('if-none-match') === etag) return new NextResponse(null, { status: 304, headers: { ...headers, ETag: etag } });
+    return NextResponse.json({ catalog, inventory: found.inventory, updatedAt: found.updated_at ?? null }, { headers: { ...headers, ETag: etag } });
   } catch {
     return NextResponse.json({ error: 'Inventory could not be refreshed.' }, { status: 503, headers });
   }

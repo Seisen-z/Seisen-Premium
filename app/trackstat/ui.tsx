@@ -58,12 +58,22 @@ function ImageWithFallback({ src, backup, className, fallback }: ImageProps) {
     if (!shown) return;
     let live = true;
     let objectUrl: string | undefined;
-    void thumbnailBlob(shown).then(blob => {
+    let retry: ReturnType<typeof setTimeout> | undefined;
+    const deadline = Date.now() + 120000;
+    const load = () => {
       if (!live) return;
-      if (blob) objectUrl = URL.createObjectURL(blob);
-      setCached({ src: shown, url: objectUrl ?? shown });
-    }).catch(() => { if (live) { setLoaded(false); setFailures(n => n + 1); } });
-    return () => { live = false; if (objectUrl) URL.revokeObjectURL(objectUrl); };
+      void thumbnailBlob(shown).then(blob => {
+        if (!live) return;
+        if (blob) objectUrl = URL.createObjectURL(blob);
+        setCached({ src: shown, url: objectUrl ?? shown });
+      }).catch(error => {
+        if (!live) return;
+        if (typeof error?.retryAfter === 'number' && Date.now() < deadline) retry = setTimeout(load, error.retryAfter);
+        else { setLoaded(false); setFailures(n => n + 1); }
+      });
+    };
+    load();
+    return () => { live = false; clearTimeout(retry); if (objectUrl) URL.revokeObjectURL(objectUrl); };
   }, [shown]);
   const source = cached && cached.src === shown ? cached.url : null;
   // eslint-disable-next-line @next/next/no-img-element

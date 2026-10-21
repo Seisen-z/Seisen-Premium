@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Activity, Moon, Sun } from 'lucide-react';
@@ -22,6 +22,7 @@ export default function SharedView({ data, avatar, token, initialTheme }: { data
   const { theme, toggle } = useTrackstatTheme(initialTheme);
   const [game, setGame] = useState<Game | null>(null);
   const [loaded, setLoaded] = useState<Partial<Record<Game, Loaded>>>({});
+  const etags = useRef<Partial<Record<Game, { token: string; etag: string }>>>({});
   useEffect(() => {
     const timer = setInterval(() => { if (!document.hidden) router.refresh(); }, 60000);
     return () => clearInterval(timer);
@@ -34,7 +35,15 @@ export default function SharedView({ data, avatar, token, initialTheme }: { data
     if (!shown) return;
     // The inventory is fetched for the game being shown and refreshed every 5 minutes
     let live = true;
-    const run = () => fetch(`/api/trackstat/share/inventory?token=${encodeURIComponent(token)}&game=${shown}`, { cache: 'no-store' }).then(r => r.json()).then((body: Loaded) => { if (live) setLoaded(current => ({ ...current, [shown]: body })); }).catch(() => {});
+    const key = shown;
+    const run = async () => {
+      try {
+        const response = await fetch(`/api/trackstat/share/inventory?token=${encodeURIComponent(token)}&game=${shown}`, { cache: 'no-store', headers: etags.current[key]?.token === token && etags.current[key]?.etag ? { 'If-None-Match': etags.current[key]!.etag } : {} });
+        if (response.status === 304 || !response.ok) return;
+        const body = await response.json() as Loaded;
+        if (live) { etags.current[key] = { token, etag: response.headers.get('ETag') ?? '' }; setLoaded(current => ({ ...current, [shown]: body })); }
+      } catch { /* keep the last good inventory during maintenance */ }
+    };
     void run();
     const timer = setInterval(() => { if (!document.hidden) void run(); }, 300000);
     return () => { live = false; clearInterval(timer); };

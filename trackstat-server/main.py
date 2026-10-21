@@ -10,11 +10,12 @@ from contextlib import asynccontextmanager
 
 import httpx
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 
 import store
+import thumbnails
 
 load_dotenv()
 SUPABASE_URL = os.environ.get('SUPABASE_URL', '').rstrip('/')
@@ -32,6 +33,7 @@ db = store.connect(DB_PATH)
 http = httpx.AsyncClient(timeout=10)
 keys: dict[str, tuple[str | None, bool, float]] = {}  # hash of connection key -> (account id, connected on the website, expiry)
 last_push: dict[tuple[str, str], float] = {}
+stats_cache: tuple[float, dict] = (0, {})
 
 
 async def existing(ids: list[str]) -> set[str] | None:
@@ -70,6 +72,7 @@ async def sweeper():
         if tick % 24 == 0:
             try:
                 print('removed accounts:', await reconcile())
+                await asyncio.to_thread(store.compact, db, DB_PATH)
             except Exception as error:
                 print('daily job failed:', error)
         tick += 1
@@ -87,9 +90,14 @@ async def lifespan(_: FastAPI):
     if os.path.isdir(backup_dir) and not os.path.islink(backup_dir):
         await asyncio.to_thread(shutil.rmtree, backup_dir)
     task = asyncio.create_task(sweeper())
-    yield
-    task.cancel()
-    await http.aclose()
+    images = asyncio.create_task(thumbnails.run(db, http, SUPABASE_URL, SUPABASE_ANON_KEY))
+    try:
+        yield
+    finally:
+        task.cancel()
+        images.cancel()
+        await asyncio.gather(task, images, return_exceptions=True)
+        await http.aclose()
 
 
 app = FastAPI(title='Trackstat server', lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
@@ -184,14 +192,47 @@ def checked(account: str, game: str):
 
 
 @app.get('/v1/inventory', dependencies=[Depends(reader)])
-def inventory(account: str, game: str):
+def inventory(account: str, game: str, if_none_match: str = Header('')):
     checked(account, game)
-    return store.load(db, account, game) or {'updated': None, 'inventory': None}
+    found = store.load(db, account, game, if_none_match)
+    if not found:
+        return JSONResponse({'updated': None, 'inventory': None}, headers={'Cache-Control': 'private, no-cache'})
+    etag = found.pop('etag')
+    headers = {'ETag': etag, 'Cache-Control': 'private, no-cache'}
+    return Response(status_code=304, headers=headers) if found.get('not_modified') else JSONResponse(found, headers=headers)
 
 
 @app.get('/v1/stats', dependencies=[Depends(reader)])
 def stats():
-    return store.stats(db, DB_PATH)
+    global stats_cache
+    if not stats_cache[1] or time.monotonic() - stats_cache[0] >= 30:
+        stats_cache = (time.monotonic(), store.stats(db, DB_PATH))
+    return stats_cache[1]
+
+
+class ThumbnailBatch(BaseModel):
+    game: str
+    icons: list[str] = Field(max_length=2000)
+
+
+@app.post('/v1/thumbnails', dependencies=[Depends(site_only)])
+def queue_thumbnails(body: ThumbnailBatch):
+    if body.game not in thumbnails.FOLDERS or any(not re.fullmatch(r'[1-9][0-9]{0,19}', icon) for icon in body.icons):
+        raise HTTPException(400, 'Invalid thumbnail')
+    store.enqueue_thumbnails(db, body.game, body.icons)
+    return {'ok': True}
+
+
+@app.get('/v1/thumbnail', dependencies=[Depends(reader)])
+async def thumbnail(game: str, icon: str):
+    if game not in thumbnails.FOLDERS or not re.fullmatch(r'[1-9][0-9]{0,19}', icon):
+        raise HTTPException(400, 'Invalid thumbnail')
+    if store.thumbnail_pending(db, game, icon):
+        return Response(status_code=202, headers={'Retry-After': '3', 'Cache-Control': 'no-store'})
+    response = await http.get(f'{SUPABASE_URL}/storage/v1/object/public/trackstats-images/{game}/{icon}.png')
+    if not response.is_success or not response.content.startswith(thumbnails.PNG) or len(response.content) > 1024 * 1024:
+        raise HTTPException(404, 'Thumbnail unavailable')
+    return Response(response.content, media_type='image/png', headers={'Cache-Control': 'public, max-age=31536000, immutable'})
 
 
 @app.get('/v1/changes', dependencies=[Depends(reader)])
