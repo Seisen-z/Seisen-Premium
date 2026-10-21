@@ -21,7 +21,6 @@ SUPABASE_ANON_KEY = os.environ.get('SUPABASE_ANON_KEY', '')
 SITE_TOKEN = os.environ.get('SITE_TOKEN', '')
 BOT_TOKEN = os.environ.get('BOT_TOKEN', '')
 DB_PATH = os.environ.get('DB_PATH', 'data/trackstat.db')
-BACKUP_DIR = os.path.join(os.path.dirname(DB_PATH) or '.', 'backups')
 RETENTION_DAYS = int(os.environ.get('CHANGE_RETENTION_DAYS', '30'))
 MAX_BODY = 1_000_000
 MIN_PUSH_SECONDS = 10
@@ -69,7 +68,7 @@ async def sweeper():
         store.prune(db, RETENTION_DAYS)
         if tick % 24 == 0:
             try:
-                print('removed accounts:', await reconcile(), 'backup:', await asyncio.to_thread(store.backup, db, BACKUP_DIR))
+                print('removed accounts:', await reconcile())
             except Exception as error:
                 print('daily job failed:', error)
         tick += 1

@@ -78,8 +78,8 @@ from concurrent.futures import ThreadPoolExecutor  # noqa: E402
 with ThreadPoolExecutor(16) as pool:
     jobs = [pool.submit(store.save, main.db, big, GAME, [{'k': f'i{n}', 'a': n}]) if n % 2 else pool.submit(store.load, main.db, big, GAME) for n in range(400)]
     [j.result() for j in jobs]
-# Daily jobs: accounts Supabase no longer has are removed, and a backup is a readable copy
-import asyncio, sqlite3 as sq  # noqa: E402
+# Daily jobs: accounts Supabase no longer has are removed; no database copies are created.
+import asyncio  # noqa: E402
 keepers = {ACCOUNT, other}
 async def fake_existing(ids):
     return {i for i in ids if i in keepers}
@@ -93,8 +93,6 @@ async def failing(ids):
 main.existing = failing
 store.save(main.db, 'bbbbbbbb-2222-3333-4444-555555555555', GAME, [{'k': 'x', 'a': 1}])
 assert asyncio.run(main.reconcile()) == 0 and store.load(main.db, 'bbbbbbbb-2222-3333-4444-555555555555', GAME) is not None  # an outage never deletes
-path = store.backup(main.db, os.path.join(tempfile.mkdtemp(), 'b'))
-assert sq.connect(path).execute('select count(*) from meta').fetchone()[0] >= 1
 st = client.get('/v1/stats', headers=site).json()
 assert st['accounts'] >= 1 and GAME in st['games'] and st['games'][GAME]['stacks'] >= 1 and st['bytes'] > 0
 assert client.get('/v1/stats').status_code == 401
@@ -113,4 +111,26 @@ assert limited.status_code == 429 and 1 <= int(limited.headers['Retry-After']) <
 main.last_push[(ACCOUNT, GAME)] -= 11
 assert push([{'k': 'rate-test', 'a': 2}]).status_code == 200
 assert store.history(main.db, ACCOUNT, GAME, 0, 100)[0]['kind'] == 'change'
+# Startup plus the next daily run keep cleanup, but never make a backups folder.
+async def no_backup_jobs():
+    original_sleep = main.asyncio.sleep
+    ticks = 0
+    async def advance(seconds):
+        nonlocal ticks
+        assert seconds == 3600
+        ticks += 1
+        if ticks == 25:
+            raise asyncio.CancelledError
+    main.asyncio.sleep = advance
+    try:
+        await main.sweeper()
+    except asyncio.CancelledError:
+        pass
+    finally:
+        main.asyncio.sleep = original_sleep
+    assert ticks == 25
+asyncio.run(no_backup_jobs())
+assert not hasattr(store, 'backup')
+assert not os.path.exists(os.path.join(os.path.dirname(main.DB_PATH), 'backups'))
+assert os.path.isfile(main.DB_PATH)
 print('all checks passed')

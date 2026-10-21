@@ -121,21 +121,6 @@ def accounts(db: sqlite3.Connection) -> list[str]:
         return [r[0] for r in db.execute('select distinct account from meta')]
 
 
-def backup(db: sqlite3.Connection, folder: str, keep: int = 7) -> str:
-    """Copies the whole database to a dated file and keeps only the newest few."""
-    os.makedirs(folder, exist_ok=True)
-    path = os.path.join(folder, time.strftime('trackstat-%Y-%m-%d.db', time.gmtime()))
-    if os.path.exists(path):
-        os.remove(path)
-    copy = sqlite3.connect(path)
-    with _lock:
-        db.backup(copy)
-    copy.close()
-    for old in sorted(f for f in os.listdir(folder) if f.startswith('trackstat-') and f.endswith('.db'))[:-keep]:
-        os.remove(os.path.join(folder, old))
-    return path
-
-
 def forget(db: sqlite3.Connection, account: str) -> None:
     with _lock, db:
         for table in ('stacks', 'meta', 'changes'):
