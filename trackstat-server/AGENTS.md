@@ -32,7 +32,7 @@ This server keeps: each account's inventory per game, plus a history of only wha
 - No local PNG copies or backup directories are created. Private model icons beginning with zero remain library-captured.
 
 ## Maintenance (hourly cleanup; daily reconciliation/compaction checks)
-- Reconcile: asks Supabase `trackstat_existing_accounts` which accounts still exist and deletes the rest here (covers key reset and inactive-account cleanup). Never deletes if Supabase cannot answer or if over half of the accounts look gone.
+- Reconcile: asks Supabase `trackstat_existing_accounts` which accounts still exist and deletes the rest here (covers key reset and inactive-account cleanup). Also drops old keys replaced by a newer key, and accounts not connected on the website while `only_connected` is on. Never deletes if Supabase cannot answer or if over half of the accounts look gone.
 - Automatic database backups are disabled. Changes older than 7 days are pruned hourly; current inventory never expires. Startup deletes only the old backups directory beside DB_PATH; no new backups are created.
 - Admin statistics are cached for 30 seconds. Timestamp cleanup uses `changes_by_time`.
 - Compaction runs only if at least 16 MiB and 25 percent of pages are free and temporary disk headroom is sufficient. It reuses the daily job and creates no persistent backup file.

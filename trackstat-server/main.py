@@ -63,6 +63,17 @@ async def superseded(ids: list[str]) -> set[str] | None:
     return set(found) if isinstance(found, list) else None
 
 
+async def unconnected(ids: list[str]) -> set[str] | None:
+    """Which of these accounts are not connected on the website (empty while that rule is off), or None if it could not answer."""
+    response = await http.post(
+        f'{SUPABASE_URL}/rest/v1/rpc/trackstat_unconnected_accounts',
+        json={'p_ids': ids},
+        headers={'apikey': SUPABASE_ANON_KEY, 'Authorization': f'Bearer {SUPABASE_ANON_KEY}'},
+    )
+    found = response.json() if response.status_code == 200 else None
+    return set(found) if isinstance(found, list) else None
+
+
 async def reconcile() -> int:
     """Removes inventories of accounts Supabase no longer has (key reset, cleanup of inactive accounts)
     and of old keys that a newer key for the same Roblox account has replaced."""
@@ -75,9 +86,10 @@ async def reconcile() -> int:
             return 0
         gone += [a for a in batch if a not in alive]
         old = await superseded([a for a in batch if a in alive])
-        if old is None:
-            return 0  # without the answer, nothing is removed
-        gone += list(old)
+        loose = await unconnected([a for a in batch if a in alive])
+        if old is None or loose is None:
+            return 0  # without the answers, nothing is removed
+        gone += list(old | loose)
     if len(mine) > 20 and len(gone) > len(mine) / 2:
         print(f'reconcile skipped: {len(gone)} of {len(mine)} accounts look gone')
         return 0

@@ -88,12 +88,19 @@ keepers.add(old_key)
 async def fake_superseded(ids):
     return {i for i in ids if i == old_key}
 main.superseded = fake_superseded
+loose_key = 'dddddddd-2222-3333-4444-555555555555'
+keepers.add(loose_key)
+async def fake_unconnected(ids):
+    return {i for i in ids if i == loose_key}
+main.unconnected = fake_unconnected
+store.save(main.db, loose_key, GAME, [{'k': 'loose', 'a': 1}])
 store.save(main.db, old_key, GAME, [{'k': 'old', 'a': 1}])
 store.save(main.db, 'aaaaaaaa-2222-3333-4444-555555555555', GAME, [{'k': 'x', 'a': 1}])
-expected = len(set(store.accounts(main.db)) - keepers) + 1  # accounts Supabase lost, plus the old key
+expected = len(set(store.accounts(main.db)) - keepers) + 2  # accounts Supabase lost, plus the old key and the unconnected one
 assert expected >= 3 and asyncio.run(main.reconcile()) == expected
 assert store.load(main.db, other, GAME) is not None and store.load(main.db, 'aaaaaaaa-2222-3333-4444-555555555555', GAME) is None
 assert store.load(main.db, old_key, GAME) is None  # an old key replaced by a newer one is dropped, even though Supabase still has it
+assert store.load(main.db, loose_key, GAME) is None  # an account not connected on the website is dropped too
 async def failing(ids):
     return None
 main.existing = failing
@@ -102,8 +109,11 @@ assert asyncio.run(main.reconcile()) == 0 and store.load(main.db, 'bbbbbbbb-2222
 main.existing = fake_existing
 store.save(main.db, old_key, GAME, [{'k': 'old', 'a': 1}])
 main.superseded = failing
+store.save(main.db, loose_key, GAME, [{'k': 'loose', 'a': 1}])
 assert asyncio.run(main.reconcile()) == 0 and store.load(main.db, old_key, GAME) is not None  # no answer about old keys: nothing removed
-main.superseded = fake_superseded
+main.superseded, main.unconnected = fake_superseded, failing
+assert asyncio.run(main.reconcile()) == 0 and store.load(main.db, loose_key, GAME) is not None  # no answer about connections: nothing removed
+main.unconnected = fake_unconnected
 st = client.get('/v1/stats', headers=site).json()
 assert st['accounts'] >= 1 and GAME in st['games'] and st['games'][GAME]['stacks'] >= 1 and st['bytes'] > 0
 assert client.get('/v1/stats').status_code == 401
