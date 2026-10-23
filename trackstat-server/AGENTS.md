@@ -19,7 +19,6 @@ This server keeps: each account's inventory per game, plus a history of only wha
 - `GET /v1/inventory?account&game` - website and bot. `Authorization: Bearer SITE_TOKEN` or `BOT_TOKEN`.
 - `GET /v1/changes?account&game&since&limit` - same auth.
 - `DELETE /v1/account/{account}` - same auth. Must run when a key reset deletes an account's data on the website.
-- `POST /v1/import` - website token only. Copies an inventory that already exists elsewhere, keeping its saved time (used once to move inventories over from Supabase).
 - `GET /v1/stats` - same auth. Totals per game, change-history size and file size (admin page).
 - `GET /health`.
 - `POST /v1/thumbnails` - website token only; `{game: folder, icons: [...]}` queues confirmed storage misses.
@@ -45,4 +44,10 @@ This server keeps: each account's inventory per game, plus a history of only wha
 - Do not store anything that identifies a login (email, key). Only the account UUID.
 
 ## Status
-Built and tested locally. Not deployed. Deployed at https://seisentrack.wisp.uno. Inventories were copied from Supabase, the library sends changed inventories here, and the website reads from here (Supabase copy is the fallback). Still to do: stop saving inventories in Supabase and remove the old copies (ask the user first).
+Deployed at https://seisentrack.wisp.uno. Inventories were copied from Supabase, the library sends changed inventories here, and the website reads from here (Supabase copy is the fallback). Still to do: stop saving inventories in Supabase and remove the old copies (ask the user first).
+
+## Protections (do not remove)
+- Only `SITE_TOKEN` can write or delete (`/v1/thumbnails`, `DELETE /v1/account`); `BOT_TOKEN` is read-only.
+- A key the server has not seen costs one Supabase request, capped at 60 per minute per caller and 600 overall; known keys cost none. Over the cap answers 429, which the library already backs off from.
+- Request bodies over 1 MB are refused even when sent in chunks. Amounts must be finite numbers.
+- The hourly job survives a failing step. There are no automatic database backups on purpose (they filled the disk); download one from the Wispbyte panel when needed.

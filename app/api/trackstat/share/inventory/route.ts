@@ -4,7 +4,7 @@ import { trackstatRPC } from '@/lib/server/trackstat';
 import { serverInventory } from '@/lib/server/trackstat-inventory';
 import { buildCatalog } from '@/lib/server/trackstat-catalog';
 import { rateLimit, getClientIp, rateLimitResponse } from '@/lib/server/rate-limit';
-import { PET_SIMULATOR_99, STEAL_AN_EGG, ANIME_DICE, type InventoryStack } from '@/lib/trackstat';
+import { PET_SIMULATOR_99, STEAL_AN_EGG, ANIME_DICE } from '@/lib/trackstat';
 
 export const dynamic = 'force-dynamic';
 const headers = { 'Cache-Control': 'private, no-store', 'Referrer-Policy': 'no-referrer' };
@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
   if (!/^[A-Za-z0-9_-]{20,64}$/.test(token)) return NextResponse.json({ catalog: {}, inventory: null }, { headers });
   try {
     const moved = await serverInventory(await trackstatRPC<string>('trackstat_shared_account', { p_token: token }), gameId);
-    const found = moved ?? await trackstatRPC<{ inventory: InventoryStack[] | null }>('trackstat_shared_inventory', { p_token: token, p_game: gameId });
+    const found = moved ?? { inventory: null };
     const catalog = await buildCatalog(found.inventory ?? [], animeDice ? 'ad' : stealAnEgg);
     const etag = `"${createHash('sha256').update(JSON.stringify([moved?.etag || found.inventory, catalog])).digest('hex')}"`;
     if (req.headers.get('if-none-match') === etag) return new NextResponse(null, { status: 304, headers: { ...headers, ETag: etag } });

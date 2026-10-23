@@ -1,4 +1,4 @@
-import { bearer, trackstatEntries, cookieName, cookieOptions, readKeys, keyPattern, maxKeys, markSeen } from '@/lib/server/trackstat-accounts';
+import { bearer, trackstatEntries, cookieName, cookieOptions, readKeys, keyPattern, maxKeys, markSeen, forgetSeen } from '@/lib/server/trackstat-accounts';
 import { NextRequest, NextResponse } from 'next/server';
 import { trackstatMedia, trackstatRPC } from '@/lib/server/trackstat';
 import { rateLimit, getClientIp, rateLimitResponse } from '@/lib/server/rate-limit';
@@ -89,6 +89,7 @@ export async function DELETE(req: NextRequest) {
     if (index !== undefined && (!Number.isInteger(index) || Number(index) < 0 || Number(index) >= entries.length)) return NextResponse.json({ error: 'Invalid account.' }, { status: 400, headers });
     const removed = index === undefined ? entries : [entries[Number(index)]];
     if (token) for (const id of removed.flatMap(entry => entry.ids)) await trackstatRPC('trackstat_user_account_remove', { p_account: id }, token);
+    await forgetSeen(removed.flatMap(entry => entry.keys));
     writeKeys(response, readKeys(req).filter(key => !removed.some(e => e.keys.includes(key))));
     return response;
   } catch { return NextResponse.json({ error: 'Account could not be removed.' }, { status: 503, headers }); }

@@ -21,6 +21,11 @@ export function markSeen(keys: string[]) {
   fresh.forEach(key => seenAt.set(key, now));
   return trackstatRPC('trackstat_site_seen', { p_keys: fresh }).then(() => undefined, () => { fresh.forEach(key => seenAt.delete(key)); });
 }
+// Removing an account on the website means its data should stop being stored; the database keeps it if someone else still has it linked
+export function forgetSeen(keys: string[]) {
+  keys.forEach(key => seenAt.delete(key));
+  return keys.length ? trackstatRPC('trackstat_site_forget', { p_keys: keys.slice(0, 60) }).then(() => undefined, () => undefined) : Promise.resolve();
+}
 export async function trackstatEntries(req: NextRequest) {
   const keys = readKeys(req);
   const token = bearer(req);

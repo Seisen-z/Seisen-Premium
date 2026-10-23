@@ -54,10 +54,9 @@ assert client.get('/v1/inventory', params={'account': ACCOUNT, 'game': GAME}, he
 assert client.get('/v1/inventory', params={'account': 'x', 'game': GAME}, headers=site).status_code == 400
 assert push([{'k': 'a'}]).status_code == 400
 other = '99999999-2222-3333-4444-555555555555'
-body = {'account': other, 'game': GAME, 'updated': 1700000000, 'inventory': [{'k': 'z', 'a': 9}]}
-assert client.post('/v1/import', json=body, headers={'Authorization': 'Bearer bot-secret'}).status_code == 401
-assert client.post('/v1/import', json=body, headers=site).json()['baseline']
+assert store.save(main.db, other, GAME, [{'k': 'z', 'a': 9}], 1700000000)['baseline']
 assert client.get('/v1/inventory', params={'account': other, 'game': GAME}, headers=site).json()['updated'] == 1700000000
+assert client.post('/v1/import', json={'account': other, 'game': GAME, 'updated': 1, 'inventory': []}, headers=site).status_code in (404, 405)  # the one-time import is gone
 # Pets of the same type are different stacks; identical ones are kept too; market numbers move without counting as changes
 pets = [{'k': 'pet:Centaur', 'a': 1, 'm': ['Nitro'], 'w': 5.5, 'p': 10}, {'k': 'pet:Centaur', 'a': 1, 'm': ['Scrambled'], 'w': 3.1}, {'k': 'pet:Cat', 'a': 1}, {'k': 'pet:Cat', 'a': 1}]
 twin = '77777777-2222-3333-4444-555555555555'

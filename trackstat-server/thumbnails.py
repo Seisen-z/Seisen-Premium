@@ -6,6 +6,15 @@ import store
 
 FOLDERS = {'petsimulator99', 'stealanegg', 'animedice'}
 PNG = b'\x89PNG\r\n\x1a\n'
+MAX_ATTEMPTS = 8
+
+
+def retry(db, game: str, icon: str, attempt: int) -> None:
+    """Waits longer after each failure and gives up after MAX_ATTEMPTS; the job is queued again whenever an inventory needs the picture."""
+    if attempt >= MAX_ATTEMPTS:
+        store.finish_thumbnail(db, game, icon)
+    else:
+        store.finish_thumbnail(db, game, icon, time.time() + min(60 * 2 ** min(attempt, 6), 3600))
 
 
 async def process(db, http, url: str, key: str) -> None:
@@ -32,7 +41,7 @@ async def process(db, http, url: str, key: str) -> None:
                     raise ValueError('Image storage failed')
                 store.finish_thumbnail(db, game, icon)
             except Exception:
-                store.finish_thumbnail(db, game, icon, time.time() + min(60 * 2 ** min(attempt, 6), 3600))
+                retry(db, game, icon, attempt)
 
     for game in {job[0] for job in jobs}:
         batch = [job for job in jobs if job[0] == game]
@@ -59,12 +68,12 @@ async def process(db, http, url: str, key: str) -> None:
                 if icon in images:
                     tasks.append(download(folder, icon, attempt, images[icon]))
                 else:
-                    store.finish_thumbnail(db, folder, icon, time.time() + 60)
+                    retry(db, folder, icon, attempt)
             await asyncio.gather(*tasks)
         except Exception:
             # An unavailable storage manifest is not proof that an image is missing.
-            for folder, icon, _ in batch:
-                store.finish_thumbnail(db, folder, icon, time.time() + 60)
+            for folder, icon, attempt in batch:
+                retry(db, folder, icon, attempt)
 
 
 async def run(db, http, url: str, key: str) -> None:

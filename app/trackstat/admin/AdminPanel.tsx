@@ -14,7 +14,7 @@ import { Stat, ago, card } from '../ui';
 
 type Totals = { libraries: number; libraries_live: number; libraries_24h: number; libraries_7d: number; accounts: number; sessions: number; website_users: number; shares: number; live_now: number; active_1h: number; active_24h: number; active_7d: number };
 type GameRow = { game_id: string; libraries_live: number; libraries_24h: number; accounts: number; live: number; active_24h: number; sessions: number };
-type Account = { id: string; username: string; roblox_id: string; created_at: string; last_sync: string | null; live: string[]; games: string[]; sessions: number; gained_today: number; website_users: number };
+type Account = { id: string; ids: string[]; keys: number; username: string; roblox_id: string; created_at: string; last_sync: string | null; live: string[]; games: string[]; sessions: number; gained_today: number; website_users: number };
 type Gain = { account: string; username: string; game_id: string; name: string; kind: string; gained: number; at: string };
 type ServerStats = { accounts: number; games: Record<string, { accounts: number; stacks: number; last_update: number }>; changes: number; oldest_change: number | null; bytes: number };
 type Data = {
@@ -227,7 +227,7 @@ function Body({ data, onOpen }: { data: Data; onOpen: (a: Account) => void }) {
             <tbody>
               {rows.slice(0, limit).map(a => (
                 <tr key={a.id} onClick={() => onOpen(a)} className="cursor-pointer border-t border-ts-fg/[0.05] hover:bg-ts-fg/[0.03]">
-                  <td className="py-2.5 pr-3"><span className="block max-w-[14rem] truncate text-ts-fg/90">{a.username}</span><span className="text-xs text-ts-fg/35">{a.roblox_id}</span></td>
+                  <td className="py-2.5 pr-3"><span className="block max-w-[14rem] truncate text-ts-fg/90">{a.username}</span><span className="text-xs text-ts-fg/35">{a.roblox_id}{a.keys > 1 ? ` · ${a.keys} keys` : ''}</span></td>
                   <td className="pr-3"><span className={`flex items-center gap-1.5 text-xs ${a.live.length ? 'text-ts-pos' : 'text-ts-fg/40'}`}><span className={`h-1.5 w-1.5 rounded-full ${a.live.length ? 'bg-ts-pos' : 'bg-ts-fg/30'}`} />{a.live.length ? 'Live' : 'Offline'}</span></td>
                   <td className="pr-3 text-xs text-ts-fg/55">{a.games.map(g => gameOf(g)?.name ?? g).join(', ') || '—'}</td>
                   <td className="pr-3 text-xs text-ts-fg/55">{a.last_sync ? ago(a.last_sync) : '—'}</td>
@@ -253,11 +253,19 @@ function Detail({ account, token, onClose }: { account: Account; token: string; 
   useEffect(() => {
     if (!view) return;
     let live = true;
-    void fetch(`/api/trackstat/admin/inventory?account=${account.id}&game=${view}`, { cache: 'no-store', headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.json()).then((body: Loaded) => { if (live) setLoaded(current => ({ ...current, [view]: { catalog: body.catalog ?? {}, inventory: body.inventory ?? null } })); })
-      .catch(() => { if (live) setLoaded(current => ({ ...current, [view]: { catalog: {}, inventory: null } })); });
+    // The account may have used several connection keys; the newest one that has an inventory is shown
+    void (async () => {
+      let found: Loaded = { catalog: {}, inventory: null };
+      for (const id of account.ids) {
+        try {
+          const body: Loaded = await fetch(`/api/trackstat/admin/inventory?account=${id}&game=${view}`, { cache: 'no-store', headers: { Authorization: `Bearer ${token}` } }).then(r => r.json());
+          if (body.inventory) { found = { catalog: body.catalog ?? {}, inventory: body.inventory }; break; }
+        } catch { /* try the next key */ }
+      }
+      if (live) setLoaded(current => ({ ...current, [view]: found }));
+    })();
     return () => { live = false; };
-  }, [account.id, view, token]);
+  }, [account.ids, view, token]);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', onKey);

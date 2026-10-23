@@ -20,10 +20,10 @@ export async function GET(req: NextRequest) {
     const roblox = req.nextUrl.searchParams.get('roblox') ?? '';
     if (!/^[0-9]{1,20}$/.test(roblox)) return NextResponse.json({ catalog: {} }, { headers });
     // The newest inventory comes from the database for this one account and game, not from the full account read
-    // The Trackstat server holds the inventory; the Supabase copy is only the fallback while inventories move over
+    // Inventories live on the Trackstat server only; Supabase no longer keeps them
     const account = await trackstatRPC<string | null>('trackstat_inventory_account', { p_keys: readKeys(req), p_roblox: roblox, p_game: gameId }, bearer(req));
     const moved = await serverInventory(account, gameId);
-    const found = moved ? { inventory: moved.inventory, updated_at: new Date(moved.updated * 1000).toISOString() } : await trackstatRPC<{ id?: string; updated_at?: string; inventory: InventoryStack[] | null }>('trackstat_inventory', { p_keys: readKeys(req), p_roblox: roblox, p_game: gameId }, bearer(req));
+    const found: { inventory: InventoryStack[] | null; updated_at?: string } = moved ? { inventory: moved.inventory, updated_at: new Date(moved.updated * 1000).toISOString() } : { inventory: null };
     // Steal An Egg also shows pictures for gained items, matched by name
     let names: string[] = [];
     if (stealAnEgg || animeDice) {
