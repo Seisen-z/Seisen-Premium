@@ -83,15 +83,27 @@ keepers = {ACCOUNT, other}
 async def fake_existing(ids):
     return {i for i in ids if i in keepers}
 main.existing = fake_existing
+old_key = 'cccccccc-2222-3333-4444-555555555555'
+keepers.add(old_key)
+async def fake_superseded(ids):
+    return {i for i in ids if i == old_key}
+main.superseded = fake_superseded
+store.save(main.db, old_key, GAME, [{'k': 'old', 'a': 1}])
 store.save(main.db, 'aaaaaaaa-2222-3333-4444-555555555555', GAME, [{'k': 'x', 'a': 1}])
-expected = len(set(store.accounts(main.db)) - keepers)
-assert expected >= 2 and asyncio.run(main.reconcile()) == expected
+expected = len(set(store.accounts(main.db)) - keepers) + 1  # accounts Supabase lost, plus the old key
+assert expected >= 3 and asyncio.run(main.reconcile()) == expected
 assert store.load(main.db, other, GAME) is not None and store.load(main.db, 'aaaaaaaa-2222-3333-4444-555555555555', GAME) is None
+assert store.load(main.db, old_key, GAME) is None  # an old key replaced by a newer one is dropped, even though Supabase still has it
 async def failing(ids):
     return None
 main.existing = failing
 store.save(main.db, 'bbbbbbbb-2222-3333-4444-555555555555', GAME, [{'k': 'x', 'a': 1}])
 assert asyncio.run(main.reconcile()) == 0 and store.load(main.db, 'bbbbbbbb-2222-3333-4444-555555555555', GAME) is not None  # an outage never deletes
+main.existing = fake_existing
+store.save(main.db, old_key, GAME, [{'k': 'old', 'a': 1}])
+main.superseded = failing
+assert asyncio.run(main.reconcile()) == 0 and store.load(main.db, old_key, GAME) is not None  # no answer about old keys: nothing removed
+main.superseded = fake_superseded
 st = client.get('/v1/stats', headers=site).json()
 assert st['accounts'] >= 1 and GAME in st['games'] and st['games'][GAME]['stacks'] >= 1 and st['bytes'] > 0
 assert client.get('/v1/stats').status_code == 401
