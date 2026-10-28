@@ -40,7 +40,7 @@ This server keeps: each account's inventory per game, plus a history of only wha
 ## Rules
 - The library never gets `SITE_TOKEN` or `BOT_TOKEN`. The bot only reads.
 - Inventory stack shape is `InventoryStack` in `lib/trackstat.ts`; `k` identifies a stack and `a` is the amount. Do not invent other fields.
-- Games: PS99 `3317771874`, Steal an Egg `10563114921`, Anime Dice `10708913337`.
+- Games: PS99 `3317771874`, Tap Simulator `10629695169`, Anime Dice `10708913337`.
 - Do not store anything that identifies a login (email, key). Only the account UUID.
 
 ## Status

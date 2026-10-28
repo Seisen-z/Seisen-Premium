@@ -6,7 +6,7 @@ import sqlite3
 import threading
 import time
 
-GAMES = {'3317771874', '10563114921', '10708913337'}
+GAMES = {'3317771874', '10629695169', '10708913337'}
 MAX_STACKS = 1000
 # Fields that move on their own (amount, market numbers, income). They are saved but never decide which stack is which.
 VOLATILE = {'a', 'x', 'r', 'p'}

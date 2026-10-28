@@ -2,21 +2,19 @@
 
 import { dailySnapshot } from '@/lib/trackstat-daily';
 import { loadInventory } from '@/lib/client/trackstat-inventory';
-import InventoryControls from './InventoryControls';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Activity, ArrowLeft, Boxes, ChevronRight, Clock, Coins, Egg, Gauge, PawPrint, Search, Star, Swords, TrendingUp, Users, Weight, Zap } from 'lucide-react';
+import { Activity, ArrowLeft, Boxes, ChevronRight, Clock, Coins, Egg, PawPrint, Search, TrendingUp, Users } from 'lucide-react';
 import { compactCount, type TrackstatDailyGains, type CatalogEntry, type InventoryStack, type TrackstatMedia, type TrackstatPublic, type TrackstatSession } from '@/lib/trackstat';
-import { CardSkeleton, DetailTable, GainChart, Img, Stat, ago, gainAt, card, InventoryStat, inventoryStats, DailyPicker, total, VariantTag, PlacedTag } from './ui';
+import { CardSkeleton, DetailTable, GainChart, Img, Stat, ago, gainAt, card, DailyPicker, total } from './ui';
 
 type Tab = 'overview' | 'inventory' | 'gains' | 'community';
 const tabs: { id: Tab; label: string; icon: typeof Activity }[] = [
   { id: 'overview', label: 'Overview', icon: Activity }, { id: 'inventory', label: 'Inventory', icon: Boxes },
   { id: 'gains', label: 'Daily Gains', icon: TrendingUp }, { id: 'community', label: 'Community', icon: Users },
 ];
-const categories = [{ id: 'all', label: 'All' }, { id: 'pet', label: 'Pets' }, { id: 'egg', label: 'Eggs' }, { id: 'gear', label: 'Gear' }, { id: 'item', label: 'Items' }];
-const metrics = ['pets', 'eggs', 'gear', 'items'] as const;
-const kg = (value: number) => `${compactCount(value)} kg`;
+const categories = [{ id: 'all', label: 'All' }, { id: 'pet', label: 'Pets' }, { id: 'potion', label: 'Potions' }, { id: 'item', label: 'Items' }];
+const metrics = ['normal', 'golden', 'diamond', 'rainbow', 'items', 'potions'] as const;
 
 function InventoryCard({ stack, info }: { stack: InventoryStack; info?: CatalogEntry }) {
   const [kind, id] = stack.k.split(':');
@@ -26,16 +24,11 @@ function InventoryCard({ stack, info }: { stack: InventoryStack; info?: CatalogE
       {stack.a > 1 && <span className="absolute -right-2 -top-3 z-10 font-mono text-lg font-extrabold leading-none text-ts-fg [text-shadow:0_2px_4px_rgba(0,0,0,0.9)]" title={String(stack.a)}><span className="mr-px text-xs font-bold opacity-70">x</span>{compactCount(stack.a)}</span>}
       <div className="relative grid h-28 place-items-center overflow-hidden rounded-t-xl" style={{ background: `radial-gradient(circle at 50% 60%, ${color}33, transparent 70%)` }}>
         <Img src={info?.stored} backup={info?.image} className="h-20 w-20 object-contain" fallback={<PawPrint size={28} className="text-ts-fg/25" />} />
-        {stack.f && <Star size={16} className="absolute left-3 top-3 fill-ts-accent text-ts-accent" aria-label="Favorite" />}
       </div>
       <div className="flex flex-1 flex-col gap-2 p-4">
-        <div className="flex items-start justify-between gap-2"><p className="break-words text-sm font-semibold leading-tight text-ts-fg">{info?.name ?? id}</p>{stack.pl ? <PlacedTag /> : null}</div>
-        <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs font-medium"><span style={{ color }}>{info?.rarity ?? kind}</span>{stack.m?.map(m => <VariantTag key={m} name={m} />)}</p>
-        {kind !== 'pet' && kind !== 'egg' && info?.description && <p className="line-clamp-2 text-xs leading-5 text-ts-fg/45">{info.description}</p>}
-        <div className={inventoryStats}>
-          {stack.w ? <InventoryStat value={kg(stack.w)} label="Weight" icon={<Weight />} /> : null}
-          {stack.p ? <InventoryStat value={`$${compactCount(stack.p)}/s`} label="Income" icon={<Coins />} tone="income" /> : null}
-        </div>
+        <div className="flex items-start justify-between gap-2"><p className="break-words text-sm font-semibold leading-tight text-ts-fg">{info?.name ?? id}</p></div>
+        <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs font-medium"><span style={{ color }}>{info?.rarity ?? kind}</span></p>
+        {kind !== 'pet' && info?.description && <p className="line-clamp-2 text-xs leading-5 text-ts-fg/45">{info.description}</p>}
       </div>
     </div>
   );
@@ -45,26 +38,23 @@ export function InventoryView({ stacks, catalog, loading }: { stacks?: Inventory
   const [q, setQ] = useState('');
   const [cat, setCat] = useState('all');
   const [limit, setLimit] = useState(60);
-  const [sort, setSort] = useState<'income' | 'weight' | 'amount' | 'name'>('income');
-  const [favOnly, setFavOnly] = useState(false);
+  const [sort, setSort] = useState<'amount' | 'name'>('amount');
   const shown = useMemo(() => {
     const name = (s: InventoryStack) => catalog[s.k]?.name ?? s.k.split(':')[1];
     const order = {
-      income: (a: InventoryStack, b: InventoryStack) => (b.p ?? 0) - (a.p ?? 0) || (b.w ?? 0) - (a.w ?? 0) || b.a - a.a,
-      weight: (a: InventoryStack, b: InventoryStack) => (b.w ?? 0) - (a.w ?? 0) || (b.p ?? 0) - (a.p ?? 0),
       amount: (a: InventoryStack, b: InventoryStack) => b.a - a.a,
       name: (a: InventoryStack, b: InventoryStack) => name(a).localeCompare(name(b)),
     }[sort];
-    return (stacks ?? []).filter(s => (cat === 'all' || s.k.startsWith(`${cat}:`)) && (!favOnly || s.f) && name(s).toLowerCase().includes(q.toLowerCase())).sort(order);
-  }, [stacks, catalog, q, cat, sort, favOnly]);
+    return (stacks ?? []).filter(s => (cat === 'all' || s.k.startsWith(`${cat}:`)) && name(s).toLowerCase().includes(q.toLowerCase())).sort(order);
+  }, [stacks, catalog, q, cat, sort]);
   if (!stacks) return loading ? <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">{Array.from({ length: 10 }, (_, i) => <CardSkeleton key={i} />)}</div> : <div className={`${card} p-10 text-sm text-ts-fg/45`}>Inventory details appear after the next sync from the updated library.</div>;
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center gap-3">
-        <label className="relative block w-full max-w-xs"><Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ts-fg/35" /><input aria-label="Search inventory" value={q} onChange={e => { setQ(e.target.value); setLimit(60); }} placeholder="Search pet, egg, gear or item…" className="w-full rounded-lg border border-ts-fg/10 bg-ts-surface py-2 pl-9 pr-3 text-sm text-ts-fg outline-none focus:border-ts-accent" /></label>
+        <label className="relative block w-full max-w-xs"><Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ts-fg/35" /><input aria-label="Search inventory" value={q} onChange={e => { setQ(e.target.value); setLimit(60); }} placeholder="Search pet, potion or item…" className="w-full rounded-lg border border-ts-fg/10 bg-ts-surface py-2 pl-9 pr-3 text-sm text-ts-fg outline-none focus:border-ts-accent" /></label>
         <div className="flex flex-wrap gap-1" role="group" aria-label="Inventory category">{categories.map(c => <button key={c.id} aria-pressed={cat === c.id} onClick={() => { setCat(c.id); setLimit(60); }} className={`rounded-lg px-3 py-1.5 text-sm transition-colors ${cat === c.id ? 'bg-ts-accent font-medium text-ts-accent-fg' : 'bg-ts-fg/[0.04] text-ts-fg/55 hover:text-ts-fg'}`}>{c.label}</button>)}</div>
       </div>
-      <InventoryControls sort={sort} onSort={value => { setSort(value); setLimit(60); }} options={[['income', 'Income'], ['weight', 'Weight'], ['amount', 'Amount'], ['name', 'Name']]} favOnly={favOnly} onFav={value => { setFavOnly(value); setLimit(60); }} summary={`${shown.length} of ${stacks.length} stacks`} />
+      <div className="mb-4 flex justify-between text-sm text-ts-fg/60"><select aria-label="Sort inventory" value={sort} onChange={e => { setSort(e.target.value as 'amount' | 'name'); setLimit(60); }} className="rounded-lg bg-ts-surface p-2"><option value="amount">Amount</option><option value="name">Name</option></select><span>{shown.length} of {stacks.length} stacks</span></div>
       {loading ? (
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">{Array.from({ length: 10 }, (_, i) => <CardSkeleton key={i} />)}</div>
       ) : shown.length ? (
@@ -77,7 +67,7 @@ export function InventoryView({ stacks, catalog, loading }: { stacks?: Inventory
   );
 }
 
-export default function StealAnEggView({ sessions, daily = [], media, community, live, roblox, onBack }: { sessions: TrackstatSession[]; daily?: TrackstatDailyGains[]; roblox: string; media: TrackstatMedia | undefined; community: TrackstatPublic | null | undefined; live: boolean; onBack: () => void }) {
+export default function TapSimulatorView({ sessions, daily = [], media, community, live, roblox, onBack }: { sessions: TrackstatSession[]; daily?: TrackstatDailyGains[]; roblox: string; media: TrackstatMedia | undefined; community: TrackstatPublic | null | undefined; live: boolean; onBack: () => void }) {
   const [tab, setTab] = useState<Tab>('overview');
   const [day, setDay] = useState('');
   const shownDay = day || new Date().toISOString().slice(0, 10);
@@ -94,7 +84,7 @@ export default function StealAnEggView({ sessions, daily = [], media, community,
   useEffect(() => {
     if (!latest || !roblox) return;
     let live = true;
-    const run = () => loadInventory(roblox, 'sae', latestUpdated.current, result => {
+    const run = () => loadInventory(roblox, 'tap', latestUpdated.current, result => {
       if (!live) return;
       setCatalog(result.catalog);
       if (result.inventory) setInventory(result.inventory);
@@ -106,15 +96,15 @@ export default function StealAnEggView({ sessions, daily = [], media, community,
   const images = useMemo(() => Object.fromEntries(Object.values(catalog).map(c => [c.name.toLowerCase(), c.stored ?? c.image])), [catalog]);
   const backups = useMemo(() => Object.fromEntries(Object.values(catalog).map(c => [c.name.toLowerCase(), c.image])), [catalog]);
   const recent = (snap?.details ?? []).filter(d => d.gained > 0 && (recentCategory === 'all' || d.kind === recentCategory)).map(d => ({ ...d, at: gainAt(d, `${shownDay}T00:00:00Z`) })).sort((x, y) => Date.parse(y.at) - Date.parse(x.at)).slice(0, 10);
-  const top = [...(inventory ?? [])].filter(s => s.k.startsWith('pet:')).sort((a, b) => (b.p ?? 0) - (a.p ?? 0)).slice(0, 6);
+  const top = [...(inventory ?? [])].filter(s => s.k.startsWith('pet:')).sort((a, b) => b.a - a.a).slice(0, 6);
 
   return (
     <>
       <div className={`${card} mb-4 p-5`}>
         <div className="flex items-center gap-4">
           <button onClick={onBack} aria-label="Back to games" className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-ts-fg/10 text-ts-fg/60 hover:border-ts-accent/50 hover:text-ts-accent"><ArrowLeft size={16} /></button>
-          <Img src={media?.stealAnEgg} className="h-16 w-16 shrink-0 rounded-lg bg-gradient-to-br from-ts-accent/25 to-ts-raised" fallback={<Egg size={30} className="text-ts-accent" />} />
-          <div className="min-w-0"><h2 className="text-xl font-semibold text-ts-fg">Steal an Egg</h2><p className={`mt-1 flex items-center gap-2 text-sm ${live ? 'text-ts-pos' : 'text-ts-fg/40'}`}><span className={`h-2 w-2 rounded-full ${live ? 'bg-ts-pos' : 'bg-ts-fg/30'}`} />{live ? 'Tracking' : 'Not tracking'}</p><p className="mt-1 text-xs text-ts-fg/45">Tracking your money, speed, pets, eggs, gear and items.</p></div>
+          <Img src={media?.tapSimulator} className="h-16 w-16 shrink-0 rounded-lg bg-gradient-to-br from-ts-accent/25 to-ts-raised" fallback={<Egg size={30} className="text-ts-accent" />} />
+          <div className="min-w-0"><h2 className="text-xl font-semibold text-ts-fg">Tap Simulator</h2><p className={`mt-1 flex items-center gap-2 text-sm ${live ? 'text-ts-pos' : 'text-ts-fg/40'}`}><span className={`h-2 w-2 rounded-full ${live ? 'bg-ts-pos' : 'bg-ts-fg/30'}`} />{live ? 'Tracking' : 'Not tracking'}</p><p className="mt-1 text-xs text-ts-fg/45">Tracking pet variants, items, potions, coins, gems, Candy Corn and rebirths.</p></div>
         </div>
         <div className="mt-5 flex gap-1 overflow-x-auto border-t border-ts-fg/[0.07] pt-3" role="tablist" aria-label="Game sections">
           {tabs.map(t => <button key={t.id} role="tab" aria-selected={tab === t.id} onClick={() => setTab(t.id)} className={`flex shrink-0 items-center gap-2 border-b-2 px-4 pb-2 pt-1 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-ts-accent ${tab === t.id ? 'border-ts-accent text-ts-accent' : 'border-transparent text-ts-fg/45 hover:text-ts-fg'}`}><t.icon size={14} />{t.label}</button>)}
@@ -132,16 +122,12 @@ export default function StealAnEggView({ sessions, daily = [], media, community,
           </div>
         ) : <p className="text-sm text-ts-fg/40">Community totals are unavailable right now.</p>
       ) : !snap ? (
-        <div className={`${card} p-10`}><Activity className="mb-4 text-ts-accent" size={28} /><h3 className="text-lg font-semibold text-ts-fg">No daily activity yet</h3><p className="mt-3 max-w-md text-sm leading-7 text-ts-fg/45">Open the Trackstat tab in the library while playing Steal an Egg and turn on Track this account.</p></div>
+        <div className={`${card} p-10`}><Activity className="mb-4 text-ts-accent" size={28} /><h3 className="text-lg font-semibold text-ts-fg">No daily activity yet</h3><p className="mt-3 max-w-md text-sm leading-7 text-ts-fg/45">Open the Trackstat tab in the library while playing Tap Simulator and turn on Track this account.</p></div>
       ) : tab === 'overview' ? (
         <>
           <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-3 2xl:grid-cols-6">
-            <Stat icon={<Coins size={20} className="text-ts-pos" />} label="Money" value={`$${compactCount(snap.money ?? 0)}`} hint={String(snap.money ?? 0)} />
-            <Stat icon={<Gauge size={20} />} label="Speed" value={compactCount(snap.speed ?? 0)} hint={String(snap.speed ?? 0)} />
-            <Stat icon={<Zap size={20} />} label="Money / second" value={`$${compactCount(snap.per_second ?? 0)}/s`} hint={String(snap.per_second ?? 0)} />
-            <Stat icon={<PawPrint size={20} />} label="Pets" value={compactCount(snap.owned.pets ?? 0)} />
-            <Stat icon={<Egg size={20} />} label="Eggs" value={compactCount(snap.owned.eggs ?? 0)} />
-            <Stat icon={<TrendingUp size={20} />} label="Daily gains" value={`+${compactCount(total(snap.gained))}`} />
+            {(['coins', 'gems', 'candy_corn', 'rebirths'] as const).map(k => <Stat key={k} icon={<Coins size={20} />} label={k === 'candy_corn' ? 'Candy Corn' : k.charAt(0).toUpperCase() + k.slice(1)} value={compactCount(snap[k] ?? 0)} hint={String(snap[k] ?? 0)} />)}
+            {metrics.map(k => <Stat key={k} icon={<PawPrint size={20} />} label={k.charAt(0).toUpperCase() + k.slice(1)} value={compactCount(snap.owned[k] ?? 0)} />)}
           </div>
           <div className="grid items-stretch gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
             <div className={`${card} p-5`}>
@@ -153,7 +139,7 @@ export default function StealAnEggView({ sessions, daily = [], media, community,
           </div>
           {!!top.length && (
             <div className={`${card} mt-4 p-5`}>
-              <div className="mb-4 flex items-center justify-between"><h3 className="text-sm font-semibold text-ts-fg">Most Valuable</h3><button onClick={() => setTab('inventory')} className="flex items-center gap-1 text-xs text-ts-accent hover:underline">Open inventory <ChevronRight size={12} /></button></div>
+              <div className="mb-4 flex items-center justify-between"><h3 className="text-sm font-semibold text-ts-fg">Most Owned</h3><button onClick={() => setTab('inventory')} className="flex items-center gap-1 text-xs text-ts-accent hover:underline">Open inventory <ChevronRight size={12} /></button></div>
               <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
                 {top.map((t, i) => {
                   const info = catalog[t.k];
@@ -161,20 +147,19 @@ export default function StealAnEggView({ sessions, daily = [], media, community,
                     <div key={`${t.k}:${i}`} className="rounded-lg border border-ts-fg/[0.06] p-3 text-center" style={{ background: `radial-gradient(circle at 50% 30%, ${info?.rarity_color ?? '#7458f5'}22, transparent 70%)` }}>
                       <Img src={info?.stored} backup={info?.image} className="mx-auto h-14 w-14 object-contain" fallback={<PawPrint size={22} className="text-ts-fg/25" />} />
                       <p className="mt-2 truncate text-xs font-medium text-ts-fg" title={info?.name}>{info?.name ?? t.k.split(':')[1]}</p>
-                      <p className="mt-1 font-mono text-xs text-ts-pos">${compactCount(t.p ?? 0)}/s</p>
-                      {t.w ? <p className="text-[10px] text-ts-fg/35">{kg(t.w)}</p> : null}
+                      <p className="mt-1 font-mono text-xs text-ts-pos">x{compactCount(t.a)}</p>
                     </div>
                   );
                 })}
               </div>
             </div>
           )}
-          <p className="mt-4 text-xs text-ts-fg/40"><Clock className="mr-1 inline" size={12} />Inventory refreshes every 15 seconds from the library. Activity is retained for 7 days; the latest inventory is kept.</p>
+          <p className="mt-4 text-xs text-ts-fg/40"><Clock className="mr-1 inline" size={12} />Inventory syncs periodically from the library. Activity is retained for 7 days; the latest inventory is kept.</p>
         </>
       ) : tab === 'inventory' ? <InventoryView stacks={inventory} catalog={catalog} loading={hasInventory && loadedFor !== signature} />
       : tab === 'gains' ? (
         <>
-          <div className="mb-6 grid grid-cols-2 gap-3 xl:grid-cols-4">{metrics.map(k => <div key={k} className={`${card} p-4`}><p className="flex items-center gap-1 text-xs capitalize text-ts-fg/45">{k === 'gear' && <Swords size={12} />}{k}</p><p className="mt-2 font-mono text-2xl text-ts-fg" title={String(snap.owned[k])}>{compactCount(snap.owned[k] ?? 0)}</p><p className="mt-2 text-xs text-ts-accent">+{compactCount(snap.gained[k] ?? 0)} gained</p></div>)}</div>
+          <div className="mb-6 grid grid-cols-2 gap-3 xl:grid-cols-4">{metrics.map(k => <div key={k} className={`${card} p-4`}><p className="flex items-center gap-1 text-xs capitalize text-ts-fg/45">{k}</p><p className="mt-2 font-mono text-2xl text-ts-fg" title={String(snap.owned[k])}>{compactCount(snap.owned[k] ?? 0)}</p><p className="mt-2 text-xs text-ts-accent">+{compactCount(snap.gained[k] ?? 0)} gained</p></div>)}</div>
           <DetailTable rows={snap.details} gainedOnly images={images} backups={backups} empty="Nothing gained on this day yet." />
           <p className="mt-5 text-xs leading-6 text-ts-fg/35">Gains count inventory increases while tracking, including trades and rewards. Stats are client-reported.</p>
         </>

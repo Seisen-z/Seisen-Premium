@@ -1,3 +1,7 @@
+# 2026-10-28
+
+- Added Tap Simulator Trackstat; removed active Steal an Egg support.
+
 # Changelog
 
 All notable changes to this project will be documented in this file.

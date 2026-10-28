@@ -14,7 +14,7 @@ export default function Welcome({ onConnect, waiting = false }: { onConnect: () 
     );
   }
   const steps = [
-    { icon: Download, title: 'Get the script', text: 'Grab Seisen Hub and load it in Pet Simulator 99 or Steal an Egg.', action: <Link href="/getkey" className={`${button} inline-flex items-center gap-2`}>Get the script <ArrowRight size={14} /></Link> },
+    { icon: Download, title: 'Get the script', text: 'Grab Seisen Hub and load it in Pet Simulator 99, Tap Simulator or Anime Dice.', action: <Link href="/getkey" className={`${button} inline-flex items-center gap-2`}>Get the script <ArrowRight size={14} /></Link> },
     { icon: Play, title: 'Open the Trackstat tab', text: 'In the library window, open Trackstat and press Copy connection key.' },
     { icon: KeyRound, title: 'Paste your key here', text: 'Each Roblox account has its own private key. No website account is needed.', action: <button onClick={onConnect} className={`${button} inline-flex items-center gap-2 border-ts-accent/40 bg-ts-accent/10 text-ts-accent`}>Paste a key <ArrowRight size={14} /></button> },
   ];

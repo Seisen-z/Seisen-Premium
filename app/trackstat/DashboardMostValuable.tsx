@@ -2,16 +2,16 @@
 
 import { useEffect, useState } from 'react';
 import { CircleDollarSign, Gem } from 'lucide-react';
-import { ANIME_DICE, PET_SIMULATOR_99, STEAL_AN_EGG, compactCount, type InventoryStack, type TrackstatAccount } from '@/lib/trackstat';
+import { ANIME_DICE, PET_SIMULATOR_99, TAP_SIMULATOR, compactCount, type InventoryStack, type TrackstatAccount } from '@/lib/trackstat';
 import { loadInventory, type InventoryResult } from '@/lib/client/trackstat-inventory';
 import { Avatar, CardSkeleton, Img, card } from './ui';
 
 type Loaded = Record<string, { data?: InventoryResult; error?: boolean }>;
 
-// Pet Simulator 99 is ranked by RAP; the other games have no market price, so they are ranked by income per second
+// Each game uses its available value: RAP, amount, or income.
 const games = [
   { id: PET_SIMULATOR_99, key: 'ps', title: 'Pet Simulator 99', note: 'ranked by total stack RAP', value: (s: InventoryStack) => (s.r ?? 0) * s.a },
-  { id: STEAL_AN_EGG, key: 'sae', title: 'Steal An Egg', note: 'ranked by money per second', value: (s: InventoryStack) => s.p ?? 0 },
+  { id: TAP_SIMULATOR, key: 'tap', title: 'Tap Simulator', note: 'ranked by owned amount', value: (s: InventoryStack) => s.a },
   { id: ANIME_DICE, key: 'ad', title: 'Anime Dice', note: 'ranked by money per second', value: (s: InventoryStack) => s.p ?? 0 },
 ] as const;
 
@@ -61,6 +61,7 @@ export default function DashboardMostValuable({ accounts, game: filter, avatarOf
       <p className="mt-2 truncate text-xs font-medium text-ts-fg" title={info?.name ?? stack.k}>{info?.name ?? stack.k.split(':')[1]}</p>
       {game.key === 'ps'
         ? <p className="mt-1 flex items-center justify-center gap-1 font-mono text-xs text-ts-cyan" title={String(value)}><Gem size={11} />{compactCount(value)}</p>
+        : game.key === 'tap' ? <p className="mt-1 font-mono text-xs text-ts-pos">x{compactCount(value)} owned</p>
         : <p className="mt-1 flex items-center justify-center gap-1 font-mono text-xs text-ts-pos" title={String(value)}><CircleDollarSign size={11} />${compactCount(value)}/s</p>}
       {stack.a > 1 && <p className="text-[10px] text-ts-fg/35">x{compactCount(stack.a)}</p>}
       {filter === 'all' && <p className="text-[10px] text-ts-fg/35">{game.title}</p>}

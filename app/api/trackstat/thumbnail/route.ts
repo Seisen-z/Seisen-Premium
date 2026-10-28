@@ -3,7 +3,7 @@ import { getClientIp, rateLimit, rateLimitResponse } from '@/lib/server/rate-lim
 
 export async function GET(req: NextRequest) {
   const game = req.nextUrl.searchParams.get('game'), icon = req.nextUrl.searchParams.get('icon');
-  if (!['petsimulator99', 'stealanegg', 'animedice'].includes(game ?? '') || !/^[1-9][0-9]{0,19}$/.test(icon ?? '')) return new NextResponse(null, { status: 400 });
+  if (!['petsimulator99', 'tapsimulator', 'animedice'].includes(game ?? '') || !/^[1-9][0-9]{0,19}$/.test(icon ?? '')) return new NextResponse(null, { status: 400 });
   const limit = rateLimit(`trackstat:thumbnail:${getClientIp(req)}`, 20, 3000);
   if (!limit.allowed) return rateLimitResponse(limit);
   const url = process.env.TRACKSTAT_SERVER_URL, token = process.env.TRACKSTAT_SERVER_TOKEN;

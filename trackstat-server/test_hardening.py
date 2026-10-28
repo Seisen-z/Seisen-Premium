@@ -127,11 +127,11 @@ assert asyncio.run(run_sweeper()) == 1  # the loop reached its sleep after the f
 # A picture Roblox never has stops being retried; an early failure is retried later with a growing wait
 import thumbnails  # noqa: E402
 import time  # noqa: E402
-store.enqueue_thumbnails(main.db, 'stealanegg', ['123456'])
+store.enqueue_thumbnails(main.db, 'tapsimulator', ['123456'])
 store.claim_thumbnails(main.db, time.time())
-thumbnails.retry(main.db, 'stealanegg', '123456', 2)
+thumbnails.retry(main.db, 'tapsimulator', '123456', 2)
 due = main.db.execute("select due from thumbnail_jobs where icon='123456'").fetchone()[0]
 assert 200 < due - time.time() <= 260, due - time.time()  # 60 * 2**2 seconds
-thumbnails.retry(main.db, 'stealanegg', '123456', thumbnails.MAX_ATTEMPTS)
+thumbnails.retry(main.db, 'tapsimulator', '123456', thumbnails.MAX_ATTEMPTS)
 assert main.db.execute("select count(*) from thumbnail_jobs where icon='123456'").fetchone()[0] == 0
 print('all hardening checks passed')

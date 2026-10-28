@@ -2,10 +2,10 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { ArrowDown, ArrowUp, Pencil } from 'lucide-react';
 import { trackstatAuth } from '@/lib/client/trackstat-auth';
-import { STEAL_AN_EGG, PET_SIMULATOR_99, ANIME_DICE, type TrackstatAccount } from '@/lib/trackstat';
+import { TAP_SIMULATOR, PET_SIMULATOR_99, ANIME_DICE, type TrackstatAccount } from '@/lib/trackstat';
 import { Avatar, button } from './ui';
 
-const gameName: Record<string, string> = { [PET_SIMULATOR_99]: 'PS99', [STEAL_AN_EGG]: 'Steal an Egg', [ANIME_DICE]: 'Anime Dice' };
+const gameName: Record<string, string> = { [PET_SIMULATOR_99]: 'PS99', [TAP_SIMULATOR]: 'Tap Simulator', [ANIME_DICE]: 'Anime Dice' };
 
 type Props = {
   accounts: TrackstatAccount[]; avatarOf: (id?: string) => string | null | undefined; nameOf: (a: TrackstatAccount) => string;
@@ -27,8 +27,8 @@ export default function ConnectionPage({ accounts, avatarOf, nameOf, rename, mov
       {accounts.length > 0 && (
         <ul className="mt-5 space-y-2">
           {accounts.map((a, position) => {
-            const live = a.activeGames.length > 0;
-            const games = [...new Set(a.sessions.map(s => s.game_id))];
+            const live = a.activeGames.some(g => g in gameName);
+            const games = [...new Set(a.sessions.map(s => s.game_id).filter(g => g in gameName))];
             const robloxId = a.account.roblox_id;
             return (
               <li key={robloxId} className="rounded-xl bg-ts-fg/[0.04] p-3">

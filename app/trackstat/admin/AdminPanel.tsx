@@ -3,11 +3,11 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import Link from 'next/link';
 import { Activity, Boxes, Clock, Database, Layers, Lock, Moon, RefreshCw, Search, Share2, Sun, UserCheck, Users, X, Zap } from 'lucide-react';
-import { PET_SIMULATOR_99, STEAL_AN_EGG, ANIME_DICE, compactCount, type CatalogEntry, type InventoryStack } from '@/lib/trackstat';
+import { PET_SIMULATOR_99, TAP_SIMULATOR, ANIME_DICE, compactCount, type CatalogEntry, type InventoryStack } from '@/lib/trackstat';
 import { AreaChart, ChartCard, Empty, HBars, type AreaPoint } from '../charts';
 import InventoryView from '../InventoryView';
 import { AnimeDiceInventory } from '../AnimeDiceView';
-import { InventoryView as SaeInventoryView } from '../StealAnEggView';
+import { InventoryView as TapInventoryView } from '../TapSimulatorView';
 import { useTrackstatTheme } from '../theme';
 import type { Theme } from '../themeConfig';
 import { Stat, ago, card } from '../ui';
@@ -21,12 +21,12 @@ type Data = {
   overview: { totals: Totals; new_accounts: { day: string; n: number }[]; daily_gains: { day: string; game_id: string; gained: number }[]; hourly_active: { hour: string; n: number }[] };
   games: GameRow[]; accounts: Account[]; activity: Gain[]; server: ServerStats | null;
 };
-type View = 'ps' | 'sae' | 'ad';
+type View = 'ps' | 'tap' | 'ad';
 type Loaded = { catalog: Record<string, CatalogEntry>; inventory: InventoryStack[] | null };
 
 const GAMES: { id: string; view: View; name: string }[] = [
   { id: PET_SIMULATOR_99, view: 'ps', name: 'Pet Simulator 99' },
-  { id: STEAL_AN_EGG, view: 'sae', name: 'Steal an Egg' },
+  { id: TAP_SIMULATOR, view: 'tap', name: 'Tap Simulator' },
   { id: ANIME_DICE, view: 'ad', name: 'Anime Dice' },
 ];
 const gameOf = (id: string) => GAMES.find(g => g.id === id);
@@ -298,7 +298,7 @@ function Detail({ account, token, onClose }: { account: Account; token: string; 
             </div>
             {view === 'ps' ? <InventoryView stacks={current?.inventory ?? undefined} catalog={current?.catalog ?? {}} loading={!current} />
               : view === 'ad' ? <AnimeDiceInventory stacks={current?.inventory ?? undefined} catalog={current?.catalog ?? {}} loading={!current} />
-              : <SaeInventoryView stacks={current?.inventory ?? undefined} catalog={current?.catalog ?? {}} loading={!current} />}
+              : <TapInventoryView stacks={current?.inventory ?? undefined} catalog={current?.catalog ?? {}} loading={!current} />}
           </section>
         )}
       </aside>

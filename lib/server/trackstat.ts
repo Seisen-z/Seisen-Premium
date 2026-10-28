@@ -10,13 +10,13 @@ async function thumbnail(path: string): Promise<string | null> {
 
 export async function trackstatMedia(robloxIds: string[]) {
   const icon = (universe: string) => thumbnail(`games/icons?universeIds=${universe}&size=512x512&format=Png&returnPolicy=PlaceHolder`);
-  const [avatarList, game, stealAnEgg, animeDice] = await Promise.all([
+  const [avatarList, game, tapSimulator, animeDice] = await Promise.all([
     Promise.all(robloxIds.map(async id => [id, /^\d+$/.test(id) ? await thumbnail(`users/avatar-headshot?userIds=${id}&size=150x150&format=Png`) : null] as const)),
     icon('3317771874'),
-    icon('10563114921'),
+    icon('10629695169'),
     icon('10708913337'),
   ]);
-  return { avatars: Object.fromEntries(avatarList), game, stealAnEgg, animeDice };
+  return { avatars: Object.fromEntries(avatarList), game, tapSimulator, animeDice };
 }
 
 export async function trackstatRPC<T>(name: string, args: Record<string, unknown> = {}, token?: string): Promise<T> {

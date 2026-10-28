@@ -6,7 +6,7 @@ import { cacheGet, cacheNamespace, cacheSet, imageGet, imageSet } from './tracks
 export type InventoryResult = { catalog: Record<string, CatalogEntry>; inventory: InventoryStack[] | null; updatedAt: string | null; cachedAt?: number; etag?: string };
 
 // Shows saved inventory at once and refreshes pictures that can arrive after the last sync.
-export async function loadInventory(roblox: string, game: 'ps' | 'sae' | 'ad', latestUpdatedAt: string | undefined, show: (result: InventoryResult) => void) {
+export async function loadInventory(roblox: string, game: 'ps' | 'tap' | 'ad', latestUpdatedAt: string | undefined, show: (result: InventoryResult) => void) {
   const key = `${await cacheNamespace()}:inventory:v2:${game}:${roblox}`;
   const saved = await cacheGet<InventoryResult>(key);
   if (saved) show(saved);

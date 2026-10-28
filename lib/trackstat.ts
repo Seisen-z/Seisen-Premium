@@ -7,9 +7,11 @@ export type TrackstatSnapshot = {
   // Reads leave the inventory out; the newest session says whether it has one and what it is worth
   inventory_value?: number | null;
   has_inventory?: boolean;
-  // Steal An Egg only
+  // Game-specific balance and progression stats
   money?: number;
-  speed?: number;
+  coins?: number;
+  gems?: number;
+  candy_corn?: number;
   rolls?: number;
   rebirths?: number;
   per_second?: number;
@@ -17,7 +19,7 @@ export type TrackstatSnapshot = {
 // One stack as sent by the library.
 // Pet Simulator 99: k = catalog key, a = amount, r = gem value each, x = exist count, l = pet level, f = favorite, e = exclusive level, cs = charm slots, ch = charm names
 // Anime Dice items: bf = buffs as [name, value] pairs, d = boost seconds, sl = gear slot, lm = spin luck multiplier
-// Steal An Egg: k = catalog key, a = amount, w = weight in kg, m = mutations, p = money per second, f = favorite, pl = egg is placed
+// Tap Simulator: pet keys include the tier; a is the owned amount.
 export type InventoryStack = { k: string; a: number; r?: number; x?: number; l?: number; f?: boolean; e?: number; cs?: number; ch?: string[]; w?: number; m?: string[]; p?: number; pl?: number; c?: number; gr?: string; tr?: string; lk?: boolean; bf?: [string, string][]; d?: number; sl?: string; lm?: number };
 export type CatalogEntry = { class?: string; kind?: string; name: string; icon: string | null; image: string | null; stored?: string | null; pending?: boolean; rarity: string | null; rarity_num: number | null; rarity_color: string | null; description: string | null };
 export type TrackstatSession = { history_expired?: boolean; id: string; game_id: string; started_at: string; updated_at: string; snapshot: TrackstatSnapshot };
@@ -30,17 +32,17 @@ export type TrackstatHistory = {
   sessions: TrackstatSession[];
 };
 export type TrackstatPublic = { game: string; accounts: number; sessions: number; live: number; gained: Counts };
-export type TrackstatMedia = { avatars: Record<string, string | null>; game: string | null; stealAnEgg: string | null; animeDice?: string | null };
+export type TrackstatMedia = { avatars: Record<string, string | null>; game: string | null; tapSimulator: string | null; animeDice?: string | null };
 // A new device asking to join an account's history
 export type TrackstatAccount = TrackstatHistory & { index: number; activeGames: string[] };
-export type TrackstatResponse = { public: TrackstatPublic | null; publicStealAnEgg: TrackstatPublic | null; publicAnimeDice?: TrackstatPublic | null; accounts: TrackstatAccount[]; media: TrackstatMedia; reconnect?: boolean; degraded?: boolean };
+export type TrackstatResponse = { public: TrackstatPublic | null; publicTapSimulator: TrackstatPublic | null; publicAnimeDice?: TrackstatPublic | null; accounts: TrackstatAccount[]; media: TrackstatMedia; reconnect?: boolean; degraded?: boolean };
 
 export const PET_SIMULATOR_99 = '3317771874';
-export const STEAL_AN_EGG = '10563114921';
+export const TAP_SIMULATOR = '10629695169';
 export const ANIME_DICE = '10708913337';
 
 const suffixes = ['', 'K', 'M', 'B', 'T', 'Qa', 'Qi', 'Sx'];
-// 1.5K, 2.4M ... up to quintillions (Steal An Egg money is in the quadrillions)
+// Compact large balances and counts.
 let fullNumbers = false;
 // Settings can show 1,500 instead of 1.5K
 export const setNumberFormat = (full: boolean) => { fullNumbers = full; };

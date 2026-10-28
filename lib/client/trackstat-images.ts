@@ -27,7 +27,7 @@ export function thumbnailBlob(url: string): Promise<Blob | null> {
   if (url.startsWith('/api/trackstat/thumbnail?')) {
     const query = new URL(url, 'https://trackstat.invalid').searchParams;
     const game = query.get('game'), icon = query.get('icon');
-    if (['petsimulator99', 'stealanegg', 'animedice'].includes(game ?? '') && /^[1-9][0-9]{0,19}$/.test(icon ?? '')) key = `${TRACKSTAT_URL}/storage/v1/object/public/trackstats-images/${game}/${icon}.png`;
+    if (['petsimulator99', 'tapsimulator', 'animedice'].includes(game ?? '') && /^[1-9][0-9]{0,19}$/.test(icon ?? '')) key = `${TRACKSTAT_URL}/storage/v1/object/public/trackstats-images/${game}/${icon}.png`;
   }
   const existing = pending.get(url);
   if (existing) return existing;

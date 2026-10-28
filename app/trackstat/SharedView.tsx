@@ -3,18 +3,18 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Activity, Moon, Sun } from 'lucide-react';
-import { PET_SIMULATOR_99, STEAL_AN_EGG, ANIME_DICE, type CatalogEntry, type InventoryStack, type TrackstatAccount, type TrackstatHistory } from '@/lib/trackstat';
+import { PET_SIMULATOR_99, TAP_SIMULATOR, ANIME_DICE, type CatalogEntry, type InventoryStack, type TrackstatAccount, type TrackstatHistory } from '@/lib/trackstat';
 import Dashboard from './Dashboard';
 import InventoryView from './InventoryView';
 import { AnimeDiceInventory } from './AnimeDiceView';
-import { InventoryView as SaeInventoryView } from './StealAnEggView';
+import { InventoryView as TapInventoryView } from './TapSimulatorView';
 import { useTrackstatTheme } from './theme';
 import type { Theme } from './themeConfig';
 import { Avatar, ago } from './ui';
 
-type Game = 'ps' | 'sae' | 'ad';
+type Game = 'ps' | 'tap' | 'ad';
 type Loaded = { catalog: Record<string, CatalogEntry>; inventory: InventoryStack[] | null };
-const gameName: Record<Game, string> = { ps: 'Pet Simulator 99', sae: 'Steal an Egg', ad: 'Anime Dice' };
+const gameName: Record<Game, string> = { ps: 'Pet Simulator 99', tap: 'Tap Simulator', ad: 'Anime Dice' };
 
 // The read-only page behind a share link: the dashboard and the inventory of one account, refreshed every minute
 export default function SharedView({ data, avatar, token, initialTheme }: { data: TrackstatHistory; avatar: string | null; token: string; initialTheme: Theme }) {
@@ -29,7 +29,7 @@ export default function SharedView({ data, avatar, token, initialTheme }: { data
   }, [router]);
 
   const withInventory = (id: string) => data.sessions.some(s => s.game_id === id && s.snapshot.has_inventory);
-  const games = ([withInventory(PET_SIMULATOR_99) && 'ps', withInventory(STEAL_AN_EGG) && 'sae', withInventory(ANIME_DICE) && 'ad'].filter(Boolean)) as Game[];
+  const games = ([withInventory(PET_SIMULATOR_99) && 'ps', withInventory(TAP_SIMULATOR) && 'tap', withInventory(ANIME_DICE) && 'ad'].filter(Boolean)) as Game[];
   const shown = game && games.includes(game) ? game : games[0];
   useEffect(() => {
     if (!shown) return;
@@ -75,7 +75,7 @@ export default function SharedView({ data, avatar, token, initialTheme }: { data
             {shown === 'ps'
               ? <InventoryView stacks={current?.inventory ?? undefined} catalog={current?.catalog ?? {}} loading={!current} />
               : shown === 'ad' ? <AnimeDiceInventory stacks={current?.inventory ?? undefined} catalog={current?.catalog ?? {}} loading={!current} />
-              : <SaeInventoryView stacks={current?.inventory ?? undefined} catalog={current?.catalog ?? {}} loading={!current} />}
+              : <TapInventoryView stacks={current?.inventory ?? undefined} catalog={current?.catalog ?? {}} loading={!current} />}
           </section>
         )}
         <footer className="mt-10 flex items-center justify-center gap-2 text-xs text-ts-fg/35"><Activity size={13} />Tracked with <Link href="/" className="text-ts-fg/55 hover:text-ts-accent">Trackstat by Seisen Hub</Link></footer>
