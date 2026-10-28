@@ -10,7 +10,7 @@ import Link from 'next/link';
 import { Activity, ArrowLeft, Boxes, CalendarDays, ChevronRight, Clock, Gem, LayoutGrid, Link2, List, PawPrint, RefreshCw, Search, TrendingUp, Users, Egg, Plus, Sun, Moon, LayoutDashboard, Settings as SettingsIcon, Sparkles, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useTrackstatTheme } from './theme';
 import type { Theme } from './themeConfig';
-import { PET_SIMULATOR_99, TAP_SIMULATOR, ANIME_DICE, compactCount, type CatalogEntry, type Counts, type InventoryStack, type TrackstatAccount, type TrackstatResponse } from '@/lib/trackstat';
+import { PET_SIMULATOR_99, TAP_SIMULATOR, ANIME_DICE, tapCounts, compactCount, type CatalogEntry, type Counts, type InventoryStack, type TrackstatAccount, type TrackstatResponse } from '@/lib/trackstat';
 import TapSimulatorView from './TapSimulatorView';
 import AnimeDiceView from './AnimeDiceView';
 import AccountPopover from './AccountPopover';
@@ -157,7 +157,7 @@ export default function TrackstatPanel({ initialTheme }: { initialTheme: Theme }
   const gamesTracked = new Set(allSessions.map(s => s.game_id)).size;
   const latest = sessions[0];
   const counts = dailySnapshot(sessions, (history?.daily ?? []).filter(row => row.game_id === PET_SIMULATOR_99), shownDay);
-  const totalGains = (history?.daily ?? []).filter(row => [PET_SIMULATOR_99, TAP_SIMULATOR, ANIME_DICE].includes(row.game_id) && row.day === new Date().toISOString().slice(0, 10)).reduce((n, row) => n + total(row.gained), 0);
+  const totalGains = (history?.daily ?? []).filter(row => [PET_SIMULATOR_99, TAP_SIMULATOR, ANIME_DICE].includes(row.game_id) && row.day === new Date().toISOString().slice(0, 10)).reduce((n, row) => n + total(row.game_id === TAP_SIMULATOR ? tapCounts(row.gained) : row.gained), 0);
   const liveTap = history?.activeGames?.includes(TAP_SIMULATOR) ?? false;
   const live = history?.activeGames?.includes(PET_SIMULATOR_99) ?? false;
   const libraryLive = history?.activeGames?.some(g => [PET_SIMULATOR_99, TAP_SIMULATOR, ANIME_DICE].includes(g)) ?? false;
@@ -230,7 +230,7 @@ export default function TrackstatPanel({ initialTheme }: { initialTheme: Theme }
           </div>
           <div className="mt-3 flex items-center gap-4 rounded-lg border border-ts-fg/[0.06] bg-ts-fg/[0.02] p-3">
             <Img src={data?.media?.tapSimulator} className="h-14 w-14 shrink-0 rounded-lg bg-gradient-to-br from-ts-accent/25 to-ts-raised" fallback={<Egg size={24} className="text-ts-accent" />} />
-            <div className="min-w-0"><p className="text-sm font-medium text-ts-fg">Tap Simulator</p><p className="mt-1 text-xs text-ts-fg/45">Normal, Golden, Diamond and Rainbow pets, items, potions, coins, gems, Candy Corn and rebirths.</p></div>
+            <div className="min-w-0"><p className="text-sm font-medium text-ts-fg">Tap Simulator</p><p className="mt-1 text-xs text-ts-fg/45">Secret 1, Secret 2, Secret 3 and Secret X pets, items, potions, coins, gems, Candy Corn and rebirths.</p></div>
           </div>
           <div className="mt-3 flex items-center gap-4 rounded-lg border border-ts-fg/[0.06] p-3"><Img src={data?.media?.animeDice} className="h-14 w-14 shrink-0 rounded-lg" fallback={<Boxes size={24} />} /><div><p className="text-sm font-medium text-ts-fg">Anime Dice</p><p className="mt-1 text-xs text-ts-fg/45">Units, boosts, gear, tokens, money, rolls, rebirths and daily gains.</p></div></div>
           <p className="mt-3 text-xs text-ts-fg/35">More games will be added over time.</p>

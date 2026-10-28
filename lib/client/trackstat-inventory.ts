@@ -7,14 +7,14 @@ export type InventoryResult = { catalog: Record<string, CatalogEntry>; inventory
 
 // Shows saved inventory at once and refreshes pictures that can arrive after the last sync.
 export async function loadInventory(roblox: string, game: 'ps' | 'tap' | 'ad', latestUpdatedAt: string | undefined, show: (result: InventoryResult) => void) {
-  const key = `${await cacheNamespace()}:inventory:v2:${game}:${roblox}`;
+  const key = `${await cacheNamespace()}:inventory:v3:${game}:${roblox}`;
   const saved = await cacheGet<InventoryResult>(key);
   if (saved) show(saved);
   // Pictures can arrive after an unchanged inventory was cached.
   const picturesReady = saved?.inventory?.every(stack => {
     const info = saved.catalog[stack.k];
     return !info?.pending && !!(info?.stored || info?.image);
-  });
+  }) && Object.values(saved?.catalog ?? {}).every(info => !info.pending);
   if (picturesReady && saved?.cachedAt && Date.now() - saved.cachedAt < 300000 && saved.updatedAt && latestUpdatedAt && Date.parse(saved.updatedAt) >= Date.parse(latestUpdatedAt)) return;
   const response = await trackstatFetch(`/api/trackstat/catalog?roblox=${roblox}&game=${game}`, { cache: 'no-store', headers: saved?.etag ? { 'If-None-Match': saved.etag } : {} });
   if (response.status === 304 && saved) { const result = { ...saved, cachedAt: Date.now() }; void cacheSet(key, result); show(result); return; }
@@ -29,7 +29,7 @@ export async function loadInventory(roblox: string, game: 'ps' | 'tap' | 'ad', l
         const blob = await imageGet(previous.image);
         if (blob) await imageSet(info.stored, blob);
       }
-      result.catalog[key] = { ...info, stored: info.stored || previous.stored, image: info.image || (info.pending === false && previous.image?.startsWith('/api/trackstat/thumbnail?') ? null : previous.image) };
+      result.catalog[key] = { ...info, image: info.image || (info.pending === false && previous.image?.startsWith('/api/trackstat/thumbnail?') ? null : previous.image) };
     }
   }
   if (result.inventory) void cacheSet(key, result);

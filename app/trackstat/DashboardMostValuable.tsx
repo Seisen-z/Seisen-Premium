@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { CircleDollarSign, Gem } from 'lucide-react';
-import { ANIME_DICE, PET_SIMULATOR_99, TAP_SIMULATOR, compactCount, type InventoryStack, type TrackstatAccount } from '@/lib/trackstat';
+import { ANIME_DICE, TAP_SECRET_RARITIES, PET_SIMULATOR_99, TAP_SIMULATOR, compactCount, type InventoryStack, type TrackstatAccount } from '@/lib/trackstat';
 import { loadInventory, type InventoryResult } from '@/lib/client/trackstat-inventory';
 import { Avatar, CardSkeleton, Img, card } from './ui';
 
@@ -23,7 +23,7 @@ export function rankMostValuable(accounts: TrackstatAccount[], loaded: Loaded, v
     seen.add(id);
     const data = loaded[`${prefix}:${id}`]?.data;
     return (data?.inventory ?? []).map((stack, index) => ({ account, stack, index, info: data?.catalog[stack.k], value: value(stack) }));
-  }).filter(row => Number.isFinite(row.value) && row.value > 0).sort((a, b) => b.value - a.value).slice(0, limit);
+  }).filter(row => (prefix !== 'tap' || !row.stack.k.startsWith('pet:') || TAP_SECRET_RARITIES.has(row.info?.rarity ?? '')) && Number.isFinite(row.value) && row.value > 0).sort((a, b) => b.value - a.value).slice(0, limit);
 }
 
 export default function DashboardMostValuable({ accounts, game: filter, avatarOf, nameOf }: { accounts: TrackstatAccount[]; game: string; avatarOf: (id?: string) => string | null | undefined; nameOf: (a: TrackstatAccount) => string }) {

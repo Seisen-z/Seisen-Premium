@@ -40,6 +40,9 @@ export type TrackstatResponse = { public: TrackstatPublic | null; publicTapSimul
 export const PET_SIMULATOR_99 = '3317771874';
 export const TAP_SIMULATOR = '10629695169';
 export const ANIME_DICE = '10708913337';
+export const TAP_SECRET_RARITIES = new Set(['Secret I', 'Secret II', 'Secret III', 'Secret X']);
+export const TAP_METRICS = ['secret1', 'secret2', 'secret3', 'secretx', 'items', 'potions'] as const;
+export const tapCounts = (counts: Counts) => Object.fromEntries(TAP_METRICS.map(key => [key, counts[key] ?? 0]));
 
 const suffixes = ['', 'K', 'M', 'B', 'T', 'Qa', 'Qi', 'Sx'];
 // Compact large balances and counts.

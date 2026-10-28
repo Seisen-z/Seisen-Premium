@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { Clock, Gauge, Info, Layers, Trophy, Users, Zap } from 'lucide-react';
-import { PET_SIMULATOR_99, TAP_SIMULATOR, ANIME_DICE, compactCount, type TrackstatAccount } from '@/lib/trackstat';
+import { PET_SIMULATOR_99, TAP_SIMULATOR, ANIME_DICE, tapCounts, compactCount, type TrackstatAccount } from '@/lib/trackstat';
 import { AreaChart, ArcsChart, ChartCard, Empty, HBars, Sparkline, type AreaPoint } from './charts';
 import { Avatar, card, total } from './ui';
 import DashboardMostValuable from './DashboardMostValuable';
@@ -36,7 +36,7 @@ export default function Dashboard({ accounts, avatarOf, nameOf, single = false }
     // Daily totals are UTC days; sessions use the same window and only count for the time inside it
     const keys = Array.from({ length: days }, (_, i) => utcDay(now - (days - 1 - i) * DAY));
     const cutoff = Date.parse(`${keys[0]}T00:00:00Z`);
-    const picked = accounts.filter(a => acct === 'all' || a.index === acct);
+    const picked = accounts.filter(a => acct === 'all' || a.index === acct).map(a => ({ ...a, daily: a.daily?.map(row => row.game_id === TAP_SIMULATOR ? { ...row, gained: tapCounts(row.gained), details: row.details?.filter(d => d.kind !== 'pet') } : row) }));
     const okGame = (g: string) => [PET_SIMULATOR_99, TAP_SIMULATOR, ANIME_DICE].includes(g) && (game === 'all' || g === game);
     const daily = picked.flatMap(a => (a.daily ?? []).filter(r => okGame(r.game_id) && keys.includes(r.day)).map(r => ({ a, ...r })));
     const sessions = picked.flatMap(a => a.sessions.filter(s => !s.history_expired && okGame(s.game_id)).map(s => ({ a, s, start: Date.parse(s.started_at), end: Date.parse(s.updated_at) }))).filter(x => x.end >= cutoff);

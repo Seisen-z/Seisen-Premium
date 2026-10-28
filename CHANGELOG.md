@@ -1,3 +1,8 @@
+# 2026-10-29
+
+- Fixed Trackstat thumbnails and image retries.
+- Changed Tap Simulator pet tracking to Secret 1, 2, 3 and X.
+
 # 2026-10-28
 
 - Added Tap Simulator Trackstat; removed active Steal an Egg support.
