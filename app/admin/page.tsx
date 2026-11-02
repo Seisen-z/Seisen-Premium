@@ -5,7 +5,7 @@ import {
   LayoutDashboard, CreditCard, MessageSquare, FileCode, Lock,
   Package, LogOut, Shield, Search, Loader2, AlertCircle,
   Trash2, Eye, ShieldCheck, Copy, Check, Save, Plus, X,
-  ChevronLeft, ChevronRight, ArrowRight, Clock, Send
+  ChevronLeft, ChevronRight, ArrowRight, Clock, Send, RefreshCw
 } from 'lucide-react';
 import Link from 'next/link';
 import { getApiUrl, copyToClipboard } from '@/lib/utils';
@@ -277,6 +277,15 @@ export default function AdminPage() {
     if (r.ok) { setPayments(p => p.filter(x => x.transaction_id !== id)); showToast('Payment deleted successfully.'); } else { showToast('Failed to delete payment.', 'error'); }
   };
 
+  const reissueKey = async (id: string) => {
+    if (!confirm('Generate a new key for this paid order?')) return;
+    const tok = localStorage.getItem('adminToken');
+    const r = await fetch('/api/admin/payments', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok}` }, body: JSON.stringify({ transactionId: id }) });
+    const d = await r.json().catch(() => ({}));
+    if (r.ok && d.success) { setPayments(p => p.map(x => x.transaction_id === id ? { ...x, generated_keys: d.keys, payment_status: 'completed' } : x)); showToast('Key generated and emailed to the customer.'); }
+    else showToast(d.error || 'Failed to generate key.', 'error');
+  };
+
   const delTicket = async (num: string) => {
     if (!confirm('Delete this ticket?')) return;
     const tok = localStorage.getItem('adminToken');
@@ -512,7 +521,7 @@ export default function AdminPage() {
                           </td>
                           <td className="px-5 py-4">
                             <div className="flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <Link href={`/success?orderId=${p.transaction_id}&tier=${p.tier}&amount=${p.amount}&currency=${p.currency}&key=${key}&email=${p.payer_email || ''}&payerId=${p.payer_email || ''}&date=${p.created_at}&method=${rc ? 'Robux' : 'PayPal'}&admin=1`} target="_blank">
+                              <Link href={`/success?${new URLSearchParams({ orderId: p.transaction_id, tier: p.tier, amount: String(p.amount), currency: p.currency, key: key === 'N/A' ? '' : key, email: p.payer_email || '', payerId: p.payer_email || '', date: p.created_at, method: rc ? 'Robux' : 'PayPal', admin: '1' })}`} target="_blank">
                                 <button className="p-2 rounded-lg" style={{ color: '#252525' }}
                                   onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#888'}
                                   onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = '#252525'}>
@@ -526,6 +535,11 @@ export default function AdminPage() {
                                   <ShieldCheck className="w-3.5 h-3.5" />
                                 </button>
                               </Link>
+                              {key === 'N/A' && !rc && (
+                                <button onClick={() => reissueKey(p.transaction_id)} title="Generate missing key" className="p-2 rounded-lg" style={{ color: '#fbbf24' }}>
+                                  <RefreshCw className="w-3.5 h-3.5" />
+                                </button>
+                              )}
                               <button onClick={() => delPayment(p.transaction_id)} className="p-2 rounded-lg" style={{ color: '#252525' }}
                                 onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#ef4444'}
                                 onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = '#252525'}>

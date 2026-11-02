@@ -4,6 +4,7 @@ import { EmailService } from './email';
 import { sendDiscordWebhook } from './discord';
 
 const VALIDITY_MAP: Record<string, number> = { weekly: 168, monthly: 720, annual: 8760, annual_weekly: 8760, lifetime: 0 };
+const KEY_ATTEMPTS = 3;
 
 export interface FulfillOrderParams {
     transactionId: string;
@@ -54,17 +55,24 @@ async function issueKeys(
     let lastKeyResult: JunkieResponse | null = null;
 
     for (let i = 0; i < quantity; i++) {
-        const keyResult = await junkie.generateKey({
-            tier,
-            validity,
-            quantity: 1,
-            userInfo: { email: customerEmail, payerId: 'Premium Purchase' },
-            paymentInfo: {
-                amount: amountPerUnit,
-                currency,
-                transactionId: `${transactionId}-${i + 1}`,
-            },
-        });
+        // The key service occasionally fails transiently; the customer has already paid, so retry before giving up.
+        let keyResult: JunkieResponse = { success: false, error: 'No attempt made' };
+        for (let attempt = 1; attempt <= KEY_ATTEMPTS; attempt++) {
+            keyResult = await junkie.generateKey({
+                tier,
+                validity,
+                quantity: 1,
+                userInfo: { email: customerEmail, payerId: 'Premium Purchase' },
+                paymentInfo: {
+                    amount: amountPerUnit,
+                    currency,
+                    transactionId: `${transactionId}-${i + 1}`,
+                },
+            });
+            if (keyResult.success && Array.isArray(keyResult.keys) && keyResult.keys.length > 0) break;
+            console.error(`Key gen attempt ${attempt}/${KEY_ATTEMPTS} failed for unit ${i + 1}/${quantity} (${transactionId}):`, keyResult.error);
+            if (attempt < KEY_ATTEMPTS) await new Promise(r => setTimeout(r, attempt * 1000));
+        }
         lastKeyResult = keyResult;
         if (keyResult.success && Array.isArray(keyResult.keys) && keyResult.keys.length > 0) {
             allKeys = allKeys.concat(keyResult.keys);
@@ -154,7 +162,7 @@ export async function fulfillOrder(db: TicketDatabase, params: FulfillOrderParam
 
         // The claimant hasn't finished (or failed) — fill in keys without re-decrementing stock.
         const { allKeys, lastKeyResult } = await issueKeys(junkie, tier, quantity, validity, customerEmail, amountPerUnit, currency, transactionId);
-        await db.updatePaymentKeys(transactionId, allKeys);
+        await db.updatePaymentKeys(transactionId, allKeys, allKeys.length > 0 ? 'completed' : 'key_failed');
         if (allKeys.length > 0) {
             void emailService.sendKeyEmail(customerEmail, allKeys[0], tier, transactionId);
         }
@@ -176,7 +184,7 @@ export async function fulfillOrder(db: TicketDatabase, params: FulfillOrderParam
     }
 
     const { allKeys, lastKeyResult } = await issueKeys(junkie, tier, quantity, validity, customerEmail, amountPerUnit, currency, transactionId);
-    await db.updatePaymentKeys(transactionId, allKeys);
+    await db.updatePaymentKeys(transactionId, allKeys, allKeys.length > 0 ? 'completed' : 'key_failed');
 
     if (allKeys.length > 0) {
         void emailService.sendKeyEmail(customerEmail, allKeys[0], tier, transactionId);
@@ -189,4 +197,31 @@ export async function fulfillOrder(db: TicketDatabase, params: FulfillOrderParam
         junkieError: allKeys.length > 0 ? null : (lastKeyResult?.error || 'No keys generated'),
         junkieDetails: allKeys.length > 0 ? undefined : lastKeyResult?.details,
     };
+}
+
+/**
+ * Re-issues keys for a paid order that ended up without any (e.g. the key service
+ * was down at purchase time). Refuses if the order already has keys so it can't
+ * hand out duplicates.
+ */
+export async function reissueKeys(db: TicketDatabase, junkie: JunkieKeySystem, transactionId: string, quantity = 1) {
+    const payment = await db.getPayment(transactionId);
+    if (!payment) return { success: false as const, status: 404, error: 'Order not found' };
+    if (Array.isArray(payment.generated_keys) && payment.generated_keys.length > 0) {
+        return { success: false as const, status: 409, error: 'Order already has a key' };
+    }
+    if (payment.currency === 'ROBUX') {
+        return { success: false as const, status: 400, error: 'Robux orders are not re-issued here' };
+    }
+
+    const tier = payment.tier as string;
+    const amountPerUnit = (payment.amount || 0) / quantity;
+    const { allKeys, lastKeyResult } = await issueKeys(junkie, tier, quantity, VALIDITY_MAP[tier] ?? 168, payment.payer_email, amountPerUnit, payment.currency, transactionId);
+    await db.updatePaymentKeys(transactionId, allKeys, allKeys.length > 0 ? 'completed' : 'key_failed');
+
+    if (allKeys.length === 0) {
+        return { success: false as const, status: 502, error: lastKeyResult?.error || 'No keys generated' };
+    }
+    void new EmailService().sendKeyEmail(payment.payer_email, allKeys[0], tier, transactionId);
+    return { success: true as const, keys: allKeys };
 }

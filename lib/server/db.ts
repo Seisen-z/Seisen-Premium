@@ -185,6 +185,8 @@ export class TicketDatabase {
   }
 
   async saveKeys(transactionId: string, keys: string[]) {
+    if (keys.length === 0) return;
+
     const rows = keys.map(key => ({
       transaction_id: transactionId,
       key_value: key,

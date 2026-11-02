@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PayPalSDK } from '@/lib/server/paypal';
-import { JunkieKeySystem } from '@/lib/server/junkie';
+import { createJunkieFromEnv } from '@/lib/server/junkie';
 import { TicketDatabase } from '@/lib/server/db';
 import { fulfillOrder } from '@/lib/server/fulfillment';
 import { rateLimit, rateLimitResponse, getClientIp } from '@/lib/server/rate-limit';
@@ -34,19 +34,7 @@ export async function POST(req: NextRequest) {
         sandboxMode: process.env.PAYPAL_SANDBOX === 'true'
     });
 
-    const junkie = new JunkieKeySystem({
-        webhookUrl: process.env.JUNKIE_WEBHOOK_URL,
-        webhookUrlWeekly: process.env.JUNKIE_WEBHOOK_URL_WEEKLY,
-        webhookUrlMonthly: process.env.JUNKIE_WEBHOOK_URL_MONTHLY,
-        webhookUrlAnnual: process.env.JUNKIE_WEBHOOK_URL_ANNUAL,
-        webhookUrlAnnualWeekly: process.env.JUNKIE_WEBHOOK_URL_ANNUAL_WEEKLY,
-        webhookUrlLifetime: process.env.JUNKIE_WEBHOOK_URL_LIFETIME,
-        hmacSecret: process.env.JUNKIE_HMAC_SECRET,
-        hmacSecretAnnual: process.env.JUNKIE_HMAC_SECRET_ANNUAL,
-        hmacHeaderAnnual: process.env.JUNKIE_HMAC_HEADER_ANNUAL,
-        provider: process.env.JUNKIE_PROVIDER,
-        defaultService: process.env.JUNKIE_SERVICE
-    });
+    const junkie = createJunkieFromEnv();
 
     const db = new TicketDatabase();
 
