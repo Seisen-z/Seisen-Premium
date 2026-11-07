@@ -1,5 +1,6 @@
 // Shown on the What's new page, newest first. Keep each line short and plain.
 export const trackstatChangelog: { date: string; items: string[] }[] = [
+  { date: 'Nov 5, 2026', items: ['Blox Fruits: full inventory, item details, balances and daily gains', 'Blox Fruits community: daily records and collected totals', 'Blox Fruits layout matches the other games', 'Blox Fruits item colors follow rarity'] },
   { date: 'Oct 24, 2026', items: ['Fixed Daily Activity counting the same gain many times', 'Fixed removing an account', 'Accounts idle for 15 days are deleted; add the key again to come back'] },
   { date: 'Oct 22, 2026', items: ['Daily Gains and Daily Activity replace session views and History', 'Seven days of activity; current inventory stays saved', 'Smaller daily updates and faster inventory refreshes', 'Shared thumbnail queue and bounded browser image storage'] },
   { date: 'Oct 20, 2026', items: ['Gentler refresh: the library and page sync every 30 seconds', 'History is kept for 7 days', 'Shared page: full width, only Overview and Top gained', 'Recent activity shows when each item was really gained'] },

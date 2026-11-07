@@ -9,6 +9,9 @@ export type TrackstatSnapshot = {
   has_inventory?: boolean;
   // Game-specific balance and progression stats
   money?: number;
+  fragments?: number;
+  level?: number;
+  bounty?: number;
   coins?: number;
   gems?: number;
   candy_corn?: number;
@@ -20,7 +23,7 @@ export type TrackstatSnapshot = {
 // Pet Simulator 99: k = catalog key, a = amount, r = gem value each, x = exist count, l = pet level, f = favorite, e = exclusive level, cs = charm slots, ch = charm names
 // Anime Dice items: bf = buffs as [name, value] pairs, d = boost seconds, sl = gear slot, lm = spin luck multiplier
 // Tap Simulator: pet keys include the tier; a is the owned amount.
-export type InventoryStack = { k: string; a: number; r?: number; x?: number; l?: number; f?: boolean; e?: number; cs?: number; ch?: string[]; w?: number; m?: string[]; p?: number; pl?: number; c?: number; gr?: string; tr?: string; lk?: boolean; bf?: [string, string][]; d?: number; sl?: string; lm?: number };
+export type InventoryStack = { k: string; a: number; r?: number; x?: number; l?: number; f?: boolean; e?: number; cs?: number; ch?: string[]; w?: number; m?: string[]; p?: number; pl?: number; c?: number; gr?: string; tr?: string; lk?: boolean; bf?: [string, string][]; d?: number; sl?: string; lm?: number; bd?: Record<string, unknown> };
 export type CatalogEntry = { class?: string; kind?: string; name: string; icon: string | null; image: string | null; stored?: string | null; pending?: boolean; rarity: string | null; rarity_num: number | null; rarity_color: string | null; description: string | null };
 export type TrackstatSession = { history_expired?: boolean; id: string; game_id: string; started_at: string; updated_at: string; snapshot: TrackstatSnapshot };
 export type TrackstatDailyGains = { day: string; game_id: string; gained: Counts; details?: TrackstatSnapshot['details'] };
@@ -32,14 +35,15 @@ export type TrackstatHistory = {
   sessions: TrackstatSession[];
 };
 export type TrackstatPublic = { game: string; accounts: number; sessions: number; live: number; gained: Counts };
-export type TrackstatMedia = { avatars: Record<string, string | null>; game: string | null; tapSimulator: string | null; animeDice?: string | null };
+export type TrackstatMedia = { avatars: Record<string, string | null>; game: string | null; tapSimulator: string | null; animeDice?: string | null; bloxFruits?: string | null };
 // A new device asking to join an account's history
 export type TrackstatAccount = TrackstatHistory & { index: number; activeGames: string[] };
-export type TrackstatResponse = { public: TrackstatPublic | null; publicTapSimulator: TrackstatPublic | null; publicAnimeDice?: TrackstatPublic | null; accounts: TrackstatAccount[]; media: TrackstatMedia; reconnect?: boolean; degraded?: boolean };
+export type TrackstatResponse = { public: TrackstatPublic | null; publicTapSimulator: TrackstatPublic | null; publicAnimeDice?: TrackstatPublic | null; publicBloxFruits?: TrackstatPublic | null; accounts: TrackstatAccount[]; media: TrackstatMedia; reconnect?: boolean; degraded?: boolean };
 
 export const PET_SIMULATOR_99 = '3317771874';
 export const TAP_SIMULATOR = '10629695169';
 export const ANIME_DICE = '10708913337';
+export const BLOX_FRUITS = '994732206';
 export const TAP_SECRET_RARITIES = new Set(['Secret I', 'Secret II', 'Secret III', 'Secret X']);
 export const TAP_METRICS = ['secret1', 'secret2', 'secret3', 'secretx', 'items', 'potions'] as const;
 export const tapCounts = (counts: Counts) => Object.fromEntries(TAP_METRICS.map(key => [key, counts[key] ?? 0]));

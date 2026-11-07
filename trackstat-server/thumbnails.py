@@ -4,7 +4,7 @@ import time
 
 import store
 
-FOLDERS = {'petsimulator99', 'tapsimulator', 'animedice'}
+FOLDERS = {'petsimulator99', 'tapsimulator', 'animedice', 'bloxfruits'}
 PNG = b'\x89PNG\r\n\x1a\n'
 MAX_ATTEMPTS = 8
 

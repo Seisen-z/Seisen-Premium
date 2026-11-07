@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { CircleDollarSign, Gem } from 'lucide-react';
-import { ANIME_DICE, TAP_SECRET_RARITIES, PET_SIMULATOR_99, TAP_SIMULATOR, compactCount, type InventoryStack, type TrackstatAccount } from '@/lib/trackstat';
+import { ANIME_DICE, BLOX_FRUITS, TAP_SECRET_RARITIES, PET_SIMULATOR_99, TAP_SIMULATOR, compactCount, type InventoryStack, type TrackstatAccount } from '@/lib/trackstat';
 import { loadInventory, type InventoryResult } from '@/lib/client/trackstat-inventory';
 import { Avatar, CardSkeleton, Img, card } from './ui';
 
@@ -13,6 +13,7 @@ const games = [
   { id: PET_SIMULATOR_99, key: 'ps', title: 'Pet Simulator 99', note: 'ranked by total stack RAP', value: (s: InventoryStack) => (s.r ?? 0) * s.a },
   { id: TAP_SIMULATOR, key: 'tap', title: 'Tap Simulator', note: 'ranked by owned amount', value: (s: InventoryStack) => s.a },
   { id: ANIME_DICE, key: 'ad', title: 'Anime Dice', note: 'ranked by money per second', value: (s: InventoryStack) => s.p ?? 0 },
+  { id: BLOX_FRUITS, key: 'bf', title: 'Blox Fruits', note: 'ranked by owned amount', value: (s: InventoryStack) => s.a },
 ] as const;
 
 export function rankMostValuable(accounts: TrackstatAccount[], loaded: Loaded, value: (s: InventoryStack) => number, prefix: string, limit = 6) {

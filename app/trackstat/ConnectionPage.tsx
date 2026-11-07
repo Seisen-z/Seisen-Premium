@@ -2,10 +2,10 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { ArrowDown, ArrowUp, Pencil } from 'lucide-react';
 import { trackstatAuth } from '@/lib/client/trackstat-auth';
-import { TAP_SIMULATOR, PET_SIMULATOR_99, ANIME_DICE, type TrackstatAccount } from '@/lib/trackstat';
+import { TAP_SIMULATOR, PET_SIMULATOR_99, ANIME_DICE, BLOX_FRUITS, type TrackstatAccount } from '@/lib/trackstat';
 import { Avatar, button } from './ui';
 
-const gameName: Record<string, string> = { [PET_SIMULATOR_99]: 'PS99', [TAP_SIMULATOR]: 'Tap Simulator', [ANIME_DICE]: 'Anime Dice' };
+const gameName: Record<string, string> = { [PET_SIMULATOR_99]: 'PS99', [TAP_SIMULATOR]: 'Tap Simulator', [ANIME_DICE]: 'Anime Dice', [BLOX_FRUITS]: 'Blox Fruits' };
 
 type Props = {
   accounts: TrackstatAccount[]; avatarOf: (id?: string) => string | null | undefined; nameOf: (a: TrackstatAccount) => string;
