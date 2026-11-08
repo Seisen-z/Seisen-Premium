@@ -911,6 +911,10 @@ function Parser:expressionLiteral(scope)
 	if(consume(self, TokenKind.Symbol, "(")) then
 		local expr = self:expression(scope);
 		expect(self, TokenKind.Symbol, ")");
+		-- (f()) / (...) truncate to one value; {f()}[1] is the same without needing a paren node
+		if expr.kind == AstKind.FunctionCallExpression or expr.kind == AstKind.PassSelfFunctionCallExpression or expr.kind == AstKind.VarargExpression then
+			return Ast.IndexExpression(Ast.TableConstructorExpression({Ast.TableEntry(expr)}), Ast.NumberExpression(1));
+		end
 		return expr;
 	end
 	
