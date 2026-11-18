@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { RobloxIntegration, ROBUX_PRICES } from '@/lib/server/roblox';
 import { createJunkieFromEnv } from '@/lib/server/junkie';
 import { TicketDatabase } from '@/lib/server/db';
+import { sendDiscordWebhook } from '@/lib/server/discord';
 import {
     DiscordAuth,
     ROBUX_ORDER_COOKIE,
@@ -249,7 +250,28 @@ export async function POST(req: Request) {
         await db.updatePaymentKeys(transactionId, keyResult.keys);
         if (isNewClaim) await db.decrementPaymentMethodStock(tier, 'robux');
 
-        // Discord webhook is sent after the user completes game selection (see /api/orders/[id]/game-selection)
+        const robuxPrice = ROBUX_PRICES[tier] ?? 0;
+        const keyDisplay = keyResult.keys.map((k: string, i: number) => `**Key ${i + 1}:** ||${k}||`).join('\n');
+        void sendDiscordWebhook(
+            `<@442317061104861184> 💰 New Robux Purchase!`,
+            [{
+                title: `💎 New Premium Purchase (Robux)`,
+                color: 0x00b2ff,
+                fields: [
+                    { name: 'Tier',           value: tier.toUpperCase(),              inline: true },
+                    { name: 'Amount',         value: `${robuxPrice} R$`,              inline: true },
+                    { name: 'Transaction ID', value: transactionId,                   inline: false },
+                    { name: 'Roblox',         value: `${order.username} (ID: ${order.userId})`, inline: false },
+                    { name: 'Email',          value: email,                           inline: false },
+                    { name: '🎮 Discord',     value: discord.tag
+                        ? `${discord.tag} (ID: \`${discord.id}\`)`
+                        : `ID: \`${discord.id}\``,                                   inline: false },
+                    { name: 'License Keys',   value: keyDisplay,                      inline: false },
+                ],
+                timestamp: new Date().toISOString(),
+            }]
+        );
+
         return NextResponse.json({
             success: true,
             keys: keyResult.keys,
