@@ -1,0 +1,39 @@
+{
+  "status": 200,
+  "heading": "The Script Hub\nRoblox Players\nActually Trust.",
+  "terminalPresent": true,
+  "navLinks": [
+    {
+      "text": "Seisen",
+      "href": "/"
+    },
+    {
+      "text": "Home",
+      "href": "/"
+    },
+    {
+      "text": "Scripts",
+      "href": "/scripts"
+    },
+    {
+      "text": "Get Key",
+      "href": "/getkey"
+    },
+    {
+      "text": "Premium",
+      "href": "/premium"
+    },
+    {
+      "text": "Updates",
+      "href": "/updates"
+    },
+    {
+      "text": "",
+      "href": "https://discord.gg/F4sAf6z8Ph"
+    },
+    {
+      "text": "Client",
+      "href": "/client/dashboard"
+    }
+  ]
+}

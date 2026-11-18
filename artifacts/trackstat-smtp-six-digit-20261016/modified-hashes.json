@@ -1,0 +1,7 @@
+{
+  "app/trackstat/login/page.tsx": "03e244abe581efd004517c5bd87c26ef9805926e189dcb5b992c6b9db67abe8f",
+  "lib/server/email.ts": "91c72b4d53f9d180de4f086ad098cebaf070639cdc7b6f336ea4e4f5ce76740d",
+  "artifacts/trackstat-account-20261016/ACTIVATION.md": "7fe0a356e1cc1284df2db32e146a9c6b683f40a5ebf72dfdcbcce25f80eee11d",
+  "app/trackstat/login/CodeInput.tsx": "84f595c457143b3acdc4afe0fcde8cd53400743a9c81f66dd9f7431acfc52a71",
+  "app/api/trackstat/auth/send-code/route.ts": "1ed572d6101e062dcf2066f9d171d2f817ac1075183895d769f4150006f5b3b1"
+}

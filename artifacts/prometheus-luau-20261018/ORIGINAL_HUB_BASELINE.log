@@ -1,0 +1,21 @@
+ORIGINAL HUB BASELINE
+COMMAND: node "D:\Website\Seisen Premium\artifacts\prometheus-luau-20261018\MODIFIED_FILES\scripts\test-prometheus.cjs" --script "E:\Seisen Hub\Scripts\Free script\StealAnEgg\StealAnEgg_2026-10-18_07.lua"
+ENV: {"SEISEN_PROJECT_ROOT": "D:\\Website\\Seisen Premium", "LUAU_BIN": "E:\\Seisen Hub\\.codex-transactions\\BloxFruits-remaining-2026-10-11\\compiler\\luau.exe", "PROMETHEUS_CORE": "D:\\Website\\Seisen Premium\\artifacts\\prometheus-luau-20261018\\BASELINE_CORE"}
+INPUT: scripts/fixtures/prometheus-luau.luau or explicitly named complete hub input.
+OUTPUT:
+[0m[31mPROMETHEUS: Parsing Error at Position 17669:13, Unexpected Token "if". Expected a Expression![0m
+[0m[31mPROMETHEUS: Parsing Error at Position 334:1, unexpected token <Symbol> "(", expected <Eof>[0m
+Error: ./src/logger.lua:54: Parsing Error at Position 334:1, unexpected token <Symbol> "(", expected <Eof>
+stack traceback:
+	./src/logger.lua:54: in function 'logger.errorCallback'
+	./src/logger.lua:57: in function 'logger.error'
+	./src/prometheus/parser.lua:136: in upvalue 'expect'
+	./src/prometheus/parser.lua:151: in function 'prometheus.parser.parse'
+	[string "local f=assert(io.open("input.lua","r"));loca..."]:1: in main chunk
+    at Thread.assertOk (D:\Website\Seisen Premium\node_modules\wasmoon\dist\index.js:365:31)
+    at Thread.run (D:\Website\Seisen Premium\node_modules\wasmoon\dist\index.js:173:22)
+    at LuaEngine.callByteCode (D:\Website\Seisen Premium\node_modules\wasmoon\dist\index.js:1228:45)
+    at LuaEngine.doString (D:\Website\Seisen Premium\node_modules\wasmoon\dist\index.js:1208:25)
+    at parse (D:\Website\Seisen Premium\artifacts\prometheus-luau-20261018\MODIFIED_FILES\scripts\test-prometheus.cjs:44:15)
+    at async main (D:\Website\Seisen Premium\artifacts\prometheus-luau-20261018\MODIFIED_FILES\scripts\test-prometheus.cjs:61:5)
+EXIT STATUS: 1

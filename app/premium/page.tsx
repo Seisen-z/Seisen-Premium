@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, ShoppingCart, Check } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import PremiumSkeleton from '@/components/ui/PremiumSkeleton';
 import CommunityVoices from '@/components/sections/CommunityVoices';
 import PurchaseCounter from '@/components/ui/PurchaseCounter';
+import { useCart } from '@/lib/client/cart';
 
 // ── Brand tokens ──────────────────────────────────────────────────────────────
 const C = {
@@ -111,8 +112,10 @@ type TilePlan = {
   period: string; billingNote: string; description: string; features: string[]; originalPrice?: string | number;
 };
 
-function PlanTile({ p, hero, stockText, outOfStock, cta, onClick }: {
-  p: TilePlan; hero?: boolean; stockText?: string; outOfStock?: boolean; cta: string; onClick: () => void;
+function PlanTile({ p, hero, stockText, outOfStock, cta, onClick, onAddToCart, cartQty }: {
+  p: TilePlan; hero?: boolean; stockText?: string; outOfStock?: boolean;
+  cta: string; onClick: () => void;
+  onAddToCart?: () => void; cartQty?: number;
 }) {
   const isFree = p.plan === 'free';
   const path = KEY_PATH[isFree ? 'free' : 'paid'];
@@ -171,6 +174,8 @@ function PlanTile({ p, hero, stockText, outOfStock, cta, onClick }: {
       {stockText && (
         <p className="mb-3 text-xs text-center" style={{ color: '#f87171' }}>{stockText}</p>
       )}
+
+      {/* Buy now */}
       <button
         onClick={onClick}
         disabled={outOfStock}
@@ -183,13 +188,34 @@ function PlanTile({ p, hero, stockText, outOfStock, cta, onClick }: {
       >
         {cta}
       </button>
+
+      {/* Add to cart — only for paid plans */}
+      {onAddToCart && !isFree && (
+        <button
+          onClick={onAddToCart}
+          disabled={outOfStock || (cartQty !== undefined && cartQty >= 5)}
+          className="mt-2 w-full py-2.5 rounded-lg text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+          style={cartQty
+            ? { backgroundColor: 'rgba(201,169,122,0.12)', color: C.accent, border: `1px solid ${C.accentBdr}` }
+            : { backgroundColor: 'transparent', color: 'rgba(255,255,255,0.3)', border: '1px solid rgba(255,255,255,0.08)' }}
+        >
+          {cartQty
+            ? <><Check className="w-3.5 h-3.5" /> In Cart ({cartQty}) · Add Another</>
+            : <><ShoppingCart className="w-3.5 h-3.5" /> Add to Cart</>}
+        </button>
+      )}
     </div>
   );
 }
 
 // ── Main Content ──────────────────────────────────────────────────────────────
+const PLAN_PRICES: Record<string, number> = {
+  weekly: 3, monthly: 6, annual: 60, annual_weekly: 30, lifetime: 12,
+};
+
 function PremiumContent() {
   const router = useRouter();
+  const { addItem, items } = useCart();
   const [subscriptionCycle, setSubscriptionCycle] = useState<'monthly' | 'annual'>('monthly');
 
   const [methodStocks, setMethodStocks] = useState<StockMap>({});
@@ -206,6 +232,7 @@ function PremiumContent() {
     lifetime: 'Get Lifetime Access',
     monthly:  'Start Monthly',
   };
+
 
   return (
     <div className="min-h-screen px-6 md:pl-24 md:pr-14 lg:pl-28 lg:pr-20 pt-14 pb-28">
@@ -276,6 +303,7 @@ function PremiumContent() {
               : [freePlan, ...plans.filter(item => item.plan !== 'lifetime'), plans.find(item => item.plan === 'lifetime')!]
             ).map((displayPlan) => {
               const stock = getStockDisplay(methodStocks, displayPlan.plan);
+              const isFree = displayPlan.plan === 'free';
               return (
                 <PlanTile
                   key={displayPlan.plan}
@@ -284,7 +312,9 @@ function PremiumContent() {
                   stockText={stock?.text}
                   outOfStock={stock?.variant === 'out-of-stock'}
                   cta={buttonLabels[displayPlan.plan]}
-                  onClick={() => router.push(displayPlan.plan === 'free' ? '/getkey' : `/checkout?plan=${displayPlan.plan}`)}
+                  onClick={() => router.push(isFree ? '/getkey' : `/checkout?plan=${displayPlan.plan}`)}
+                  onAddToCart={isFree ? undefined : () => addItem(displayPlan.plan, displayPlan.title, PLAN_PRICES[displayPlan.plan] ?? (displayPlan.price as number))}
+                  cartQty={items.find(i => i.tier === displayPlan.plan)?.quantity}
                 />
               );
             })}

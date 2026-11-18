@@ -1,0 +1,8 @@
+const fs=require('fs'),vm=require('vm'),path=require('path'),ts=require('../../node_modules/typescript'),assert=require('node:assert/strict'),React=require('../../node_modules/react'),{renderToStaticMarkup}=require('../../node_modules/react-dom/server');
+const root=path.join(__dirname,'MODIFIED_FILE'),moduleCopy={exports:{}};
+const source=ts.transpileModule(fs.readFileSync(path.join(root,'app/trackstat/ConnectionPage.tsx.bak'),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,target:ts.ScriptTarget.ES2022}}).outputText;
+vm.runInNewContext(source,{module:moduleCopy,exports:moduleCopy.exports,require:name=>name==='@/lib/client/trackstat-auth'?{trackstatAuth:{}}:name==='@/lib/trackstat'?{PET_SIMULATOR_99:'1',STEAL_AN_EGG:'2',ANIME_DICE:'3'}:name==='./ui'?{Avatar:()=>null,button:''}:require(name),console});
+const noop=()=>{},hist=(id,extra={})=>({index:id,account:{id:String(id),roblox_id:String(id),username:'Fixture'+id},sessions:[],activeGames:[],...extra});
+const element=React.createElement(moduleCopy.exports.default,{accounts:[hist(0,{activeGames:['1']}),hist(1),hist(2,{connectionStatus:'reset'})],avatarOf:noop,nameOf:a=>a.account.username,rename:noop,move:noop,busy:false,onRemove:noop,keyValue:'',setKey:noop,onSubmit:noop});
+const html=renderToStaticMarkup(element);for(const status of ['Connected','Offline','Key reset'])assert(html.includes('>'+status+'<'));assert(html.includes('Add the new key from the library to reconnect.'));for(const id of [0,1,2])assert(html.includes('Remove Fixture'+id));
+fs.writeFileSync(path.join(__dirname,'ui-preview.html'),html);console.log('RESULT rendered Connected / Offline / Key reset and all three Remove controls');

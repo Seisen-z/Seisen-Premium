@@ -1,0 +1,4 @@
+PASS running library is connected
+PASS stopped library becomes offline after presence timeout
+REPRODUCED: reset drops old connection instead of a reset status
+RESULT BASELINE/ROLLBACK reproduced missing reset status

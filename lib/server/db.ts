@@ -324,6 +324,28 @@ export class TicketDatabase {
     });
   }
 
+  async getUserPaymentsByDiscordId(discordId: string) {
+    const { data, error } = await this.client
+      .from('payments')
+      .select('*, license_keys(key_value)')
+      .eq('discord_id', discordId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching payments by discord_id:', error);
+      return [];
+    }
+
+    return data.map((payment: any) => {
+      if (payment.license_keys?.length) {
+        payment.generated_keys = payment.license_keys.map((k: any) => k.key_value);
+      } else if (typeof payment.generated_keys === 'string') {
+        try { payment.generated_keys = JSON.parse(payment.generated_keys); } catch { payment.generated_keys = [payment.generated_keys]; }
+      }
+      return payment;
+    });
+  }
+
   async getPurchaseCount() {
     const { count, error } = await this.client
       .from('payments')

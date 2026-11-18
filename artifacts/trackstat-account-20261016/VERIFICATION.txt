@@ -1,0 +1,99 @@
+TRACKSTAT ACCOUNT + RESET DATA - 2026-10-16
+Current user correction: bottom button says Account only. Popover displays identity and
+connected Roblox-account count, not email/code forms. Email and code are on /trackstat/login.
+
+MODIFIED_FILE: D:\Website\Seisen Premium\artifacts\trackstat-account-20261016\MODIFIED_FILE.lua (complete updated library)
+DIFF_FILE: D:\Website\Seisen Premium\artifacts\trackstat-account-20261016\DIFF_FILE.diff (website + SQL + library + changelog)
+VERIFICATION: D:\Website\Seisen Premium\artifacts\trackstat-account-20261016\VERIFICATION.txt
+ROLLBACK: D:\Website\Seisen Premium\artifacts\trackstat-account-20261016\ROLLBACK.sh
+Website source snapshots and SHA256: modified/ plus MODIFIED_FILES.json.
+Library original SHA256: e71443a10560ecfadfdee67abafa88e271f3d599f79c88bae8122c6d3a0c6d74
+Library modified SHA256: 52c3a342957b6707a765c091a7cfa38c2d9706de3278d75c808aa4b62f75e9bc
+Website original hashes: manifest.json (seven existing files).
+Changed branches/fields: library Reset callback -> trackstat_reset_and_wipe; clears session,
+snapshot, previous and restarts presence. Website account ownership uses auth.uid() and saved
+account UUIDs; no raw connection keys are stored in the new ownership table. Private data
+reader reused by key and authenticated owner paths. Existing guest key flow remains optional.
+Guest/local pending device approvals still require possession of the connection key; email-only
+restored entries do not hand a raw key to new game devices.
+
+COMMANDS (cwd D:\Website\Seisen Premium)
+BASELINE DATABASE: node artifacts/trackstat-account-20261016/database-test.mjs baseline
+Input: original reset function from the existing initial migration, disposable Postgres fixture.
+Literal output: DATABASE ASSERTION: Expected values to be strictly equal:
+
+1 !== 0
+Exit status: 1. Old reset preserves the account row and data instead of deleting it.
+MODIFIED DATABASE: node artifacts/trackstat-account-20261016/database-test.mjs modified
+Input: new migration on disposable PGlite PostgreSQL with minimal existing schema.
+Literal result: RESULT 10 database tests passed
+Exit status: 0. Covers deletion cascades, revocation, fresh identity, unrelated data preservation,
+owner isolation, no public direct-table/internal-reader access, invalid key and collision rejection.
+Test auth.uid() is simulated. Digest is stubbed with MD5 only in the fixture; production uses
+existing extensions.digest SHA256. Real user data/auth provider was not modified.
+MODIFIED API: node artifacts/trackstat-account-20261016/api-test.cjs
+Input: actual TypeScript routes/helpers transpiled with mocked Supabase RPC and real Next requests.
+Literal result: RESULT 12 API tests passed
+Exit status: 0. stdout in api-results.txt. Guest flow, email-only access, UUID deduplication,
+reset stale-key drop, errors, authenticated catalog, import, signout and detach covered.
+MODIFIED LIBRARY: python artifacts/trackstat-account-20261016/library-test.py "E:\Seisen Hub\Seisen-Library-main\Seisen UI.lua"
+Input: exact Reset callback extracted from complete library; mocked RPC/files/state.
+Literal result: RESULT 4 library reset tests passed
+Exit status: 0. stdout in library-results.txt. Full Luau compile succeeds.
+BASELINE LIBRARY: python artifacts/trackstat-account-20261016/library-test.py artifacts/trackstat-account-20261016/BASELINE_LIBRARY.lua
+Literal result: assertion failed! at the dedicated destructive-RPC assertion.
+Exit status: 1 (expected original non-destructive callback).
+BASELINE UI: python artifacts/trackstat-account-20261016/verify-ui.py artifacts/trackstat-account-20261016/baseline
+Literal output: BASELINE: Account summary and dedicated email-code page absent
+Exit status: 1.
+MODIFIED UI: python artifacts/trackstat-account-20261016/verify-ui.py .
+Literal output: PASS: Account summary/count only; separate email-code page; authenticated catalog access
+Exit status: 0.
+Typecheck: npx.cmd tsc --noEmit --pretty false -> empty output, exit0.
+Targeted lint: npx.cmd eslint app/trackstat/AccountPopover.tsx app/trackstat/login/page.tsx lib/client/trackstat-auth.ts lib/server/trackstat-accounts.ts app/api/trackstat/profile/route.ts app/api/trackstat/route.ts app/api/trackstat/catalog/route.ts app/api/trackstat/link/route.ts lib/server/trackstat.ts
+Literal output: empty. Exit status: 0.
+Production build: npm.cmd run build
+Result: optimized build completed, routes /trackstat and /trackstat/login generated; exit0.
+Full output: build.txt.
+HTTP SSR probes: GET http://localhost:3001/trackstat and /trackstat/login both200.
+Sidebar Account/count markup exists without email/code input forms; login email form rendered.
+This is HTTP/markup verification, not a browser screenshot review or real delivered-email test.
+
+ROLLBACK EXACT COMMAND (PowerShell):
+& 'C:\Program Files\Git\bin\sh.exe' artifacts/trackstat-account-20261016/ROLLBACK.sh 'D:/Website/Seisen Premium/artifacts/trackstat-account-20261016/rollback-copy/website' 'D:/Website/Seisen Premium/artifacts/trackstat-account-20261016/rollback-copy/library/Seisen UI.lua'
+Input: separate copies of the changed website files and library.
+Literal output: ROLLBACK: original website and library source restored; added feature files removed
+Exit status: 0.
+All seven original website-file hashes and the library original hash restored exactly; seven
+added feature files removed. Restored UI test reports BASELINE: Account summary and dedicated
+email-code page absent, exit1. Restored library test returns original assertion failure, exit1.
+After verification, restored website .ts/.tsx files in artifacts were renamed .bak so the
+project TypeScript glob does not accidentally compile incomplete rollback copies. Initial
+build failure caused by those fixture imports was corrected by this rename; production source
+was not changed for that test-artifact issue. Current production source remains modified.
+Rollback is a source-file operation, not a recovery of deleted production history or an
+undo of Supabase Auth configuration/schema. No real deletion was performed.
+
+ACTIVATION / STATUS
+User chose to apply SQL manually. Ready file:
+D:\Website\Seisen Premium\supabase\migrations\20261028_trackstat_email_reset.sql
+Apply before deploying updated code. New reset RPC name makes un-migrated servers fail rather
+than falsely claim a wipe. Email code delivery requires Supabase Auth Email provider, signup/
+Magic Link templates containing {{ .Token }}, and SMTP. Website SMTP environment variables
+are separate from Supabase Auth configuration. EMAIL_TEMPLATE.html and ACTIVATION.md provided.
+Official references: https://supabase.com/docs/guides/auth/auth-email-passwordless
+https://supabase.com/docs/guides/auth/auth-email-templates
+No SQL was applied to live Supabase, no real email OTP sent/verified, and no real private
+history reset. Code is local; this task did not commit/push/deploy either repository.
+Reset only deletes that connection's private rows and detaches its email ownership. It does
+not delete actual game inventory, unrelated accounts or shared thumbnail catalog; a one-way
+revoked-key hash remains to prevent re-registration. Poll refresh removes old browser entries,
+normally on the next15-second refresh. New library inventory starts as baseline with zero gains.
+
+FINAL REVIEW
+Reused current15-second website refresh, existing library busy/save/session reset infrastructure,
+shared RPC layer, public configuration, and existing private-data query. Removed duplicated
+key lookup from route after introducing shared resolver. No new tracking polling loop or
+custom password/code generator. One auth event subscription is cleaned up. A request-version
+guard prevents older in-flight reads from replacing newer signed-out data. Unrelated edits
+in app/getkey/page.tsx, app/api/site-updates/route.ts, and legacy library deletion untouched.

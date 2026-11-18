@@ -1,0 +1,356 @@
+Changed syntax fields: native IfElseExpression AST/parser/visitor/unparser/VM branches and FloorDivExpression AST/token/precedence/parser/visitor/unparser/VM binary operation. Lua51 mode remains strict. VM packing/unpacking now records explicit result counts to preserve nil branches and varargs.
+Preserved lazy selection, false/nil, single-result conditionals, nested elseif, side effects, upvalues, floor-division precedence, negatives and __idiv metamethods. No and/or ternary lowering, no regex input rewriting. Supported continue and compound assignment behavior retained.
+Added reusable actual-core regression command, fixture corpus, npm test integration, future-agent regression instructions, README and changelog. No promise of universal future syntax support. No deployment or Git push performed.
+FOUR PATHS:
+D:\Website\Seisen Premium\artifacts\prometheus-luau-20261018\MODIFIED_FILE.zip
+D:\Website\Seisen Premium\artifacts\prometheus-luau-20261018\DIFF_FILE.diff
+D:\Website\Seisen Premium\artifacts\prometheus-luau-20261018\VERIFICATION.txt
+D:\Website\Seisen Premium\artifacts\prometheus-luau-20261018\ROLLBACK.sh
+ORIGINAL HASHES:
+{
+  "lib/prometheus/src/prometheus/ast.lua": "10c7f1aafce5052dc93220cab5f4a52f608b46a57fcccf59e5ce95d60050cb60",
+  "lib/prometheus/src/prometheus/enums.lua": "8150f420c515e8d5ee7b632ff60af3d219c3d0b5a2cb1d9466fc20ed5fdd6e25",
+  "lib/prometheus/src/prometheus/parser.lua": "427b6f1e11d8782e93ee32735e267be64b7883efc2453c4d605b810c3eccaed0",
+  "lib/prometheus/src/prometheus/unparser.lua": "0068e6edf9daf19c245b12bae711d895df5cf281446b62786f2bb3ec48ff8053",
+  "lib/prometheus/src/prometheus/visitast.lua": "53ee7f87ea1bfe933d4abbfb5721fe544481febfa144c9e0c533895b122e43b9",
+  "lib/prometheus/src/prometheus/compiler/compiler.lua": "6e56afd4126642d7b0cfc6c6d0d003bd827e227ae09fb02e0bb43df2d0bbe0a0",
+  "package.json": "ee0e1a5d7df436a7ff7dd65b89b039b5846a2670d7a73de4b2f416e501e4ea02",
+  "README.md": "19a339deb9a1dd9531c4daf1774282a60cd65d2c374bff287da37106a435f8f0",
+  "CHANGELOG.md": "34660e1ac7a3eb4b0a7ab5d948f9d39f4964d149b23257ed3069267e87c821b8"
+}
+
+BASELINE
+COMMAND: node "D:\Website\Seisen Premium\artifacts\prometheus-luau-20261018\MODIFIED_FILES\scripts\test-prometheus.cjs"
+ENV: {"SEISEN_PROJECT_ROOT": "D:\\Website\\Seisen Premium", "LUAU_BIN": "E:\\Seisen Hub\\.codex-transactions\\BloxFruits-remaining-2026-10-11\\compiler\\luau.exe", "PROMETHEUS_CORE": "D:\\Website\\Seisen Premium\\artifacts\\prometheus-luau-20261018\\BASELINE_CORE"}
+INPUT: scripts/fixtures/prometheus-luau.luau or explicitly named complete hub input.
+OUTPUT:
+[0m[35mPROMETHEUS: [0mApplying Obfuscation Pipeline to regression.lua ...
+[0m[35mPROMETHEUS: [0mParsing ...
+[0m[31mPROMETHEUS: Parsing Error at Position 5:3, unexpected token <Identifier> "assert", expected <Eof>[0m
+Error: ./src/logger.lua:54: Parsing Error at Position 5:3, unexpected token <Identifier> "assert", expected <Eof>
+stack traceback:
+	./src/logger.lua:54: in function 'logger.errorCallback'
+	./src/logger.lua:57: in function 'logger.error'
+	./src/prometheus/parser.lua:136: in upvalue 'expect'
+	./src/prometheus/parser.lua:151: in function 'prometheus.parser.parse'
+	./src/prometheus/pipeline.lua:178: in function 'prometheus.pipeline.apply'
+	(...tail calls...)
+    at Thread.assertOk (D:\Website\Seisen Premium\node_modules\wasmoon\dist\index.js:365:31)
+    at Thread.run (D:\Website\Seisen Premium\node_modules\wasmoon\dist\index.js:173:22)
+    at LuaEngine.callByteCode (D:\Website\Seisen Premium\node_modules\wasmoon\dist\index.js:1228:45)
+    at LuaEngine.doString (D:\Website\Seisen Premium\node_modules\wasmoon\dist\index.js:1208:25)
+    at transform (D:\Website\Seisen Premium\artifacts\prometheus-luau-20261018\MODIFIED_FILES\scripts\test-prometheus.cjs:31:22)
+    at async main (D:\Website\Seisen Premium\artifacts\prometheus-luau-20261018\MODIFIED_FILES\scripts\test-prometheus.cjs:83:22)
+EXIT STATUS: 1
+
+MODIFIED
+COMMAND: node "D:\Website\Seisen Premium\artifacts\prometheus-luau-20261018\MODIFIED_FILES\scripts\test-prometheus.cjs"
+ENV: {"SEISEN_PROJECT_ROOT": "D:\\Website\\Seisen Premium", "LUAU_BIN": "E:\\Seisen Hub\\.codex-transactions\\BloxFruits-remaining-2026-10-11\\compiler\\luau.exe", "PROMETHEUS_CORE": "D:\\Website\\Seisen Premium\\artifacts\\prometheus-luau-20261018\\MODIFIED_CORE"}
+INPUT: scripts/fixtures/prometheus-luau.luau or explicitly named complete hub input.
+OUTPUT:
+[0m[35mPROMETHEUS: [0mApplying Obfuscation Pipeline to regression.lua ...
+[0m[35mPROMETHEUS: [0mParsing ...
+[0m[33mPROMETHEUS: Warning at Position 12:56, assigning 1 value to 2 variables initializes extra variables with nil, add a nil value to silence[0m
+[0m[35mPROMETHEUS: [0mParsing Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mRenaming Variables ...
+[0m[35mPROMETHEUS: [0mRenaming Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mGenerating Code ...
+[0m[35mPROMETHEUS: [0mCode Generation Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mObfuscation Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mGenerated Code size is 127.65% of the Source Code size
+[0m[33mPROMETHEUS: Warning at Position 1:955, assigning 1 value to 2 variables initializes extra variables with nil, add a nil value to silence[0m
+PASS: Minify LuaU parse, compile and runtime equivalence
+[0m[35mPROMETHEUS: [0mApplying Obfuscation Pipeline to regression.lua ...
+[0m[35mPROMETHEUS: [0mParsing ...
+[0m[33mPROMETHEUS: Warning at Position 12:56, assigning 1 value to 2 variables initializes extra variables with nil, add a nil value to silence[0m
+[0m[35mPROMETHEUS: [0mParsing Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mApplying Step "Vmify" ...
+[0m[35mPROMETHEUS: [0mStep "Vmify" Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mApplying Step "Constant Array" ...
+[0m[35mPROMETHEUS: [0mStep "Constant Array" Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mApplying Step "Wrap in Function" ...
+[0m[35mPROMETHEUS: [0mStep "Wrap in Function" Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mRenaming Variables ...
+[0m[35mPROMETHEUS: [0mRenaming Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mGenerating Code ...
+[0m[35mPROMETHEUS: [0mCode Generation Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mObfuscation Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mGenerated Code size is 563.94% of the Source Code size
+PASS: Weak LuaU parse, compile and runtime equivalence
+[0m[35mPROMETHEUS: [0mApplying Obfuscation Pipeline to regression.lua ...
+[0m[35mPROMETHEUS: [0mParsing ...
+[0m[33mPROMETHEUS: Warning at Position 12:56, assigning 1 value to 2 variables initializes extra variables with nil, add a nil value to silence[0m
+[0m[35mPROMETHEUS: [0mParsing Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mApplying Step "Encrypt Strings" ...
+[0m[35mPROMETHEUS: [0mStep "Encrypt Strings" Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mApplying Step "Anti Tamper" ...
+[0m[35mPROMETHEUS: [0mStep "Anti Tamper" Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mApplying Step "Vmify" ...
+[0m[35mPROMETHEUS: [0mStep "Vmify" Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mApplying Step "Constant Array" ...
+[0m[35mPROMETHEUS: [0mStep "Constant Array" Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mApplying Step "Numbers To Expressions" ...
+[0m[35mPROMETHEUS: [0mStep "Numbers To Expressions" Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mApplying Step "Wrap in Function" ...
+[0m[35mPROMETHEUS: [0mStep "Wrap in Function" Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mRenaming Variables ...
+[0m[35mPROMETHEUS: [0mRenaming Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mGenerating Code ...
+[0m[35mPROMETHEUS: [0mCode Generation Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mObfuscation Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mGenerated Code size is 1650.42% of the Source Code size
+PASS: Medium LuaU parse, compile and runtime equivalence
+[0m[35mPROMETHEUS: [0mApplying Obfuscation Pipeline to regression.lua ...
+[0m[35mPROMETHEUS: [0mParsing ...
+[0m[33mPROMETHEUS: Warning at Position 12:56, assigning 1 value to 2 variables initializes extra variables with nil, add a nil value to silence[0m
+[0m[35mPROMETHEUS: [0mParsing Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mApplying Step "Vmify" ...
+[0m[35mPROMETHEUS: [0mStep "Vmify" Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mApplying Step "Encrypt Strings" ...
+[0m[35mPROMETHEUS: [0mStep "Encrypt Strings" Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mApplying Step "Anti Tamper" ...
+[0m[35mPROMETHEUS: [0mStep "Anti Tamper" Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mApplying Step "Vmify" ...
+[0m[35mPROMETHEUS: [0mStep "Vmify" Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mApplying Step "Constant Array" ...
+[0m[35mPROMETHEUS: [0mStep "Constant Array" Done in 1.00 seconds
+[0m[35mPROMETHEUS: [0mApplying Step "Numbers To Expressions" ...
+[0m[35mPROMETHEUS: [0mStep "Numbers To Expressions" Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mApplying Step "Wrap in Function" ...
+[0m[35mPROMETHEUS: [0mStep "Wrap in Function" Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mRenaming Variables ...
+[0m[35mPROMETHEUS: [0mRenaming Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mGenerating Code ...
+[0m[35mPROMETHEUS: [0mCode Generation Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mObfuscation Done in 1.00 seconds
+[0m[35mPROMETHEUS: [0mGenerated Code size is 6155.86% of the Source Code size
+PASS: Strong LuaU parse, compile and runtime equivalence
+[0m[31mPROMETHEUS: Parsing Error at Position 1:22, unexpected token <Eof> "", expected <Keyword> "else"[0m
+[0m[31mPROMETHEUS: Parsing Error at Position 1:20, Unexpected Token "else". Expected a Expression![0m
+[0m[31mPROMETHEUS: Parsing Error at Position 1:12, Unexpected Token "". Expected a Expression![0m
+[0m[31mPROMETHEUS: Parsing Error at Position 1:8, Unexpected Token "if". Expected a Expression![0m
+[0m[31mPROMETHEUS: Parsing Error at Position 1:11, Unexpected Token "/". Expected a Expression![0m
+[0m[35mPROMETHEUS: [0mApplying Obfuscation Pipeline to regression.lua ...
+[0m[35mPROMETHEUS: [0mParsing ...
+[0m[35mPROMETHEUS: [0mParsing Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mRenaming Variables ...
+[0m[35mPROMETHEUS: [0mRenaming Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mGenerating Code ...
+[0m[35mPROMETHEUS: [0mCode Generation Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mObfuscation Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mGenerated Code size is 98.21% of the Source Code size
+PASS: malformed-input rejection and Lua51 compatibility
+EXIT STATUS: 0
+
+ORIGINAL HUB BASELINE
+COMMAND: node "D:\Website\Seisen Premium\artifacts\prometheus-luau-20261018\MODIFIED_FILES\scripts\test-prometheus.cjs" --script "E:\Seisen Hub\Scripts\Free script\StealAnEgg\StealAnEgg_2026-10-18_07.lua"
+ENV: {"SEISEN_PROJECT_ROOT": "D:\\Website\\Seisen Premium", "LUAU_BIN": "E:\\Seisen Hub\\.codex-transactions\\BloxFruits-remaining-2026-10-11\\compiler\\luau.exe", "PROMETHEUS_CORE": "D:\\Website\\Seisen Premium\\artifacts\\prometheus-luau-20261018\\BASELINE_CORE"}
+INPUT: scripts/fixtures/prometheus-luau.luau or explicitly named complete hub input.
+OUTPUT:
+[0m[31mPROMETHEUS: Parsing Error at Position 17669:13, Unexpected Token "if". Expected a Expression![0m
+[0m[31mPROMETHEUS: Parsing Error at Position 334:1, unexpected token <Symbol> "(", expected <Eof>[0m
+Error: ./src/logger.lua:54: Parsing Error at Position 334:1, unexpected token <Symbol> "(", expected <Eof>
+stack traceback:
+	./src/logger.lua:54: in function 'logger.errorCallback'
+	./src/logger.lua:57: in function 'logger.error'
+	./src/prometheus/parser.lua:136: in upvalue 'expect'
+	./src/prometheus/parser.lua:151: in function 'prometheus.parser.parse'
+	[string "local f=assert(io.open("input.lua","r"));loca..."]:1: in main chunk
+    at Thread.assertOk (D:\Website\Seisen Premium\node_modules\wasmoon\dist\index.js:365:31)
+    at Thread.run (D:\Website\Seisen Premium\node_modules\wasmoon\dist\index.js:173:22)
+    at LuaEngine.callByteCode (D:\Website\Seisen Premium\node_modules\wasmoon\dist\index.js:1228:45)
+    at LuaEngine.doString (D:\Website\Seisen Premium\node_modules\wasmoon\dist\index.js:1208:25)
+    at parse (D:\Website\Seisen Premium\artifacts\prometheus-luau-20261018\MODIFIED_FILES\scripts\test-prometheus.cjs:44:15)
+    at async main (D:\Website\Seisen Premium\artifacts\prometheus-luau-20261018\MODIFIED_FILES\scripts\test-prometheus.cjs:61:5)
+EXIT STATUS: 1
+
+ORIGINAL HUB MODIFIED
+COMMAND: node "D:\Website\Seisen Premium\artifacts\prometheus-luau-20261018\MODIFIED_FILES\scripts\test-prometheus.cjs" --script "E:\Seisen Hub\Scripts\Free script\StealAnEgg\StealAnEgg_2026-10-18_07.lua" --preset Minify --out "D:\Website\Seisen Premium\artifacts\prometheus-luau-20261018\ORIGINAL_HUB_Minify.lua"
+ENV: {"SEISEN_PROJECT_ROOT": "D:\\Website\\Seisen Premium", "LUAU_BIN": "E:\\Seisen Hub\\.codex-transactions\\BloxFruits-remaining-2026-10-11\\compiler\\luau.exe", "PROMETHEUS_CORE": "D:\\Website\\Seisen Premium\\artifacts\\prometheus-luau-20261018\\MODIFIED_CORE"}
+INPUT: scripts/fixtures/prometheus-luau.luau or explicitly named complete hub input.
+OUTPUT:
+[0m[33mPROMETHEUS: Warning at Position 17994:113, assigning 2 values to 3 variables initializes extra variables with nil, add a nil value to silence[0m
+[0m[33mPROMETHEUS: Warning at Position 18153:133, assigning 1 value to 2 variables initializes extra variables with nil, add a nil value to silence[0m
+[0m[33mPROMETHEUS: Warning at Position 20492:68, assigning 1 value to 3 variables initializes extra variables with nil, add a nil value to silence[0m
+[0m[33mPROMETHEUS: Warning at Position 20719:51, assigning 2 values to 3 variables initializes extra variables with nil, add a nil value to silence[0m
+[0m[35mPROMETHEUS: [0mApplying Obfuscation Pipeline to regression.lua ...
+[0m[35mPROMETHEUS: [0mParsing ...
+[0m[33mPROMETHEUS: Warning at Position 17994:113, assigning 2 values to 3 variables initializes extra variables with nil, add a nil value to silence[0m
+[0m[33mPROMETHEUS: Warning at Position 18153:133, assigning 1 value to 2 variables initializes extra variables with nil, add a nil value to silence[0m
+[0m[33mPROMETHEUS: Warning at Position 20492:68, assigning 1 value to 3 variables initializes extra variables with nil, add a nil value to silence[0m
+[0m[33mPROMETHEUS: Warning at Position 20719:51, assigning 2 values to 3 variables initializes extra variables with nil, add a nil value to silence[0m
+[0m[35mPROMETHEUS: [0mParsing Done in 9.00 seconds
+[0m[35mPROMETHEUS: [0mRenaming Variables ...
+[0m[35mPROMETHEUS: [0mRenaming Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mGenerating Code ...
+[0m[35mPROMETHEUS: [0mCode Generation Done in 1.00 seconds
+[0m[35mPROMETHEUS: [0mObfuscation Done in 10.00 seconds
+[0m[35mPROMETHEUS: [0mGenerated Code size is 83.10% of the Source Code size
+PASS: generated full script compiles without executing it
+PASS: actual Prometheus pipeline: E:\Seisen Hub\Scripts\Free script\StealAnEgg\StealAnEgg_2026-10-18_07.lua
+EXIT STATUS: 0
+
+ROLLBACK RESTORE
+COMMAND: "C:\Program Files\Git\bin\sh.exe" "D:\Website\Seisen Premium\artifacts\prometheus-luau-20261018\ROLLBACK.sh" "D:\Website\Seisen Premium\artifacts\prometheus-luau-20261018\ROLLBACK_TARGET"
+ENV: {"SEISEN_PROJECT_ROOT": "D:\\Website\\Seisen Premium", "LUAU_BIN": "E:\\Seisen Hub\\.codex-transactions\\BloxFruits-remaining-2026-10-11\\compiler\\luau.exe"}
+INPUT: scripts/fixtures/prometheus-luau.luau or explicitly named complete hub input.
+OUTPUT:
+PASS: original hashes restored; added test/instruction files removed
+EXIT STATUS: 0
+
+ROLLBACK
+COMMAND: node "D:\Website\Seisen Premium\artifacts\prometheus-luau-20261018\MODIFIED_FILES\scripts\test-prometheus.cjs"
+ENV: {"SEISEN_PROJECT_ROOT": "D:\\Website\\Seisen Premium", "LUAU_BIN": "E:\\Seisen Hub\\.codex-transactions\\BloxFruits-remaining-2026-10-11\\compiler\\luau.exe", "PROMETHEUS_CORE": "D:\\Website\\Seisen Premium\\artifacts\\prometheus-luau-20261018\\ROLLBACK_TARGET\\lib\\prometheus"}
+INPUT: scripts/fixtures/prometheus-luau.luau or explicitly named complete hub input.
+OUTPUT:
+[0m[35mPROMETHEUS: [0mApplying Obfuscation Pipeline to regression.lua ...
+[0m[35mPROMETHEUS: [0mParsing ...
+[0m[31mPROMETHEUS: Parsing Error at Position 5:3, unexpected token <Identifier> "assert", expected <Eof>[0m
+Error: ./src/logger.lua:54: Parsing Error at Position 5:3, unexpected token <Identifier> "assert", expected <Eof>
+stack traceback:
+	./src/logger.lua:54: in function 'logger.errorCallback'
+	./src/logger.lua:57: in function 'logger.error'
+	./src/prometheus/parser.lua:136: in upvalue 'expect'
+	./src/prometheus/parser.lua:151: in function 'prometheus.parser.parse'
+	./src/prometheus/pipeline.lua:178: in function 'prometheus.pipeline.apply'
+	(...tail calls...)
+    at Thread.assertOk (D:\Website\Seisen Premium\node_modules\wasmoon\dist\index.js:365:31)
+    at Thread.run (D:\Website\Seisen Premium\node_modules\wasmoon\dist\index.js:173:22)
+    at LuaEngine.callByteCode (D:\Website\Seisen Premium\node_modules\wasmoon\dist\index.js:1228:45)
+    at LuaEngine.doString (D:\Website\Seisen Premium\node_modules\wasmoon\dist\index.js:1208:25)
+    at transform (D:\Website\Seisen Premium\artifacts\prometheus-luau-20261018\MODIFIED_FILES\scripts\test-prometheus.cjs:31:22)
+    at async main (D:\Website\Seisen Premium\artifacts\prometheus-luau-20261018\MODIFIED_FILES\scripts\test-prometheus.cjs:83:22)
+EXIT STATUS: 1
+
+INSTALLED NPM TEST
+COMMAND: npm.cmd test
+ENV: {"SEISEN_PROJECT_ROOT": "D:\\Website\\Seisen Premium", "LUAU_BIN": "E:\\Seisen Hub\\.codex-transactions\\BloxFruits-remaining-2026-10-11\\compiler\\luau.exe"}
+INPUT: scripts/fixtures/prometheus-luau.luau or explicitly named complete hub input.
+OUTPUT:
+
+> seisen-nextjs@0.1.0 test
+> node --test lib/*.test.ts && node scripts/test-prometheus.cjs
+
+(node:2352) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Website/Seisen%20Premium/lib/trackstat-chart.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Website\Seisen Premium\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ the axis ends on a round number just above the data (3.2956ms)
+✔ a single point makes a path that is just a start (0.423ms)
+✔ the curve passes through every point (0.6987ms)
+✔ the curve never bulges past the points next to it (2.4547ms)
+✔ a rising line stays rising between its points (2.662ms)
+(node:21072) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Website/Seisen%20Premium/lib/trackstat-merge.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Website\Seisen Premium\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ devices of one Roblox account become one entry with every key and id (5.3924ms)
+✔ different Roblox accounts stay separate and keep their order (0.8331ms)
+✔ sessions are combined newest first (33.6501ms)
+✔ daily gains add up per day and game, and other days are kept (1.6362ms)
+✔ an account is live when any device is, without duplicates (0.8544ms)
+✔ the loaded histories are not changed by merging (0.8862ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 11
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 529.5858
+[0m[35mPROMETHEUS: [0mApplying Obfuscation Pipeline to regression.lua ...
+[0m[35mPROMETHEUS: [0mParsing ...
+[0m[33mPROMETHEUS: Warning at Position 12:56, assigning 1 value to 2 variables initializes extra variables with nil, add a nil value to silence[0m
+[0m[35mPROMETHEUS: [0mParsing Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mRenaming Variables ...
+[0m[35mPROMETHEUS: [0mRenaming Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mGenerating Code ...
+[0m[35mPROMETHEUS: [0mCode Generation Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mObfuscation Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mGenerated Code size is 127.65% of the Source Code size
+[0m[33mPROMETHEUS: Warning at Position 1:955, assigning 1 value to 2 variables initializes extra variables with nil, add a nil value to silence[0m
+PASS: Minify LuaU parse, compile and runtime equivalence
+[0m[35mPROMETHEUS: [0mApplying Obfuscation Pipeline to regression.lua ...
+[0m[35mPROMETHEUS: [0mParsing ...
+[0m[33mPROMETHEUS: Warning at Position 12:56, assigning 1 value to 2 variables initializes extra variables with nil, add a nil value to silence[0m
+[0m[35mPROMETHEUS: [0mParsing Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mApplying Step "Vmify" ...
+[0m[35mPROMETHEUS: [0mStep "Vmify" Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mApplying Step "Constant Array" ...
+[0m[35mPROMETHEUS: [0mStep "Constant Array" Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mApplying Step "Wrap in Function" ...
+[0m[35mPROMETHEUS: [0mStep "Wrap in Function" Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mRenaming Variables ...
+[0m[35mPROMETHEUS: [0mRenaming Done in 1.00 seconds
+[0m[35mPROMETHEUS: [0mGenerating Code ...
+[0m[35mPROMETHEUS: [0mCode Generation Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mObfuscation Done in 1.00 seconds
+[0m[35mPROMETHEUS: [0mGenerated Code size is 563.94% of the Source Code size
+PASS: Weak LuaU parse, compile and runtime equivalence
+[0m[35mPROMETHEUS: [0mApplying Obfuscation Pipeline to regression.lua ...
+[0m[35mPROMETHEUS: [0mParsing ...
+[0m[33mPROMETHEUS: Warning at Position 12:56, assigning 1 value to 2 variables initializes extra variables with nil, add a nil value to silence[0m
+[0m[35mPROMETHEUS: [0mParsing Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mApplying Step "Encrypt Strings" ...
+[0m[35mPROMETHEUS: [0mStep "Encrypt Strings" Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mApplying Step "Anti Tamper" ...
+[0m[35mPROMETHEUS: [0mStep "Anti Tamper" Done in 1.00 seconds
+[0m[35mPROMETHEUS: [0mApplying Step "Vmify" ...
+[0m[35mPROMETHEUS: [0mStep "Vmify" Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mApplying Step "Constant Array" ...
+[0m[35mPROMETHEUS: [0mStep "Constant Array" Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mApplying Step "Numbers To Expressions" ...
+[0m[35mPROMETHEUS: [0mStep "Numbers To Expressions" Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mApplying Step "Wrap in Function" ...
+[0m[35mPROMETHEUS: [0mStep "Wrap in Function" Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mRenaming Variables ...
+[0m[35mPROMETHEUS: [0mRenaming Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mGenerating Code ...
+[0m[35mPROMETHEUS: [0mCode Generation Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mObfuscation Done in 1.00 seconds
+[0m[35mPROMETHEUS: [0mGenerated Code size is 1650.42% of the Source Code size
+PASS: Medium LuaU parse, compile and runtime equivalence
+[0m[35mPROMETHEUS: [0mApplying Obfuscation Pipeline to regression.lua ...
+[0m[35mPROMETHEUS: [0mParsing ...
+[0m[33mPROMETHEUS: Warning at Position 12:56, assigning 1 value to 2 variables initializes extra variables with nil, add a nil value to silence[0m
+[0m[35mPROMETHEUS: [0mParsing Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mApplying Step "Vmify" ...
+[0m[35mPROMETHEUS: [0mStep "Vmify" Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mApplying Step "Encrypt Strings" ...
+[0m[35mPROMETHEUS: [0mStep "Encrypt Strings" Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mApplying Step "Anti Tamper" ...
+[0m[35mPROMETHEUS: [0mStep "Anti Tamper" Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mApplying Step "Vmify" ...
+[0m[35mPROMETHEUS: [0mStep "Vmify" Done in 1.00 seconds
+[0m[35mPROMETHEUS: [0mApplying Step "Constant Array" ...
+[0m[35mPROMETHEUS: [0mStep "Constant Array" Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mApplying Step "Numbers To Expressions" ...
+[0m[35mPROMETHEUS: [0mStep "Numbers To Expressions" Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mApplying Step "Wrap in Function" ...
+[0m[35mPROMETHEUS: [0mStep "Wrap in Function" Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mRenaming Variables ...
+[0m[35mPROMETHEUS: [0mRenaming Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mGenerating Code ...
+[0m[35mPROMETHEUS: [0mCode Generation Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mObfuscation Done in 1.00 seconds
+[0m[35mPROMETHEUS: [0mGenerated Code size is 6155.86% of the Source Code size
+PASS: Strong LuaU parse, compile and runtime equivalence
+[0m[31mPROMETHEUS: Parsing Error at Position 1:22, unexpected token <Eof> "", expected <Keyword> "else"[0m
+[0m[31mPROMETHEUS: Parsing Error at Position 1:20, Unexpected Token "else". Expected a Expression![0m
+[0m[31mPROMETHEUS: Parsing Error at Position 1:12, Unexpected Token "". Expected a Expression![0m
+[0m[31mPROMETHEUS: Parsing Error at Position 1:8, Unexpected Token "if". Expected a Expression![0m
+[0m[31mPROMETHEUS: Parsing Error at Position 1:11, Unexpected Token "/". Expected a Expression![0m
+[0m[35mPROMETHEUS: [0mApplying Obfuscation Pipeline to regression.lua ...
+[0m[35mPROMETHEUS: [0mParsing ...
+[0m[35mPROMETHEUS: [0mParsing Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mRenaming Variables ...
+[0m[35mPROMETHEUS: [0mRenaming Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mGenerating Code ...
+[0m[35mPROMETHEUS: [0mCode Generation Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mObfuscation Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mGenerated Code size is 98.21% of the Source Code size
+PASS: malformed-input rejection and Lua51 compatibility
+EXIT STATUS: 0
+
+Rollback restored original source hashes and original rejection of the reproducing fixture; separate rollback target used. Live core retains native support. Generated full original hub output compiled, not gameplay-executed. All four presets were runtime-tested using standalone fixtures against official Luau reference behavior.
+Review: six core files changed; one shared VM pack/unpack mechanism is needed for nil-count correctness. No unrelated application logic or authentication changed.

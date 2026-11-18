@@ -1,0 +1,543 @@
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -28,5 +28,7 @@
+ 
+ ### Fixed
+ 
++- **Obfuscator**: Added Luau conditional expressions and floor division, preserving lazy branches and nil/vararg result counts. Added four-preset runtime regression tests.
++
+ - **Admin Connection**: Resolved issues with admin replies not using the correct API.
+ - **UI Consistency**: Standardized container widths and padding across the Client Area.
+--- a/README.md
++++ b/README.md
+@@ -25,3 +25,17 @@
+ - **Premium System**: PayPal and Robux payment integration.
+ - **Ticket System**: Discord-integrated support ticket system.
+ - **Admin Dashboard**: Manage users, keys, and tickets.
++
++## Prometheus compatibility regression tests
++
++The Luau target supports native conditional expressions (`if ... then ... elseif ... else ...`) and floor division (`//`). Lazy branches, false/nil results and VM result counts are covered by runtime regression tests.
++
++Install the official Luau CLI tools, set `LUAU_BIN` to `luau`/`luau.exe` (with `luau-compile` alongside it, or set `LUAU_COMPILE_BIN`), and run:
++
++```powershell
++$env:LUAU_BIN = "C:\Tools\luau\luau.exe"
++npm.cmd test
++npm.cmd run test:prometheus -- --script "INPUT.lua" --preset Medium --out "OUTPUT.lua"
++```
++
++`npm test` includes the Prometheus suite for Minify, Weak, Medium and Strong, plus Lua51 and malformed-input checks. Full-script output is compiled without executing game code. For each new compatibility failure, add a reproducing fixture first, implement support and run the suite plus the reported full input. See `lib/prometheus/AGENTS.md`. Production servers need a restart/redeploy to refresh their cached core files.
+--- a/lib/prometheus/AGENTS.md
++++ b/lib/prometheus/AGENTS.md
+@@ -0,0 +1,9 @@
++# Prometheus compatibility changes
++
++- Reproduce each reported failure with this repository's actual `wasmoon`, `glue.wasm`, parser, CLI options and presets.
++- Add the smallest valid Luau regression to `scripts/fixtures/prometheus-luau.luau` before changing the core. Confirm it fails against the previous core.
++- Preserve lazy branches, false/nil values, single-result conditional semantics, varargs, upvalues, operator precedence and metamethods. Do not use `condition and value or other` to represent a conditional with a false/nil branch.
++- Set `LUAU_BIN` to the official Luau interpreter and run `npm test`; all four presets must parse, compile and execute the regression with reference-equivalent output. Keep Lua51 compatibility and malformed-input rejection tests passing.
++- Test the full reported input using `npm run test:prometheus -- --script INPUT --preset PRESET --out OUTPUT`. This compiles generated output without executing a Roblox hub outside Roblox.
++- Keep changes focused. Add future reported syntax to the regression suite, then implement and re-test it; do not promise support for every future Luau construct.
++- Distinguish parser success, generated-code compilation, fixture runtime equivalence and actual connected-game execution in completion reports. Restart/redeploy the server to refresh production's cached Prometheus files.
+--- a/lib/prometheus/src/prometheus/ast.lua
++++ b/lib/prometheus/src/prometheus/ast.lua
+@@ -58,6 +58,8 @@
+ 	SubExpression = "SubExpression";
+ 	MulExpression = "MulExpression";
+ 	DivExpression = "DivExpression";
++	FloorDivExpression = "FloorDivExpression";
++	IfElseExpression = "IfElseExpression";
+ 	ModExpression = "ModExpression";
+ 	NotExpression = "NotExpression";
+ 	LenExpression = "LenExpression";
+@@ -97,6 +99,8 @@
+ 	[AstKind.SubExpression] = 8;
+ 	[AstKind.MulExpression] = 7;
+ 	[AstKind.DivExpression] = 7;
++	[AstKind.FloorDivExpression] = 7;
++	[AstKind.IfElseExpression] = 13;
+ 	[AstKind.ModExpression] = 7;
+ 	[AstKind.NotExpression] = 5;
+ 	[AstKind.LenExpression] = 5;
+@@ -642,6 +646,25 @@
+ 	}
+ end
+ 
++function Ast.FloorDivExpression(lhs, rhs)
++	return {
++		kind = AstKind.FloorDivExpression,
++		lhs = lhs,
++		rhs = rhs,
++		isConstant = false,
++	}
++end
++
++function Ast.IfElseExpression(condition, ifTrue, ifFalse)
++	return {
++		kind = AstKind.IfElseExpression,
++		condition = condition,
++		ifTrue = ifTrue,
++		ifFalse = ifFalse,
++		isConstant = false,
++	}
++end
++
+ function Ast.ModExpression(lhs, rhs, simplify)
+ 	if(simplify and rhs.isConstant and lhs.isConstant) then
+ 		local success, val = pcall(function() return lhs.value % rhs.value end);
+--- a/lib/prometheus/src/prometheus/compiler/compiler.lua
++++ b/lib/prometheus/src/prometheus/compiler/compiler.lua
+@@ -50,6 +50,7 @@
+             AstKind.SubExpression,
+             AstKind.MulExpression,
+             AstKind.DivExpression,
++            AstKind.FloorDivExpression,
+             AstKind.ModExpression,
+             AstKind.PowExpression,
+         };
+@@ -136,6 +137,7 @@
+     self.envVar = self.scope:addVariable();
+     self.containerFuncVar = self.scope:addVariable();
+     self.unpackVar = self.scope:addVariable();
++    self.packVar = self.scope:addVariable();
+     self.newproxyVar = self.scope:addVariable();
+     self.setmetatableVar = self.scope:addVariable();
+     self.getmetatableVar = self.scope:addVariable();
+@@ -233,7 +235,7 @@
+                             Ast.ReturnStatement{
+                                 Ast.FunctionCallExpression(Ast.VariableExpression(self.scope, self.containerFuncVar), {
+                                     Ast.VariableExpression(createClosureScope, createClosurePosArg),
+-                                    Ast.TableConstructorExpression({Ast.TableEntry(Ast.VarargExpression())}),
++                                    self:pack(createClosureSubScope, {Ast.TableEntry(Ast.VarargExpression())}),
+                                     Ast.VariableExpression(createClosureScope, createClosureUpvalsArg), -- Upvalues
+                                     Ast.VariableExpression(createClosureScope, createClosureProxyObject)
+                                 })
+@@ -291,6 +293,24 @@
+         assignmentStatRhs[i] = v.val;
+     end
+ 
++    -- Explicit counts preserve a selected nil value through VM returns and varargs.
++    local rawUnpack = self.scope:addVariable();
++    local unpackScope, packScope = Scope:new(self.scope), Scope:new(self.scope);
++    local values, first, last = unpackScope:addVariable(), unpackScope:addVariable(), unpackScope:addVariable();
++    unpackScope:addReferenceToHigherScope(self.scope, rawUnpack);
++    packScope:addReferenceToHigherScope(self.scope, self.selectVar);
++    local packBody = Ast.Block({Ast.ReturnStatement({Ast.TableConstructorExpression({
++        Ast.KeyedTableEntry(Ast.StringExpression("n"), Ast.FunctionCallExpression(Ast.VariableExpression(self.scope, self.selectVar), {Ast.StringExpression("#"), Ast.VarargExpression()})),
++        Ast.TableEntry(Ast.VarargExpression()),
++    })})}, packScope);
++    local unpackBody = Ast.Block({Ast.ReturnStatement({Ast.FunctionCallExpression(Ast.VariableExpression(self.scope, rawUnpack), {
++        Ast.VariableExpression(unpackScope, values),
++        Ast.OrExpression(Ast.VariableExpression(unpackScope, first), Ast.NumberExpression(1)),
++        Ast.OrExpression(Ast.VariableExpression(unpackScope, last), Ast.OrExpression(
++            Ast.IndexExpression(Ast.VariableExpression(unpackScope, values), Ast.StringExpression("n")),
++            Ast.LenExpression(Ast.VariableExpression(unpackScope, values)))),
++    })})}, unpackScope);
++
+     -- Emit Code
+     local functionNode = Ast.FunctionLiteralExpression({
+         Ast.VariableExpression(self.scope, self.envVar),
+@@ -302,6 +322,11 @@
+         Ast.VariableExpression(self.scope, argVar),
+         unpack(util.shuffle(tbl))
+     }, Ast.Block({
++        Ast.LocalVariableDeclaration(self.scope, {rawUnpack}, {Ast.VariableExpression(self.scope, self.unpackVar)});
++        Ast.AssignmentStatement({Ast.AssignmentVariable(self.scope, self.unpackVar)}, {Ast.FunctionLiteralExpression({
++            Ast.VariableExpression(unpackScope, values), Ast.VariableExpression(unpackScope, first), Ast.VariableExpression(unpackScope, last),
++        }, unpackBody)});
++        Ast.LocalVariableDeclaration(self.scope, {self.packVar}, {Ast.FunctionLiteralExpression({Ast.VarargExpression()}, packBody)});
+         Ast.AssignmentStatement(assignmentStatLhs, assignmentStatRhs);
+         Ast.ReturnStatement{
+             Ast.FunctionCallExpression(Ast.FunctionCallExpression(Ast.VariableExpression(self.scope, self.createVarargClosureVar), {
+@@ -904,6 +929,13 @@
+     return Ast.VariableExpression(self.containerFuncScope, self.argsVar);
+ end
+ 
++function Compiler:pack(scope, entries)
++    scope:addReferenceToHigherScope(self.scope, self.packVar);
++    local args = {};
++    for i, entry in ipairs(entries) do args[i] = entry.value; end
++    return Ast.FunctionCallExpression(Ast.VariableExpression(self.scope, self.packVar), args);
++end
++
+ function Compiler:unpack(scope)
+     scope:addReferenceToHigherScope(self.scope, self.unpackVar);
+     return Ast.VariableExpression(self.scope, self.unpackVar);
+@@ -1072,7 +1104,7 @@
+             scope:addReferenceToHigherScope(self.containerFuncScope, self.argsVar);
+             scope:addReferenceToHigherScope(self.scope, self.selectVar);
+             scope:addReferenceToHigherScope(self.scope, self.unpackVar);
+-            self:addStatement(self:setRegister(scope, self.varargReg, Ast.TableConstructorExpression({
++            self:addStatement(self:setRegister(scope, self.varargReg, self:pack(scope, {
+                 Ast.TableEntry(Ast.FunctionCallExpression(Ast.VariableExpression(self.scope, self.selectVar), {
+                     Ast.NumberExpression(i);
+                     Ast.FunctionCallExpression(Ast.VariableExpression(self.scope, self.unpackVar), {
+@@ -1170,7 +1202,7 @@
+             self:freeRegister(reg, false);
+         end
+ 
+-        self:addStatement(self:setReturn(scope, Ast.TableConstructorExpression(entries)), {self.RETURN_REGISTER}, regs, false);
++        self:addStatement(self:setReturn(scope, self:pack(scope, entries)), {self.RETURN_REGISTER}, regs, false);
+         self:addStatement(self:setPos(self.activeBlock.scope, nil), {self.POS_REGISTER}, {}, false);
+         self.activeBlock.advanceToNextBlock = false;
+         return;
+@@ -2005,12 +2037,12 @@
+         end
+ 
+         if(returnAll) then
+-            self:addStatement(self:setRegister(scope, retRegs[1], Ast.TableConstructorExpression{Ast.TableEntry(Ast.FunctionCallExpression(self:register(scope, baseReg), args))}), {retRegs[1]}, {baseReg, unpack(regs)}, true);
++            self:addStatement(self:setRegister(scope, retRegs[1], self:pack(scope, {Ast.TableEntry(Ast.FunctionCallExpression(self:register(scope, baseReg), args))})), {retRegs[1]}, {baseReg, unpack(regs)}, true);
+         else
+             if(numReturns > 1) then
+                 local tmpReg = self:allocRegister(false);
+     
+-                self:addStatement(self:setRegister(scope, tmpReg, Ast.TableConstructorExpression{Ast.TableEntry(Ast.FunctionCallExpression(self:register(scope, baseReg), args))}), {tmpReg}, {baseReg, unpack(regs)}, true);
++                self:addStatement(self:setRegister(scope, tmpReg, self:pack(scope, {Ast.TableEntry(Ast.FunctionCallExpression(self:register(scope, baseReg), args))})), {tmpReg}, {baseReg, unpack(regs)}, true);
+     
+                 for i, reg in ipairs(retRegs) do
+                     self:addStatement(self:setRegister(scope, reg, Ast.IndexExpression(self:register(scope, tmpReg), Ast.NumberExpression(i))), {reg}, {tmpReg}, false);
+@@ -2067,9 +2099,9 @@
+             self:addStatement(self:setRegister(scope, tmpReg, Ast.IndexExpression(self:register(scope, baseReg), self:register(scope, tmpReg))), {tmpReg}, {baseReg, tmpReg}, false);
+ 
+             if returnAll then
+-                self:addStatement(self:setRegister(scope, retRegs[1], Ast.TableConstructorExpression{Ast.TableEntry(Ast.FunctionCallExpression(self:register(scope, tmpReg), args))}), {retRegs[1]}, {tmpReg, unpack(regs)}, true);
+-            else
+-                self:addStatement(self:setRegister(scope, tmpReg, Ast.TableConstructorExpression{Ast.TableEntry(Ast.FunctionCallExpression(self:register(scope, tmpReg), args))}), {tmpReg}, {tmpReg, unpack(regs)}, true);
++                self:addStatement(self:setRegister(scope, retRegs[1], self:pack(scope, {Ast.TableEntry(Ast.FunctionCallExpression(self:register(scope, tmpReg), args))})), {retRegs[1]}, {tmpReg, unpack(regs)}, true);
++            else
++                self:addStatement(self:setRegister(scope, tmpReg, self:pack(scope, {Ast.TableEntry(Ast.FunctionCallExpression(self:register(scope, tmpReg), args))})), {tmpReg}, {tmpReg, unpack(regs)}, true);
+ 
+                 for i, reg in ipairs(retRegs) do
+                     self:addStatement(self:setRegister(scope, reg, Ast.IndexExpression(self:register(scope, tmpReg), Ast.NumberExpression(i))), {reg}, {tmpReg}, false);
+@@ -2108,6 +2140,50 @@
+             else
+                self:addStatement(self:setRegister(scope, regs[i], Ast.NilExpression()), {regs[i]}, {}, false);
+             end
++        end
++        return regs;
++    end
++
++    -- A conditional evaluates exactly one branch and produces one value, including false/nil.
++    if(expression.kind == AstKind.IfElseExpression) then
++        local posState = self.registers[self.POS_REGISTER];
++        self.registers[self.POS_REGISTER] = self.VAR_REGISTER;
++        local regs = {};
++        for i = 1, math.max(1, numReturns) do
++            regs[i] = self:allocRegister();
++            if i > 1 then
++                self:addStatement(self:setRegister(scope, regs[i], Ast.NilExpression()), {regs[i]}, {}, false);
++            end
++        end
++        local savedPos;
++        if posState then
++            savedPos = self:allocRegister(false);
++            self:addStatement(self:copyRegisters(scope, {savedPos}, {self.POS_REGISTER}), {savedPos}, {self.POS_REGISTER}, false);
++        end
++        local conditionReg = self:compileExpression(expression.condition, funcDepth, 1)[1];
++        local trueBlock, falseBlock, joinBlock = self:createBlock(), self:createBlock(), self:createBlock();
++        scope = self.activeBlock.scope;
++        self:addStatement(self:setRegister(scope, self.POS_REGISTER,
++            Ast.OrExpression(Ast.AndExpression(self:register(scope, conditionReg), Ast.NumberExpression(trueBlock.id)), Ast.NumberExpression(falseBlock.id))),
++            {self.POS_REGISTER}, {conditionReg}, false);
++        self:freeRegister(conditionReg, false);
++        for _, branch in ipairs({{trueBlock, expression.ifTrue}, {falseBlock, expression.ifFalse}}) do
++            self:setActiveBlock(branch[1]);
++            local valueReg = self:compileExpression(branch[2], funcDepth, 1)[1];
++            scope = self.activeBlock.scope;
++            self:addStatement(self:copyRegisters(scope, {regs[1]}, {valueReg}), {regs[1]}, {valueReg}, false);
++            self:freeRegister(valueReg, false);
++            self:addStatement(self:setRegister(scope, self.POS_REGISTER, Ast.NumberExpression(joinBlock.id)), {self.POS_REGISTER}, {}, false);
++        end
++        self.registers[self.POS_REGISTER] = posState;
++        self:setActiveBlock(joinBlock);
++        if savedPos then
++            self:addStatement(self:copyRegisters(joinBlock.scope, {self.POS_REGISTER}, {savedPos}), {self.POS_REGISTER}, {savedPos}, false);
++            self:freeRegister(savedPos, false);
++        end
++        if numReturns == 0 then
++            self:freeRegister(regs[1], false);
++            return {};
+         end
+         return regs;
+     end
+--- a/lib/prometheus/src/prometheus/enums.lua
++++ b/lib/prometheus/src/prometheus/enums.lua
+@@ -69,7 +69,7 @@
+ 		Symbols = {
+ 			"+",  "-",  "*",  "/",  "%",  "^",  "#",
+ 			"==", "~=", "<=", ">=", "<",  ">",  "=",
+-			"+=", "-=", "/=", "%=", "^=", "..=", "*=",
++			"+=", "-=", "/=", "%=", "^=", "..=", "*=", "//",
+ 			"(",  ")",  "{",  "}",  "[",  "]",
+ 			";",  ":",  ",",  ".",  "..", "...",
+ 			"::", "->", "?",  "|",  "&", 
+--- a/lib/prometheus/src/prometheus/parser.lua
++++ b/lib/prometheus/src/prometheus/parser.lua
+@@ -680,6 +680,12 @@
+ 			found = true;
+ 		end
+ 
++		if(self.luaVersion == LuaVersion.LuaU and consume(self, TokenKind.Symbol, "//")) then
++			local rhs = self:expressionUnary(scope);
++			curr = Ast.FloorDivExpression(curr, rhs);
++			found = true;
++		end
++
+ 		if(consume(self, TokenKind.Symbol, "%")) then
+ 			local rhs = self:expressionUnary(scope);
+ 			curr = Ast.ModExpression(curr, rhs, true);
+@@ -722,6 +728,9 @@
+ 
+ -- Table Literals and Function Literals cannot directly be called or indexed
+ function Parser:tableOrFunctionLiteral(scope)
++	if(self.luaVersion == LuaVersion.LuaU and is(self, TokenKind.Keyword, "if")) then
++		return self:expressionIfElse(scope);
++	end
+ 	
+ 	if(is(self, TokenKind.Symbol, "{")) then
+ 		return self:tableConstructor(scope);
+@@ -732,6 +741,21 @@
+ 	end
+ 	
+ 	return self:expressionFunctionCall(scope);
++end
++
++function Parser:expressionIfElse(scope, isElseIf)
++	expect(self, TokenKind.Keyword, isElseIf and "elseif" or "if");
++	local condition = self:expression(scope);
++	expect(self, TokenKind.Keyword, "then");
++	local ifTrue = self:expression(scope);
++	local ifFalse;
++	if(is(self, TokenKind.Keyword, "elseif")) then
++		ifFalse = self:expressionIfElse(scope, true);
++	else
++		expect(self, TokenKind.Keyword, "else");
++		ifFalse = self:expression(scope);
++	end
++	return Ast.IfElseExpression(condition, ifTrue, ifFalse);
+ end
+ 
+ function Parser:expressionFunctionLiteral(parentScope)
+--- a/lib/prometheus/src/prometheus/unparser.lua
++++ b/lib/prometheus/src/prometheus/unparser.lua
+@@ -670,6 +670,25 @@
+ 		return lhs .. self:optionalWhitespace() .. "/" .. self:optionalWhitespace() .. rhs;
+ 	end
+ 	
++	k = AstKind.FloorDivExpression;
++	if(expression.kind == k) then
++		local lhs = self:unparseExpression(expression.lhs, tabbing);
++		if(Ast.astKindExpressionToNumber(expression.lhs.kind) >= Ast.astKindExpressionToNumber(k)) then
++			lhs = "(" .. lhs .. ")";
++		end
++		local rhs = self:unparseExpression(expression.rhs, tabbing);
++		if(Ast.astKindExpressionToNumber(expression.rhs.kind) >= Ast.astKindExpressionToNumber(k)) then
++			rhs = "(" .. rhs .. ")";
++		end
++		return lhs .. self:optionalWhitespace() .. "//" .. self:optionalWhitespace() .. rhs;
++	end
++
++	if(expression.kind == AstKind.IfElseExpression) then
++		return "(if " .. self:unparseExpression(expression.condition, tabbing)
++			.. " then " .. self:unparseExpression(expression.ifTrue, tabbing)
++			.. " else " .. self:unparseExpression(expression.ifFalse, tabbing) .. ")";
++	end
++
+ 	k = AstKind.ModExpression;
+ 	if(expression.kind == k) then
+ 		local lhs = self:unparseExpression(expression.lhs, tabbing);
+--- a/lib/prometheus/src/prometheus/visitast.lua
++++ b/lib/prometheus/src/prometheus/visitast.lua
+@@ -182,6 +182,7 @@
+ 	AstKind.SubExpression,
+ 	AstKind.MulExpression,
+ 	AstKind.DivExpression,
++	AstKind.FloorDivExpression,
+ 	AstKind.ModExpression,
+ 	AstKind.PowExpression,
+ }
+@@ -195,6 +196,12 @@
+ 		end
+ 	end
+ 	
++	if(expression.kind == AstKind.IfElseExpression) then
++		expression.condition = visitExpression(expression.condition, previsit, postvisit, data);
++		expression.ifTrue = visitExpression(expression.ifTrue, previsit, postvisit, data);
++		expression.ifFalse = visitExpression(expression.ifFalse, previsit, postvisit, data);
++	end
++
+ 	if(binaryExpressions[expression.kind]) then
+ 		expression.lhs = visitExpression(expression.lhs, previsit, postvisit, data);
+ 		expression.rhs = visitExpression(expression.rhs, previsit, postvisit, data);
+--- a/package.json
++++ b/package.json
+@@ -7,7 +7,8 @@
+     "build": "next build",
+     "start": "next start",
+     "lint": "eslint",
+-    "test": "node --test lib/*.test.ts"
++    "test": "node --test lib/*.test.ts && node scripts/test-prometheus.cjs",
++    "test:prometheus": "node scripts/test-prometheus.cjs"
+   },
+   "dependencies": {
+     "@supabase/supabase-js": "^2.90.1",
+--- a/scripts/fixtures/prometheus-luau.luau
++++ b/scripts/fixtures/prometheus-luau.luau
+@@ -0,0 +1,48 @@
++local calls = 0
++local function choose(value)
++    calls += 1
++    return value, "extra"
++end
++assert((if true then false else error("eager else")) == false, "fixture line 6")
++assert((if false then error("eager then") else nil) == nil, "fixture line 7")
++assert((if false then 1 elseif false then 2 elseif true then 3 else 4) == 3, "fixture line 8")
++assert((if true then if false then 1 else 2 else 3) == 2, "fixture line 9")
++assert((if false then 1 else if true then 2 else 3) == 2, "fixture line 10")
++assert((if 0 then "zero is truthy" else false) == "zero is truthy", "fixture line 11")
++local a,b = if true then choose(false) else choose(true)
++assert(a == false and b == nil and calls == 1, "fixture line 13")
++local function result(...) return if true then ... else 99 end
++local packed = table.pack(result(nil, 7))
++assert(packed.n == 1 and packed[1] == nil, "fixture line 16")
++local function forward(...) return ... end
++local forwarded = table.pack(forward(nil, 2, nil))
++assert(forwarded.n == 3 and forwarded[1] == nil and forwarded[2] == 2 and forwarded[3] == nil, "nil vararg counts")
++local offset = 10
++local f = function(x) return if x then offset else offset + 1 end
++assert(f(true) == 10 and f(false) == 11, "fixture line 19")
++offset = 12
++assert(f(true) == 12 and f(false) == 13, "captured upvalue changes")
++local pair = {if true then choose(8) else choose(9)}
++assert(#pair == 1 and pair[1] == 8 and calls == 2, "fixture line 21")
++local total = 0
++for i=1,4 do
++    if if i == 2 then true else false then continue end
++    total += if i == 1 then 10 else i
++end
++assert(total == 17, "fixture line 27")
++assert(7 // 2 == 3 and -7 // 2 == -4 and 7 // -2 == -4, "fixture line 28")
++assert(20 // 3 // 2 == 3 and 2 + 9 // 2 * 3 == 14, "fixture line 29")
++assert((if true then 17 else 1) // 4 == 4, "fixture line 30")
++assert(16 // (if false then 1 else 3) == 5, "fixture line 31")
++local metatableCalls = 0
++local divisor = setmetatable({}, {__idiv=function(_, rhs) metatableCalls += 1;return rhs + 100 end})
++assert(divisor // 2 == 102 and metatableCalls == 1, "fixture line 34")
++local shadow = function()
++    local math = {floor=function() error("shadowed math.floor") end}
++    return 9 // 2
++end
++assert(shadow() == 4, "fixture line 39")
++local lazy = 0
++local v = if choose(false) then error("bad") else choose("chosen")
++assert(v == "chosen" and calls == 4 and lazy == 0, "fixture line 42")
++print("PASS: Luau conditional and floor-division semantics")
+--- a/scripts/test-prometheus.cjs
++++ b/scripts/test-prometheus.cjs
+@@ -0,0 +1,105 @@
++const fs = require('node:fs/promises');
++const path = require('node:path');
++const os = require('node:os');
++const { spawnSync } = require('node:child_process');
++const ROOT = path.resolve(process.env.SEISEN_PROJECT_ROOT || path.join(__dirname, '..'));
++const CORE = path.resolve(process.env.PROMETHEUS_CORE || path.join(ROOT, 'lib/prometheus'));
++const LUAU = process.env.LUAU_BIN || 'luau';
++const LUAU_COMPILE = process.env.LUAU_COMPILE_BIN || (path.dirname(LUAU) === '.'
++  ? 'luau-compile' : path.join(path.dirname(LUAU), 'luau-compile' + path.extname(LUAU)));
++const { LuaFactory } = require(path.join(ROOT, 'node_modules/wasmoon'));
++
++async function engine() {
++  const factory = new LuaFactory(path.join(CORE, 'glue.wasm'));
++  const lua = await factory.createEngine();
++  async function mount(dir, base = '') {
++    for (const entry of await fs.readdir(dir, { withFileTypes: true })) {
++      const file = path.join(dir, entry.name), relative = path.posix.join(base, entry.name);
++      if (entry.isDirectory()) await mount(file, relative);
++      else if (entry.name.endsWith('.lua')) await factory.mountFile(relative, await fs.readFile(file, 'utf8'));
++    }
++  }
++  await mount(CORE);
++  await lua.doString('_G.arg={[0]="cli.lua"};package.path="./?.lua;./src/?.lua;"..package.path;require("prometheus")');
++  return { lua, factory };
++}
++
++async function transform(source, preset, version = 'LuaU') {
++  const { lua, factory } = await engine();
++  try {
++    await factory.mountFile('input.lua', source + '\n');
++    return await lua.doString(`
++      local f=assert(io.open("input.lua","r"));local source=f:read("*a");f:close()
++      local config=require("presets")[${JSON.stringify(preset)}]
++      config.LuaVersion=${JSON.stringify(version)};config.Seed=182610
++      return require("prometheus.pipeline"):fromConfig(config):apply(source,"regression.lua")
++    `);
++  } finally { lua.global.close(); }
++}
++
++async function parse(source, version = 'LuaU') {
++  const { lua, factory } = await engine();
++  try {
++    await factory.mountFile('input.lua', source + '\n');
++    await lua.doString(`local f=assert(io.open("input.lua","r"));local s=f:read("*a");f:close();require("prometheus.parser"):new({LuaVersion=${JSON.stringify(version)}}):parse(s)`);
++  } finally { lua.global.close(); }
++}
++
++async function execute(source, file) {
++  await fs.writeFile(file, source);
++  const result = spawnSync(LUAU, [file], { encoding: 'utf8', timeout: 30000 });
++  if (result.error) throw new Error(`Luau runtime required; set LUAU_BIN. ${result.error.message}`);
++  if (result.status !== 0) throw new Error(`Luau execution failed (${result.status}): ${result.stdout}${result.stderr}`);
++  return result.stdout.replace(/\r\n/g, '\n');
++}
++
++async function main() {
++  const scriptIndex = process.argv.indexOf('--script');
++  if (scriptIndex !== -1) {
++    const input = path.resolve(process.argv[scriptIndex + 1]);
++    const source = await fs.readFile(input, 'utf8');
++    await parse(source);
++    const presetIndex = process.argv.indexOf('--preset');
++    if (presetIndex !== -1) {
++      const preset = process.argv[presetIndex + 1];
++      if (!['Minify','Weak','Medium','Strong'].includes(preset)) throw new Error('Invalid preset');
++      const output = await transform(source, preset);
++      const outputIndex = process.argv.indexOf('--out');
++      if (outputIndex === -1) throw new Error('--out is required with --preset');
++      const outputFile = path.resolve(process.argv[outputIndex + 1]);
++      await fs.writeFile(outputFile, output);
++      const compiled = spawnSync(LUAU_COMPILE, ['--null', outputFile], { encoding: 'utf8', timeout: 30000 });
++      if (compiled.error || compiled.status !== 0) throw new Error('Generated script failed Luau compilation: ' + (compiled.error || compiled.stderr));
++      console.log('PASS: generated full script compiles without executing it');
++    }
++    console.log('PASS: actual Prometheus pipeline: ' + input);
++    return;
++  }
++  const fixture = await fs.readFile(path.join(ROOT, 'scripts/fixtures/prometheus-luau.luau'), 'utf8');
++  const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'seisen-prometheus-'));
++  try {
++    const expected = await execute(fixture, path.join(temp, 'reference.luau'));
++    for (const preset of ['Minify', 'Weak', 'Medium', 'Strong']) {
++      const output = await transform(fixture, preset);
++      await parse(output);
++      const actual = await execute(output, path.join(temp, preset + '.luau'));
++      if (actual !== expected) throw new Error(preset + ' changed fixture behavior');
++      console.log('PASS: ' + preset + ' LuaU parse, compile and runtime equivalence');
++    }
++    for (const source of ['local x=if true then 1', 'local x=if true then else 2', 'local x=1 //']) {
++      let rejected = false;
++      try { await parse(source); } catch { rejected = true; }
++      if (!rejected) throw new Error('Malformed syntax was accepted: ' + source);
++    }
++    for (const source of ['local x=if true then 1 else 2', 'local x=1 // 2']) {
++      let rejected = false;
++      try { await parse(source, 'Lua51'); } catch { rejected = true; }
++      if (!rejected) throw new Error('Lua51 mode accepted LuaU-only syntax');
++    }
++    const legacy = 'local a=3;local function f(x)return x+a end;print(f(4))';
++    const legacyOutput = await transform(legacy, 'Minify', 'Lua51');
++    if (await execute(legacyOutput, path.join(temp, 'legacy.lua')) !== '7\n') throw new Error('Lua51 regression');
++    console.log('PASS: malformed-input rejection and Lua51 compatibility');
++  } finally { await fs.rm(temp, { recursive: true, force: true }); }
++}
++main().catch(error => { console.error(error.stack || error); process.exitCode = 1; });

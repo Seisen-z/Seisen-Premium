@@ -1,0 +1,9 @@
+[
+  "lib/trackstat-config.ts",
+  "lib/client/trackstat-auth.ts",
+  "lib/server/trackstat-accounts.ts",
+  "app/api/trackstat/profile/route.ts",
+  "app/trackstat/AccountPopover.tsx",
+  "app/trackstat/login/page.tsx",
+  "supabase/migrations/20261028_trackstat_email_reset.sql"
+]

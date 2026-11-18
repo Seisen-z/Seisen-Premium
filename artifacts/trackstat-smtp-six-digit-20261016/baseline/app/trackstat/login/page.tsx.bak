@@ -1,0 +1,58 @@
+"use client";
+import { useState, type FormEvent } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { ArrowLeft, ArrowRight, Mail, ShieldCheck } from 'lucide-react';
+import { trackstatAuth, trackstatFetch } from '@/lib/client/trackstat-auth';
+
+export default function TrackstatLogin() {
+  const router = useRouter();
+  const [email, setEmail] = useState('');
+  const [code, setCode] = useState('');
+  const [step, setStep] = useState<'email' | 'code' | 'save'>('email');
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState('');
+  async function submit(event: FormEvent) {
+    event.preventDefault(); setBusy(true); setMessage('');
+    try {
+      if (step === 'email') {
+        const { error } = await trackstatAuth.auth.signInWithOtp({ email: email.trim().toLowerCase(), options: { shouldCreateUser: true } });
+        if (error) throw error;
+        setStep('code');
+      } else {
+        if (step === 'code') {
+          const { error } = await trackstatAuth.auth.verifyOtp({ email: email.trim().toLowerCase(), token: code.trim(), type: 'email' });
+          if (error) throw error;
+          setStep('save'); setCode('');
+        }
+        const response = await trackstatFetch('/api/trackstat/profile', { method: 'POST' });
+        const body = await response.json();
+        if (!response.ok) throw new Error(body.error || 'Could not save your connections. Try again.');
+        router.replace('/trackstat');
+      }
+    } catch (error) { setMessage(error instanceof Error ? error.message : 'Please try again.'); }
+    finally { setBusy(false); }
+  }
+  const input = 'mt-2 w-full rounded-xl border border-white/10 bg-[#090909] px-4 py-3 text-sm text-white outline-none focus:border-[#c9a97a] disabled:opacity-50';
+  return <div className="mx-auto grid min-h-[75vh] max-w-5xl items-center gap-10 px-6 py-16 md:grid-cols-[1.1fr_1fr] md:gap-20">
+    <div>
+      <Link href="/trackstat" className="mb-10 inline-flex items-center gap-2 text-xs text-white/45 hover:text-[#c9a97a]"><ArrowLeft size={14} />Back to Trackstat</Link>
+      <p className="mb-4 font-mono text-xs uppercase tracking-[0.22em] text-[#c9a97a]">Trackstat account</p>
+      <h1 className="max-w-md text-4xl font-semibold leading-tight tracking-tight text-white">Your accounts.<br /><span className="text-white/40">Any browser.</span></h1>
+      <p className="mt-5 max-w-sm text-sm leading-7 text-white/50">Sign in with your email to open your saved Roblox accounts, inventory and gains. No password needed.</p>
+      <p className="mt-6 flex items-center gap-2 text-xs text-[#c9a97a]/80"><ShieldCheck size={15} />Optional. Connection keys still work without sign-in.</p>
+    </div>
+    <section aria-labelledby="login-title" className="rounded-2xl border border-white/10 bg-[#101010] p-6 md:p-8">
+      <Mail size={22} className="mb-5 text-[#c9a97a]" />
+      <h2 id="login-title" className="text-xl font-semibold text-white">{step === 'email' ? 'Sign in to Trackstat' : step === 'code' ? 'Check your email' : 'Save your connections'}</h2>
+      <p className="mb-6 mt-2 text-xs leading-6 text-white/45">{step === 'email' ? 'We will send you a one-time verification code.' : step === 'code' ? `Enter the code sent to ${email}.` : 'Your email is verified. Save connections from this browser and continue.'}</p>
+      <form onSubmit={submit} className="space-y-4">
+        {step === 'email' && <label className="block text-xs text-white/60">Email address<input autoComplete="email" type="email" required maxLength={254} value={email} disabled={busy} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" className={input} /></label>}
+        {step === 'code' && <label className="block text-xs text-white/60">Verification code<input autoComplete="one-time-code" inputMode="numeric" pattern="[0-9]{6,8}" required minLength={6} maxLength={8} value={code} disabled={busy} onChange={e => setCode(e.target.value.replace(/\D/g, ''))} placeholder="Enter email code" className={`${input} font-mono tracking-[0.2em]`} /></label>}
+        {message && <p role="alert" className="text-xs leading-6 text-amber-200">{message}</p>}
+        <button disabled={busy} className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#c9a97a] px-4 py-3 text-sm font-semibold text-black transition-colors hover:bg-[#dcc4a2] disabled:opacity-50">{busy ? 'Please wait...' : step === 'email' ? 'Send verification code' : step === 'code' ? 'Verify & sign in' : 'Save & open Trackstat'}<ArrowRight size={15} /></button>
+        {step === 'code' && <button type="button" disabled={busy} onClick={() => { setStep('email'); setCode(''); setMessage(''); }} className="text-xs text-white/45 hover:text-white">Change email or resend code</button>}
+      </form>
+    </section>
+  </div>;
+}

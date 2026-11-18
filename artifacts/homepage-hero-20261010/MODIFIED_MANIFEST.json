@@ -1,0 +1,14 @@
+[
+  {
+    "file": "app/page.tsx",
+    "sha256": "86f7fbdd92d7140a69970e95ae20c7d0c1078fa7ad6546ee5625185edf6beef6"
+  },
+  {
+    "file": "app/home-hero.module.css",
+    "sha256": "9cb35847fc737791e3ecd0289753edc38fe46725e484a276fc971e67429a6524"
+  },
+  {
+    "file": "public/script-hub-hero.png",
+    "sha256": "b1d508b44987e8f6befc05dfdb1752f560a5c77c6427bc285a908e49c9a81969"
+  }
+]

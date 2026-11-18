@@ -1,0 +1,25 @@
+ORIGINAL HUB MODIFIED
+COMMAND: node "D:\Website\Seisen Premium\artifacts\prometheus-luau-20261018\MODIFIED_FILES\scripts\test-prometheus.cjs" --script "E:\Seisen Hub\Scripts\Free script\StealAnEgg\StealAnEgg_2026-10-18_07.lua" --preset Minify --out "D:\Website\Seisen Premium\artifacts\prometheus-luau-20261018\ORIGINAL_HUB_Minify.lua"
+ENV: {"SEISEN_PROJECT_ROOT": "D:\\Website\\Seisen Premium", "LUAU_BIN": "E:\\Seisen Hub\\.codex-transactions\\BloxFruits-remaining-2026-10-11\\compiler\\luau.exe", "PROMETHEUS_CORE": "D:\\Website\\Seisen Premium\\artifacts\\prometheus-luau-20261018\\MODIFIED_CORE"}
+INPUT: scripts/fixtures/prometheus-luau.luau or explicitly named complete hub input.
+OUTPUT:
+[0m[33mPROMETHEUS: Warning at Position 17994:113, assigning 2 values to 3 variables initializes extra variables with nil, add a nil value to silence[0m
+[0m[33mPROMETHEUS: Warning at Position 18153:133, assigning 1 value to 2 variables initializes extra variables with nil, add a nil value to silence[0m
+[0m[33mPROMETHEUS: Warning at Position 20492:68, assigning 1 value to 3 variables initializes extra variables with nil, add a nil value to silence[0m
+[0m[33mPROMETHEUS: Warning at Position 20719:51, assigning 2 values to 3 variables initializes extra variables with nil, add a nil value to silence[0m
+[0m[35mPROMETHEUS: [0mApplying Obfuscation Pipeline to regression.lua ...
+[0m[35mPROMETHEUS: [0mParsing ...
+[0m[33mPROMETHEUS: Warning at Position 17994:113, assigning 2 values to 3 variables initializes extra variables with nil, add a nil value to silence[0m
+[0m[33mPROMETHEUS: Warning at Position 18153:133, assigning 1 value to 2 variables initializes extra variables with nil, add a nil value to silence[0m
+[0m[33mPROMETHEUS: Warning at Position 20492:68, assigning 1 value to 3 variables initializes extra variables with nil, add a nil value to silence[0m
+[0m[33mPROMETHEUS: Warning at Position 20719:51, assigning 2 values to 3 variables initializes extra variables with nil, add a nil value to silence[0m
+[0m[35mPROMETHEUS: [0mParsing Done in 9.00 seconds
+[0m[35mPROMETHEUS: [0mRenaming Variables ...
+[0m[35mPROMETHEUS: [0mRenaming Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mGenerating Code ...
+[0m[35mPROMETHEUS: [0mCode Generation Done in 1.00 seconds
+[0m[35mPROMETHEUS: [0mObfuscation Done in 10.00 seconds
+[0m[35mPROMETHEUS: [0mGenerated Code size is 83.10% of the Source Code size
+PASS: generated full script compiles without executing it
+PASS: actual Prometheus pipeline: E:\Seisen Hub\Scripts\Free script\StealAnEgg\StealAnEgg_2026-10-18_07.lua
+EXIT STATUS: 0

@@ -1,0 +1,26 @@
+import type { NextRequest } from 'next/server';
+import type { TrackstatHistory } from '@/lib/trackstat';
+import { trackstatRPC } from './trackstat';
+export const keyPattern = /^sp_[a-f0-9]{64}$/;
+export const cookieName = 'seisen_trackstat';
+export const cookieOptions = { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax' as const, path: '/api/trackstat', maxAge: 60 * 60 * 24 * 30 };
+export const readKeys = (req: NextRequest) => [...new Set((req.cookies.get(cookieName)?.value ?? '').split(',').filter(key => keyPattern.test(key)))].slice(0, 10);
+export const bearer = (req: NextRequest) => req.headers.get('authorization')?.match(/^Bearer ([A-Za-z0-9_.-]{20,8192})$/)?.[1];
+export type TrackstatEntry = { key?: string; history: TrackstatHistory };
+export async function trackstatEntries(req: NextRequest) {
+  const keys = readKeys(req);
+  const results = await Promise.allSettled(keys.map(key => trackstatRPC<TrackstatHistory>('trackstat_private', { p_key: key })));
+  const entries: TrackstatEntry[] = [];
+  let dropped = false;
+  results.forEach((result, i) => {
+    if (result.status === 'fulfilled') entries.push({ key: keys[i], history: result.value });
+    else if (result.reason instanceof Error && result.reason.message === 'Invalid connection key') dropped = true;
+    else throw result.reason;
+  });
+  const token = bearer(req);
+  if (token) {
+    const saved = await trackstatRPC<TrackstatHistory[]>('trackstat_user_accounts_read', {}, token);
+    for (const history of saved) if (!entries.some(e => e.history.account.id === history.account.id)) entries.push({ history });
+  }
+  return { entries, dropped, token };
+}

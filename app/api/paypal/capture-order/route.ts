@@ -49,8 +49,60 @@ export async function POST(req: NextRequest) {
     // Auto-mark as shipped to release funds
     await paypal.addTrackingToReleaseFunds(paymentInfo.transactionId);
 
-    // Parse tier and quantity from custom_id — format: "tier:quantity" or just "tier" (legacy)
     const rawTier = paymentInfo.tier || 'weekly';
+
+    // ── Cart mode: custom_id = "cart|monthly:2|lifetime:1" ──────────────────
+    if (rawTier.startsWith('cart|')) {
+        const parts = rawTier.slice(5).split('|');
+        const cartItems = parts.map((p: string) => {
+            const [tier, qty] = p.split(':');
+            return { tier: tier.toLowerCase(), quantity: Math.max(1, Math.min(10, parseInt(qty, 10) || 1)) };
+        });
+
+        const totalQty = cartItems.reduce((s: number, ci: { tier: string; quantity: number }) => s + ci.quantity, 0);
+        const amountPerUnit = paymentInfo.amount / totalQty;
+        const allKeys: string[] = [];
+        let lastError: string | null = null;
+
+        for (let i = 0; i < cartItems.length; i++) {
+            const { tier, quantity } = cartItems[i];
+            const result = await fulfillOrder(db, {
+                transactionId: `${paymentInfo.transactionId}-cart-${i}`,
+                tier,
+                quantity,
+                paymentMethod: 'paypal',
+                decrementStock: true,
+                amountPerUnit: amountPerUnit * quantity,
+                currency: paymentInfo.currency,
+                currencySymbol: '€',
+                payerId: paymentInfo.payerId,
+                customerEmail: paymentInfo.payerEmail,
+                discordId: discordUser?.id,
+                discordTag: discordUser?.tag,
+                discordAvatar: discordUser?.avatar,
+                providerLabel: 'PayPal (Cart)',
+                embedColor: 0xfbbf24,
+                junkie,
+            });
+            allKeys.push(...result.keys);
+            if (result.junkieError) lastError = result.junkieError;
+        }
+
+        return NextResponse.json({
+            success: allKeys.length > 0,
+            orderId: paymentInfo.orderId,
+            transactionId: paymentInfo.transactionId,
+            keys: allKeys,
+            quantity: totalQty,
+            payerEmail: paymentInfo.payerEmail,
+            payerName: paymentInfo.payerName,
+            payerId: paymentInfo.payerId,
+            createTime: paymentInfo.createTime,
+            junkieError: lastError,
+        });
+    }
+
+    // ── Single-tier mode (existing flow) ─────────────────────────────────────
     let normalizedTier: string;
     let quantity = 1;
 

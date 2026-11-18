@@ -1,0 +1,23 @@
+ROLLBACK
+COMMAND: node "D:\Website\Seisen Premium\artifacts\prometheus-luau-20261018\MODIFIED_FILES\scripts\test-prometheus.cjs"
+ENV: {"SEISEN_PROJECT_ROOT": "D:\\Website\\Seisen Premium", "LUAU_BIN": "E:\\Seisen Hub\\.codex-transactions\\BloxFruits-remaining-2026-10-11\\compiler\\luau.exe", "PROMETHEUS_CORE": "D:\\Website\\Seisen Premium\\artifacts\\prometheus-luau-20261018\\ROLLBACK_TARGET\\lib\\prometheus"}
+INPUT: scripts/fixtures/prometheus-luau.luau or explicitly named complete hub input.
+OUTPUT:
+[0m[35mPROMETHEUS: [0mApplying Obfuscation Pipeline to regression.lua ...
+[0m[35mPROMETHEUS: [0mParsing ...
+[0m[31mPROMETHEUS: Parsing Error at Position 5:3, unexpected token <Identifier> "assert", expected <Eof>[0m
+Error: ./src/logger.lua:54: Parsing Error at Position 5:3, unexpected token <Identifier> "assert", expected <Eof>
+stack traceback:
+	./src/logger.lua:54: in function 'logger.errorCallback'
+	./src/logger.lua:57: in function 'logger.error'
+	./src/prometheus/parser.lua:136: in upvalue 'expect'
+	./src/prometheus/parser.lua:151: in function 'prometheus.parser.parse'
+	./src/prometheus/pipeline.lua:178: in function 'prometheus.pipeline.apply'
+	(...tail calls...)
+    at Thread.assertOk (D:\Website\Seisen Premium\node_modules\wasmoon\dist\index.js:365:31)
+    at Thread.run (D:\Website\Seisen Premium\node_modules\wasmoon\dist\index.js:173:22)
+    at LuaEngine.callByteCode (D:\Website\Seisen Premium\node_modules\wasmoon\dist\index.js:1228:45)
+    at LuaEngine.doString (D:\Website\Seisen Premium\node_modules\wasmoon\dist\index.js:1208:25)
+    at transform (D:\Website\Seisen Premium\artifacts\prometheus-luau-20261018\MODIFIED_FILES\scripts\test-prometheus.cjs:31:22)
+    at async main (D:\Website\Seisen Premium\artifacts\prometheus-luau-20261018\MODIFIED_FILES\scripts\test-prometheus.cjs:83:22)
+EXIT STATUS: 1

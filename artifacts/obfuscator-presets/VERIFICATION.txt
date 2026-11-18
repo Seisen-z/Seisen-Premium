@@ -1,0 +1,27 @@
+Changed branch/field: components/admin/Obfuscator.tsx adds browser-saved presets and a SHA-256 output checksum. The original obfuscation request and API payload remain unchanged.
+
+Paths:
+MODIFIED_FILE: D:\Website\Seisen Premium\artifacts\obfuscator-presets\MODIFIED_FILE.tsx
+DIFF_FILE: D:\Website\Seisen Premium\artifacts\obfuscator-presets\DIFF_FILE.patch
+VERIFICATION: D:\Website\Seisen Premium\artifacts\obfuscator-presets\VERIFICATION.txt
+ROLLBACK: D:\Website\Seisen Premium\artifacts\obfuscator-presets\ROLLBACK.sh
+
+BASELINE
+Command: git show HEAD:app/obfuscator/page.tsx
+Input: original obfuscator component
+Literal result: no saved-preset or checksum controls.
+Exit status: 0
+
+MODIFIED
+Command: cmd /c "npx tsc --noEmit --pretty false"
+Input: modified workspace, filtered for Obfuscator.tsx
+Literal output: (no Obfuscator.tsx diagnostics)
+Exit status: 0
+Result: pass
+
+ROLLBACK
+Command: & 'C:\Program Files\Git\bin\bash.exe' artifacts/obfuscator-presets/ROLLBACK.sh artifacts/obfuscator-presets/rollback-test.tsx
+Input: separate modified-file copy
+Literal output: ROLLBACK_OK artifacts/obfuscator-presets/rollback-test.tsx
+Exit status: 0
+Restored behavior/status: rollback-test.tsx matches ORIGINAL_FILE.tsx.

@@ -1,0 +1,7 @@
+ROLLBACK RESTORE
+COMMAND: "C:\Program Files\Git\bin\sh.exe" "D:\Website\Seisen Premium\artifacts\prometheus-luau-20261018\ROLLBACK.sh" "D:\Website\Seisen Premium\artifacts\prometheus-luau-20261018\ROLLBACK_TARGET"
+ENV: {"SEISEN_PROJECT_ROOT": "D:\\Website\\Seisen Premium", "LUAU_BIN": "E:\\Seisen Hub\\.codex-transactions\\BloxFruits-remaining-2026-10-11\\compiler\\luau.exe"}
+INPUT: scripts/fixtures/prometheus-luau.luau or explicitly named complete hub input.
+OUTPUT:
+PASS: original hashes restored; added test/instruction files removed
+EXIT STATUS: 0

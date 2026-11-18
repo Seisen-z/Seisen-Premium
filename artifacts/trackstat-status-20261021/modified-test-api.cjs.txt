@@ -1,0 +1,9 @@
+PASS empty 204 RPC permits account removal
+PASS stable Roblox ID removes correct saved account and preserves other cookie
+PASS reset marker can be removed
+PASS incomplete reads do not remove wrong accounts
+PASS valid connection overrides reset marker in either device order
+PASS GET preserves reset status without exposing key
+PASS new key replaces old reset key on reconnect
+RESULT 7 API/regression cases passed
+trackstat saved accounts failed: Trackstat trackstat_user_accounts_read failed (503)

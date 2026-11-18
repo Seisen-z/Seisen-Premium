@@ -1,0 +1,5 @@
+﻿import fs from 'node:fs';
+const dir='artifacts/feature-import-2026-10-10';const changes=JSON.parse(fs.readFileSync(`${dir}/CHANGES.json`,'utf8'));const results=[];
+for(const c of changes){const folder=c.source==='Run a Restaurant!'?'RunARestaurant':c.source;const files=[`E:/Seisen Hub/Scripts/Free script/${folder}/00_${folder}.lua`,`E:/Seisen Hub/Scripts/Premium Script/${folder}/00_${folder}.lua`].filter(p=>fs.existsSync(p));const code=files.map(p=>fs.readFileSync(p,'utf8')).join('\n');
+const features=c.features.map(feature=>{const base=feature.replace(/ \(Premium\)$/,'');let match=code.toLowerCase().includes(base.toLowerCase());let method='literal label/documentation';if(!match){const short=base.replace(/ \([^)]*\)$/,'');match=code.toLowerCase().includes(short.toLowerCase());method='label plus context';}return {feature,match,method};});results.push({source:c.source,script_name:c.script_name,files,features});}
+fs.writeFileSync(`${dir}/SOURCE_AUDIT.json`,JSON.stringify(results,null,2));console.log(JSON.stringify(results.filter(r=>r.features.some(f=>!f.match)).map(r=>({source:r.source,missing:r.features.filter(f=>!f.match).map(f=>f.feature)})),null,2));

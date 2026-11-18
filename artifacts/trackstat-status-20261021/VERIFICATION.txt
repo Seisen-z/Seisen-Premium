@@ -1,0 +1,125 @@
+Trackstat status and removal verification - 2026-10-21
+Changed branch/field: connectionStatus=reset; empty successful RPC body -> null; DELETE uses stable robloxId and rejects incomplete reads.
+Connected = active library presence; Offline = linked without active presence; Key reset = reset-only metadata marker.
+Library unchanged: existing trackstat_reset_and_wipe request is handled by a BEFORE DELETE database trigger.
+Reset still deletes the old identity and tracking data. Marker contains only account label, hashed old key, and previous owner IDs.
+Production migration/deployment NOT performed. Existing resets predating this migration have no marker to recover.
+Four artifact paths:
+D:\Website\Seisen Premium\artifacts\trackstat-status-20261021\MODIFIED_FILE.zip
+D:\Website\Seisen Premium\artifacts\trackstat-status-20261021\DIFF_FILE.diff
+D:\Website\Seisen Premium\artifacts\trackstat-status-20261021\VERIFICATION.txt
+D:\Website\Seisen Premium\artifacts\trackstat-status-20261021\ROLLBACK.sh
+
+BASELINE
+cwd: D:\Website\Seisen Premium
+Command: python artifacts/trackstat-status-20261021/verify.py baseline
+Input: baseline
+Literal output: BASELINE: removal 503 and missing reset status reproduced
+Exit status: 0
+Nested command: node artifacts/trackstat-status-20261021/test-api.cjs baseline
+REPRODUCED: empty successful RPC makes DELETE return 503
+RESULT BASELINE/ROLLBACK reproduced removal failure
+
+Nested command: node artifacts/trackstat-status-20261021/test-db.mjs baseline
+PASS running library is connected
+PASS stopped library becomes offline after presence timeout
+REPRODUCED: reset drops old connection instead of a reset status
+RESULT BASELINE/ROLLBACK reproduced missing reset status
+
+
+MODIFIED
+cwd: D:\Website\Seisen Premium
+Command: python artifacts/trackstat-status-20261021/verify.py modified
+Input: modified
+Literal output: MODIFIED: 7 API + 9 database cases + status rendering PASS
+Exit status: 0
+Nested command: node artifacts/trackstat-status-20261021/test-api.cjs modified
+PASS empty 204 RPC permits account removal
+PASS stable Roblox ID removes correct saved account and preserves other cookie
+PASS reset marker can be removed
+PASS incomplete reads do not remove wrong accounts
+PASS valid connection overrides reset marker in either device order
+PASS GET preserves reset status without exposing key
+PASS new key replaces old reset key on reconnect
+RESULT 7 API/regression cases passed
+trackstat saved accounts failed: Trackstat trackstat_user_accounts_read failed (503)
+
+Nested command: node artifacts/trackstat-status-20261021/test-db.mjs modified
+PASS running library is connected
+PASS stopped library becomes offline after presence timeout
+PASS reset keeps only reset status and label
+PASS reset still deletes old identity and tracking data; new key is empty
+PASS reset invalidates page fingerprint
+PASS email-only read retains reset marker and cookie read does not duplicate it
+PASS other user cannot read or detach marker and direct table access denied
+PASS invalid key is not a reset and old key cannot save new ownership
+PASS owner removes reset marker and email cache invalidates
+RESULT 9 database cases passed
+
+
+ROLLBACK
+cwd: D:\Website\Seisen Premium
+Command: python artifacts/trackstat-status-20261021/verify.py rollback
+Input: rollback
+Literal output: ROLLBACK: baseline hashes and original behavior restored
+Exit status: 0
+Nested command: node artifacts/trackstat-status-20261021/test-api.cjs rollback
+REPRODUCED: empty successful RPC makes DELETE return 503
+RESULT BASELINE/ROLLBACK reproduced removal failure
+
+Nested command: node artifacts/trackstat-status-20261021/test-db.mjs rollback
+PASS running library is connected
+PASS stopped library becomes offline after presence timeout
+REPRODUCED: reset drops old connection instead of a reset status
+RESULT BASELINE/ROLLBACK reproduced missing reset status
+
+Nested rollback command: "C:\Program Files\Git\bin\sh.exe" "D:\Website\Seisen Premium\artifacts\trackstat-status-20261021\ROLLBACK.sh" "D:\Website\Seisen Premium\artifacts\trackstat-status-20261021\ROLLBACK_COPY"
+RESTORED: 6 baseline hashes; new migration removed
+
+Database rollback was applied in a separate PGlite fixture before the restored-behavior assertions.
+
+Modified static validation:
+Command: npx tsc --noEmit
+Input: current website source; output: (empty); exit status: 0
+Command: npx eslint lib/server/trackstat.ts lib/trackstat.ts lib/trackstat-merge.ts app/api/trackstat/route.ts app/trackstat/TrackstatPanel.tsx app/trackstat/ConnectionPage.tsx
+Input: changed source files; output: (empty); exit status: 0
+Command: node --test lib/trackstat-merge.test.ts
+Literal result: tests 6; pass 6; fail 0; exit status: 0
+Command: npm run build
+Literal result: Compiled successfully in 44s; /trackstat, /trackstat/login, /trackstat/admin and API routes generated; exit status: 0
+Full production build output: build.txt
+Initial tsc included incomplete artifact source snapshots and reported missing sibling imports. Renaming snapshots .bak resolved this; no project config was changed.
+
+UI rendering command: node artifacts/trackstat-status-20261021/test-ui.cjs
+RESULT rendered Connected / Offline / Key reset and all three Remove controls
+
+Input: React ConnectionPage with three fixture accounts; exit status: 0. Static rendering, not a live deployed browser or Roblox reset test.
+
+Baseline and final hashes:
+lib/server/trackstat.ts
+BASELINE SHA256 1a16e0739e98e380fc0529d886161fc3107fdb4f8d28b629754c80a1fb506e5f
+MODIFIED SHA256 4df7bd50dd8f34cdb532993a5b612fb593c32fc41172da07790902eacd7b077e
+ROLLBACK SHA256 1a16e0739e98e380fc0529d886161fc3107fdb4f8d28b629754c80a1fb506e5f
+lib/trackstat.ts
+BASELINE SHA256 797d5e61c47a4316ca61285e8c5aec2ba072ae0bf69ead89ed69b12b649fb7f5
+MODIFIED SHA256 dcc7d2c33b527ad07bfa994a814712c71196470afd83378012d3066ace1b4aa9
+ROLLBACK SHA256 797d5e61c47a4316ca61285e8c5aec2ba072ae0bf69ead89ed69b12b649fb7f5
+lib/trackstat-merge.ts
+BASELINE SHA256 91918d646ef01b095deee3991760cb3c31ef492a462a7260b3f4b87361bfd727
+MODIFIED SHA256 31384e093f35c8b6bbb727d5a0e2a08c1c4bc76a35175eacaddaeca60eab6b59
+ROLLBACK SHA256 91918d646ef01b095deee3991760cb3c31ef492a462a7260b3f4b87361bfd727
+app/api/trackstat/route.ts
+BASELINE SHA256 cb906130742ff4fda5d4b9ef7576c29b5f672c3a79b6b96c6f21eb7fc20ca072
+MODIFIED SHA256 55413fd7eb288166009b8565763213ed951aa5ca6fac2af585f3cd91e6e5e6fd
+ROLLBACK SHA256 cb906130742ff4fda5d4b9ef7576c29b5f672c3a79b6b96c6f21eb7fc20ca072
+app/trackstat/TrackstatPanel.tsx
+BASELINE SHA256 e927aeedeb63059594935dbfa90450818ccec7ac488dfee9a120e27945b1561e
+MODIFIED SHA256 75a6e7d6edfa2145ab020799e651795111320748e21382f18302635dd0e47700
+ROLLBACK SHA256 e927aeedeb63059594935dbfa90450818ccec7ac488dfee9a120e27945b1561e
+app/trackstat/ConnectionPage.tsx
+BASELINE SHA256 3b28ccc1a872111bc1f134903f15c19fddb63d2551353813a5a5831eedd2c190
+MODIFIED SHA256 9e92945a0497809971ea4d4f75d778f9766b778874d2b6c170b7cfdfc50c1b8b
+ROLLBACK SHA256 3b28ccc1a872111bc1f134903f15c19fddb63d2551353813a5a5831eedd2c190
+
+Restored behavior/status: rollback copy reproduces original DELETE 503 and missing reset marker. Live working files remain MODIFIED.
+Code-bloat review: six focused source edits and one migration; no library changes, loops, connections, tracking logic rewrites or unrelated features.

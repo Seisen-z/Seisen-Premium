@@ -1,0 +1,16 @@
+{
+  "app/api/trackstat/route.ts": "41851d96c9e9409189dae1a6bdecf83841756b5a0441589f8359495983cb74c6",
+  "app/api/trackstat/catalog/route.ts": "8cba66e4521a8b554020b725c2850d4771f89160b4f9aa09c0ad3930ba6054c5",
+  "app/api/trackstat/link/route.ts": "7c36ca97dc24465efc7244eaf9a72916c42580d6496e66d85cf6b03f6ae03512",
+  "lib/server/trackstat.ts": "e45219e4e90ad0814342851b4380381662a03d5673048e7df0de1ffca0882170",
+  "lib/trackstat.ts": "730dfd3a7e13e80bd176b8ec812cb2e838c5a4f8ce471c0b9fd9d17f647d374c",
+  "app/trackstat/TrackstatPanel.tsx": "a6a973e30735411d3510f15d5f8ce1e1a0fd045e498720dc25bf565e7efaeca2",
+  "app/trackstat/StealAnEggView.tsx": "72378cbf8596875b79ce27a84c8b564b93f045cdf94aa1a485aab0f8b15bee6a",
+  "lib/trackstat-config.ts": "082393a98af1788a069c5d2676c78b410c8908700c9ba38ffae00af3e99772c8",
+  "lib/client/trackstat-auth.ts": "e917fe5dc34e3cb29a68ca5e82f856bf25b8e0289e1ad82aaf9203958cd4a889",
+  "lib/server/trackstat-accounts.ts": "e3d3962d0389a7aa2b80cdca58f042630ae069cb14e387e6ed793928a1cc59d3",
+  "app/api/trackstat/profile/route.ts": "925c6dc5b31a11c5bf8e6f2ac8fd2edf226a53ca3a4aeea005c23d7d894f3ee6",
+  "app/trackstat/AccountPopover.tsx": "4dabbe110d23cb6a094dab527000090e0e3bbe0105938cade931580a13833f9b",
+  "app/trackstat/login/page.tsx": "46db20fd3821bce460d98cf11796764b632819fbf6f0db0babd822212fe38116",
+  "supabase/migrations/20261028_trackstat_email_reset.sql": "f1fcf5958d018e8d69f2801f42c2b2b3e59ca5d9f4b6f0dc11b5768e0f095e11"
+}

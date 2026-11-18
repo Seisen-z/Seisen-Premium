@@ -93,7 +93,7 @@ export default function DashboardPage() {
             </div>
           </div>
           <Link
-            href="/premium"
+            href={subscription?.tier?.toLowerCase() === 'monthly' ? '/client/renew' : '/premium'}
             className="shrink-0 px-4 py-2 rounded-lg text-xs font-bold transition-colors"
             style={isExpired
               ? { backgroundColor: 'rgba(239,68,68,0.15)', color: '#f87171', border: '1px solid rgba(239,68,68,0.25)' }

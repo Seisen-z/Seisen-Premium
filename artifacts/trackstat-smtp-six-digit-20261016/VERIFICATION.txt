@@ -1,0 +1,91 @@
+TRACKSTAT SIX-DIGIT CODE + WEBSITE SMTP - 2026-10-16
+MODIFIED_FILE: D:\Website\Seisen Premium\artifacts\trackstat-smtp-six-digit-20261016\MODIFIED_FILE.txt
+DIFF_FILE: D:\Website\Seisen Premium\artifacts\trackstat-smtp-six-digit-20261016\DIFF_FILE.diff
+VERIFICATION: D:\Website\Seisen Premium\artifacts\trackstat-smtp-six-digit-20261016\VERIFICATION.txt
+ROLLBACK: D:\Website\Seisen Premium\artifacts\trackstat-smtp-six-digit-20261016\ROLLBACK.sh
+
+Changed fields/branches: login sends via /api/trackstat/auth/send-code, not signInWithOtp.
+CodeInput renders six numeric cells instead of one textbox; leadingzeros preserved, full-code
+paste/autofill, Backspace and arrows handled. All six digits required before Verify.
+EmailService.sendVerificationCode gains an optional Trackstat purpose and reuses existing SMTP.
+Other callers retain their Client Area subject/body/15-minute expiry text. No new transport,
+custom code database/generator, auth poll or unnecessary helper abstractions introduced.
+Supabase generateLink creates the OTP without sending mail; only existing EmailService SMTP
+sends it. Supabase still verifies the code and issues the auth session.
+
+Hashes and snapshots: manifest.json original; modified-hashes.json final; baseline/ and modified/.
+Raw .env.local never copied into artifacts/reports. Only its original non-secret hash recorded.
+User's saved key detected through Next environment loader; no credential value echoed.
+
+Exact commands (cwd D:\Website\Seisen Premium):
+BASELINE: node artifacts/trackstat-smtp-six-digit-20261016/test.cjs baseline
+Input: preserved prior login source. Literal output:
+BASELINE: single code textbox; Supabase email sending
+Exit1 (expected requested-feature absence).
+MODIFIED: node artifacts/trackstat-smtp-six-digit-20261016/test.cjs
+Input: actual TSX/server route/EmailService with mocked hooks, Supabase admin and SMTP transport.
+Literal result: RESULT 18 six-digit/SMTP tests passed
+Exit0; complete stdout below.
+ROLLBACK: & 'C:\Program Files\Git\bin\sh.exe' artifacts/trackstat-smtp-six-digit-20261016/ROLLBACK.sh 'E:/Seisen Hub/.libtest/artifacts/trackstat-smtp-rollback-20261016'
+Input: separate copy of five source/document files.
+Literal output: ROLLBACK: prior login and email service restored; six-digit component and SMTP route removed
+Exit0.
+RESTORED: node artifacts/trackstat-smtp-six-digit-20261016/test.cjs baseline 'E:/Seisen Hub/.libtest/artifacts/trackstat-smtp-rollback-20261016/app/trackstat/login/page.tsx'
+Literal output: BASELINE: single code textbox; Supabase email sending
+Exit1 (expected original behavior). All three existing file hashes equal baseline; both added
+files removed. Working source remains modified. .env.local is excluded from rollback so the
+user's credential is preserved.
+REGRESSION: node artifacts/trackstat-account-20261016/api-test.cjs
+Literal result: RESULT 12 API tests passed
+Exit0.
+TYPECHECK: npx.cmd tsc --noEmit --pretty false
+Output empty, exit0.
+LINT: npx.cmd eslint app/trackstat/login/page.tsx app/trackstat/login/CodeInput.tsx app/api/trackstat/auth/send-code/route.ts
+Output empty, exit0.
+BUILD: npm.cmd run build
+Optimized build and route generation complete, exit0. Complete output in build.txt.
+HTTP: GET http://localhost:3001/trackstat/login ->200; invalid-email POST to new SMTP endpoint
+with matching Origin ->400 before code generation/mail.
+
+LIVE CONNECTION CHECKS (read-only; no real OTP generated or email sent):
+Command loaded @next/env, created Supabase client using TRACKSTAT_SUPABASE_SERVICE_ROLE_KEY,
+called auth.admin.listUsers(page1/perPage1), printed only status (no returned user data),
+then transpiled existing EmailService and called verifyConnection using existing SMTP_*.
+Literal output:
+LIVE Trackstat admin credential: PASS
+LIVE existing SMTP connection: PASS
+No verification email sent; no user or history changed
+Exit0. Earlier check read blank; later checks found the saved local key. Never echoed secrets.
+No real inbox/code-verification cycle or browser screenshot review is claimed.
+
+Server route returns no OTP, links, provider internals or service credential in API JSON.
+Origin/body/email validation; 5/IP/min and1/email/min via existing process-local limiter;
+provider/SMTP failure and non-six-digit OTP fail explicitly (never truncated).
+Supabase Email OTP length must be6; delivery does not require Supabase SMTP/templates.
+LOCAL_SETUP.md and previous ACTIVATION.md updated to replace prior provider-email instructions.
+No extra SQL migration in this follow-up. Prior account-ownership migration remains required.
+
+STATUS: local testing only. No commit, push, deployment or Vercel configuration change.
+Local source was reopened and hashes match packaged modified snapshots. SMTP/admin credentials
+valid, but user still needs to test actual receipt and entry with their own email.
+
+MODIFIED stdout:
+PASS six separate numeric cells
+PASS typing advances focus and preserves leading zero
+PASS paste all six digits into any cell
+PASS paste partial code fills forward
+PASS letters rejected and paste capped at six digits
+PASS deleting a middle digit does not shift others
+PASS empty-cell Backspace goes to previous digit
+PASS arrow navigation clamps at first and last cells
+PASS busy disables all cells
+PASS local route sends generated six-digit OTP through existing SMTP only
+PASS cross-origin requests rejected before minting
+PASS invalid email and malformed or oversized bodies rejected
+PASS missing server credential fails without Supabase-mail fallback
+PASS IP limit and email cooldown block additional minting
+PASS provider errors and non-six-digit codes never send email
+PASS SMTP failure is not reported as sent
+PASS Trackstat email uses existing transport with correct purpose
+PASS existing Client Area emails keep their default behavior
+RESULT 18 six-digit/SMTP tests passed

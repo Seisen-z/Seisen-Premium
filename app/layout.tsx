@@ -8,6 +8,8 @@ import CustomCursor from '@/components/ui/CustomCursor';
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
 import ThemeSelector from '@/components/ui/ThemeSelector';
 import TabTitleAnimation from '@/components/layout/TabTitleAnimation';
+import { CartProvider } from '@/lib/client/cart';
+import CartBadge from '@/components/ui/CartBadge';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -51,7 +53,8 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} ${firaCode.variable}`} suppressHydrationWarning>
       <body className="min-h-screen" suppressHydrationWarning>
-<ThemeProvider>
+        <CartProvider>
+        <ThemeProvider>
           <div className="min-h-screen flex flex-col">
             <TabTitleAnimation />
             <VisitorTracker />
@@ -59,21 +62,25 @@ export default function RootLayout({
 
             {/* Dock */}
             <Dock />
-            
+
             {/* Theme Selector */}
             <ThemeSelector />
-            
+
+            {/* Floating cart badge */}
+            <CartBadge />
+
             {/* Main Content */}
             <main className="flex-1 pt-14 relative z-10">
               {children}
             </main>
-            
+
             {/* Footer */}
             <footer className="mt-auto">
               <Footer />
             </footer>
           </div>
         </ThemeProvider>
+        </CartProvider>
       </body>
     </html>
   );

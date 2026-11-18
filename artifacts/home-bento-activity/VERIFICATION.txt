@@ -1,0 +1,31 @@
+Changed branch/field: HomeBento expands each game into separate Free and Premium bar entries. The All tab shows both entries; Free and Premium filters keep their matching entry. The execution endpoint uses database aggregation views and returns freeCount/premiumCount for each game.
+
+Paths:
+MODIFIED_FILE: D:\Website\Seisen Premium\artifacts\home-bento-activity\MODIFIED_FILE.ts
+DIFF_FILE: D:\Website\Seisen Premium\artifacts\home-bento-activity\DIFF_FILE.patch
+VERIFICATION: D:\Website\Seisen Premium\artifacts\home-bento-activity\VERIFICATION.txt
+ROLLBACK: D:\Website\Seisen Premium\artifacts\home-bento-activity\ROLLBACK.sh
+Migration: D:\Website\Seisen Premium\supabase\migrations\optimize_execution_stats.sql
+
+Original source SHA-256 before modification:
+5DF134B7DA8AA61E2EBFD43CC9DE33AAE77D0648A2BE3623CE501FE64A479FC1
+
+BASELINE
+Command: git show HEAD:components/sections/HomeBento.tsx | Select-String -Pattern 'filteredCount'
+Input: HEAD version of HomeBento.tsx
+Literal result: no output (the baseline had no per-tier bar expansion).
+Exit status: 0
+
+MODIFIED
+Command: cmd /c "npx eslint components/sections/HomeBento.tsx app/api/stats/executions/route.ts"
+Input: modified workspace
+Literal output: ✖ 4 problems (0 errors, 4 warnings)
+Exit status: 0
+Result: pass with existing unused-symbol warnings.
+
+ROLLBACK
+Command: Copy-Item artifacts/home-bento-activity/MODIFIED_FILE.ts artifacts/home-bento-activity/rollback-test.ts -Force; & 'C:\Program Files\Git\bin\bash.exe' artifacts/home-bento-activity/ROLLBACK.sh artifacts/home-bento-activity/rollback-test.ts
+Input: a separate modified-file copy
+Literal output: ROLLBACK_OK C8307DFF61919EC7970185B07D54CE34A0A7B203A6E28CA5D81C4F17EA847D92
+Exit status: 0
+Restored behavior/status: rollback-test.ts exactly matches ORIGINAL_FILE.ts; SHA-256 C8307DFF61919EC7970185B07D54CE34A0A7B203A6E28CA5D81C4F17EA847D92.

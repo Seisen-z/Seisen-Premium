@@ -1,0 +1,5887 @@
+[
+  {
+    "source": "+1LootToForge",
+    "script_name": "+1 Loot to Forge",
+    "files": [
+      "E:/Seisen Hub/Scripts/Free script/+1LootToForge/00_+1LootToForge.lua"
+    ],
+    "features": [
+      {
+        "feature": "Auto Train",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Stage Farm",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Next Stage",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Back When Bag Full",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Instant Kill Aura",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect Dropped Ores",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect Super Loot",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Tower Farm",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto World Boss",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect Health Orb",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Forge",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Upgrade Train Power",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Upgrade Luck",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Upgrade Ore Pack",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Rebirth",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Roll Class",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Sell Selected",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Sell When Pack Full",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Online Rewards",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Daily Dungeon Ticket",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Index Rewards",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Battle Pass",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim 30-Day Check-In",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Teleport",
+        "match": true,
+        "method": "literal label/documentation"
+      }
+    ]
+  },
+  {
+    "source": "+1MinePerClick",
+    "script_name": "+1 Mine Per Click",
+    "files": [
+      "E:/Seisen Hub/Scripts/Free script/+1MinePerClick/00_+1MinePerClick.lua"
+    ],
+    "features": [
+      {
+        "feature": "Auto Sell When Full",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Click",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Dig",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Rebirth",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Upgrade Slot",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Upgrade Walkspeed",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Pickaxe",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Aura",
+        "match": true,
+        "method": "literal label/documentation"
+      }
+    ]
+  },
+  {
+    "source": "AnimeAstralSimulator",
+    "script_name": "Anime Astral Simulator",
+    "files": [
+      "E:/Seisen Hub/Scripts/Free script/AnimeAstralSimulator/00_AnimeAstralSimulator.lua"
+    ],
+    "features": [
+      {
+        "feature": "Auto Click / Attack",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Farm Mobs",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Perfect Position (Middle)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Teleport If Out of Range",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Farm Missing Relics",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Spawn Boss",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Join Selected Raid",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Farm Raid (In-Raid Only)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Leave Raid on Target Wave",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Join Time Trial",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Farm Time Trial (In-Trial Only)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Leave Time Trial on Target Room",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Join MaxTac Call",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Farm MaxTac (In-Raid Only)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Leave MaxTac on Target Wave",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Join Defense",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Join Tower",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Join Dungeon",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Roll Gacha",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Roll Star",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Roll Sword Gacha",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Roll Servants Gacha",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Roll Primordials Gacha",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Roll / Upgrade Progression",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto World Upgrades",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Haki Upgrades",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Roll Player Passive",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Roll Sword Passive",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Roll Pet Passive",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Roll Titan Passive",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Roll Shadow Passive",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Roll Grimoire",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Roll Accessories Curses",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Spend Stat Points",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Rank Up",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Equip Best Loadout",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Equip Best Pet",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Equip Best Avatar (Skin & Buff)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Equip Best Sword",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Equip Best Titan",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Equip Best Shadow",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Equip Best Primordial",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Equip Best Kagune",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Equip Best Spirits",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Equip Best Celestial Keys",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Sell Worst Primordials When Full",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Teleport to World",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Daily Rewards",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Time Rewards",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect All Achievements",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Battlepass",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Global Quests",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim World Quests",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Side Quests",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Guild Missions",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Do Guild Missions",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Open Gacha for Missions",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Timeless Raid Coin & Buy Acc",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Do Raids for Missions",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Kill Mobs for Missions",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Build Helper [Genos]",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Place Helper [Genos]",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Roll Servants",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Place Helper [Servant]",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect [Mana Circles]",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Upgrade Skill Tree",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Deploy Quinque",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Upgrade Kagunes",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Ninja Exam",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Set Chakra Points",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Karma Rebirth",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Zenkai",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Upgrade Vessels",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Train Dragon Slayers",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Set Active Dragon Slayer",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Upgrade Quickhacks",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Upgrade Attributes",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Upgrade Ripperdoc (Eddies)",
+        "match": true,
+        "method": "literal label/documentation"
+      }
+    ]
+  },
+  {
+    "source": "AnimeDice",
+    "script_name": "Anime Dice",
+    "files": [
+      "E:/Seisen Hub/Scripts/Free script/AnimeDice/00_AnimeDice.lua"
+    ],
+    "features": [
+      {
+        "feature": "Auto Roll Dice",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Rebirth",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Upgrades",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Dice Shop",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Upgrade Plot Units",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Use Items / Boosts",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect Unit Income",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Equip Plot Units",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Quests",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Daily Reward",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Group Reward",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Offline Earnings",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Start Tower Match",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Equip Tower Units",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Sell Units",
+        "match": true,
+        "method": "literal label/documentation"
+      }
+    ]
+  },
+  {
+    "source": "AnimeExpedition",
+    "script_name": "Anime Expedition",
+    "files": [
+      "E:/Seisen Hub/Scripts/Free script/AnimeExpedition/00_AnimeExpedition.lua"
+    ],
+    "features": [
+      {
+        "feature": "Auto Summon",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Battlepass",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Index",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Quests (Daily/Weekly)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Bounties",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Achievements",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Elemental Weather",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Headliner Hunt",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Beginner's Path",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Event Quests",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Calendar",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Redeem Codes",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Trait Reroll",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Craft",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Open Villain Chest",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Enter Stage",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Matchmaking Stage (Regular)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Matchmaking Stage (Daily)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Matchmaking Stage (Weekly)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Challenge",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Skip Completed Challenges",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Swap Challenge On Finish",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Skip Waves",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Start",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Upgrade All Unit (Stage)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Use Ultimate",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Restart (Win/Lose)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Restart On Wave",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Leave (Win/Lose)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Leave On Wave",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Next",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Create Macro",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Delete Macro",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Export Macro",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Record Macro",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Play Macro",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Stop Macro",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Play Stage Macro",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Restart Macro",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Import Macro",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Import from URL",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Test Webhook",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Enable Summon Webhook",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Enable Match Result Webhook",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Ping on Unit/Skin Reward",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Only Send On Selected Rarity",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Enable Trait Reroll Webhook",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Gold Shop",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Cosmetic Shop",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Event Shop",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Villain Invasion Shop",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Expedition Shop",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Hire Unit",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect EXP Drops",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Choose Best Route",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Add Fuel (Gold Mine)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Add Fuel (Resource Drill)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Add Fuel (All Buildings)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Gold Mine",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Resource Drill",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim All Rewards",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Open Geodes",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Place Unit",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Upgrade All Unit (Expedition)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Ultimate (Expedition)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Repair Payload",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Use Anvil",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Apply Tome",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Start Game",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Continue (Expedition)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Repeat (Expedition)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Extract (Expedition)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Checkpoint Shop",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Choose (Cards)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Disable Unit Obtainment Cutscene",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Black Screen (AFK Mode)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Remove Map Environment",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Disable 3D Rendering",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Boost Performance (Low Graphics)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Enhance Performance (Simplify Units)",
+        "match": true,
+        "method": "literal label/documentation"
+      }
+    ]
+  },
+  {
+    "source": "AnimeOrigin",
+    "script_name": "Anime Origin",
+    "files": [
+      "E:/Seisen Hub/Scripts/Free script/AnimeOrigin/00_AnimeOrigin.lua"
+    ],
+    "features": [
+      {
+        "feature": "Enable Auto Summon",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Battlepass",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Quests",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Playtime Rewards",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Index Rewards",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Daily Spin",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Level Milestone",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Enter Stage",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Challenge",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Leave/Restart",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Enter Infinity Castle",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Enter Igris Boss Fight",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Enter Rift",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Pick Up Authority Fragment",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Crimson Clash",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Feed Ban",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Select Chest",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Gold Shop",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Enable Auto Reroll (Trait)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Record Macro",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Play Macro",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Equip Macro Units",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Stop Macro",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Clear Macro",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Save Macro",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Delete Selected Macro",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Copy Macro to Clipboard",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Import Macro from Clipboard",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Import Macro",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Import Macro from URL",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Enable Auto Play",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Enable Auto Play 2",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Open 2D Map Planner",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Redirect Placements",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Save Config",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Delete Config",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Export Config to Clipboard",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Import Config from Clipboard",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Import Config",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Import Config from URL",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Focus Currency Units",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Ultimate",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Enter Artifact",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Refresh Artifacts",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Leave After Finish (Artifact)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Select Modifier",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Select Reward",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Keep My Reward",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Black Screen (AFK Mode)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Test Webhook",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Enable Stage Reward Webhook",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Enable Summon Webhook",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Remove Map",
+        "match": true,
+        "method": "literal label/documentation"
+      }
+    ]
+  },
+  {
+    "source": "AnimeRanger",
+    "script_name": "Anime Re:Ranger X",
+    "files": [
+      "E:/Seisen Hub/Scripts/Free script/AnimeRanger/00_AnimeRanger.lua"
+    ],
+    "features": [
+      {
+        "feature": "Refresh List",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Save Macro",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Delete Macro",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Record Macro",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Replay",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Play Macro",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Deploy",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Upgrade",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Vote",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Next",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Retry",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto x2 Speed",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Upgrade Yen",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Yen Max Level",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Yen Generate Level",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Base Health Level",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Milestone",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Battlepass",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Sell [Rarity] (per-rarity auto-sell)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Start Auto Summon",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Challenge",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Start Stage",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Enter Calamity",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Clear Memory",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Refresh Units",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Check Main Trait",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Check Sub Trait",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Trait Reroll",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Items (Merchant)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Items (Raid Shop)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Items (Calamity Shop)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Items (Ghoul Hunt)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Items (Bounty Hunt)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Notify on Mythic Trait",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Ping on Unit Drop",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Send Reward Webhooks",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Enable Anti-AFK",
+        "match": true,
+        "method": "literal label/documentation"
+      }
+    ]
+  },
+  {
+    "source": "AnimeRanger",
+    "script_name": "Anime Ranger X",
+    "files": [
+      "E:/Seisen Hub/Scripts/Free script/AnimeRanger/00_AnimeRanger.lua"
+    ],
+    "features": [
+      {
+        "feature": "Refresh List",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Save Macro",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Delete Macro",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Record Macro",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Replay",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Play Macro",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Deploy",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Upgrade",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Vote",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Next",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Retry",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto x2 Speed",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Upgrade Yen",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Yen Max Level",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Yen Generate Level",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Base Health Level",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Milestone",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Battlepass",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Sell [Rarity] (per-rarity auto-sell)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Start Auto Summon",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Challenge",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Start Stage",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Enter Calamity",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Clear Memory",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Refresh Units",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Check Main Trait",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Check Sub Trait",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Trait Reroll",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Items (Merchant)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Items (Raid Shop)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Items (Calamity Shop)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Items (Ghoul Hunt)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Items (Bounty Hunt)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Notify on Mythic Trait",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Ping on Unit Drop",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Send Reward Webhooks",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Enable Anti-AFK",
+        "match": true,
+        "method": "literal label/documentation"
+      }
+    ]
+  },
+  {
+    "source": "BeeGarden",
+    "script_name": "Bee Garden",
+    "files": [
+      "E:/Seisen Hub/Scripts/Free script/BeeGarden/00_BeeGarden.lua",
+      "E:/Seisen Hub/Scripts/Premium Script/BeeGarden/00_BeeGarden.lua"
+    ],
+    "features": [
+      {
+        "feature": "Auto Collect Coins",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Expand",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Unlock Conveyor",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Upgrade Fusing",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Egg",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Place Egg",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Hatch Eggs",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Select Egg to Blacklist",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Clear Specific Blacklist",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Equip Bee",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Pick Plant",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Sell",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Bee Shop",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Select All (per rarity)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect Volcano (Meteor)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect Snowflake",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect UFO (Cows)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect Volcano Egg Only",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect Snowy Egg Only",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect Alien Charm",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Complete Dig (Fossil)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Item (Merchant)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Museum Reward",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Shop Item",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Craft Fossil Statue",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Deliver",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Purchase UFO",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Decoration",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Craft Summer Statue",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Playtime Reward",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Open Lucky Block",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Open Treasure Chest",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Open Bags",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect Taco",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect Goldfish",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect Lucky Block",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect Nuke Egg",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Feed Bee Queen (Burger)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect Honeycomb",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect Spawn Car & Arc",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Randomize Collection Order",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Slap Ghost",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Daily Spin",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Taco Spin",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Playtime Rewards",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Achievement",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Level Reward",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Server Hop (Lowest Players)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Anti AFK",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Hide Popups/Notifications",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Void Teleport",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto God Roll (Premium)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Roll Quirk (Premium)",
+        "match": true,
+        "method": "literal label/documentation"
+      }
+    ]
+  },
+  {
+    "source": "BlueHeater2",
+    "script_name": "Blue Heater 2",
+    "files": [
+      "E:/Seisen Hub/Scripts/Free script/BlueHeater2/00_BlueHeater2.lua"
+    ],
+    "features": [
+      {
+        "feature": "Highlight Enemies",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Farm All",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Farm",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Kill Aura",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Equip",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Mage Kill Aura",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Skill",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Dodge",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Unlimited Double Jump",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Ignore Fall Damage",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Unlimited Stamina",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Fast Regen Stamina",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect Chests",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect Orbs",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Highlight Quest Items",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Quest",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Server Hop",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Admin Check Hop",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Delete Items",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Delete Materials",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Retry",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Farm Dungeon",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Farm Boss",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Enter Dungeon (Floor 1,2,3,4)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Farm Tower",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Enter Tower",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Complete Glass Obby",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Golf",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Parkour Lava Rise",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Enter Easter Bunny",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Bunny Onesie (x1)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Hegg (x1)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Hegg (x10)",
+        "match": true,
+        "method": "literal label/documentation"
+      }
+    ]
+  },
+  {
+    "source": "BreakAndStealAnEgg",
+    "script_name": "Break and Steal an Egg",
+    "files": [
+      "E:/Seisen Hub/Scripts/Free script/BreakAndStealAnEgg/00_BreakAndStealAnEgg.lua"
+    ],
+    "features": [
+      {
+        "feature": "Auto Break & Steal Egg",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Focus Biggest Egg First",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Place Animal on Pen",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Equip Best Animals",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Steal Dropped Pets",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Place Merge Eggs",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Hatch / Open Ready Eggs",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Treadmill Idle",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Unlock Treadmill",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Upgrade Treadmill",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Upgrade Pen",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Pickaxes",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Equip Best Pickaxe",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Trails",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Equip Best Trail",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Sell Animals",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Sell Eggs",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Sell If Inventory Full",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Don't Sell Favorites",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Enable WalkSpeed",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Bat Kill Aura",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Egg ESP",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Animal Drop ESP",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Index Rewards",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Group Reward",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Offline Rewards",
+        "match": true,
+        "method": "literal label/documentation"
+      }
+    ]
+  },
+  {
+    "source": "Build a Soccer Squad",
+    "script_name": "Build a Soccer Team",
+    "files": [
+      "E:/Seisen Hub/Scripts/Free script/Build a Soccer Squad/00_Build a Soccer Squad.lua"
+    ],
+    "features": [
+      {
+        "feature": "Auto Squad Farm",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Smart Reroll",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Use Year Reroll",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Use All Rerolls",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Chemistry Priority",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Anti-AFK",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Sniper Mode",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto-Build Squad",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Keep Team on Bad Slot",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Team Hunt Enabled",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Elite Player Hunt",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Rejoin",
+        "match": true,
+        "method": "literal label/documentation"
+      }
+    ]
+  },
+  {
+    "source": "BuildARingFarm",
+    "script_name": "Build a Ring Farm",
+    "files": [
+      "E:/Seisen Hub/Scripts/Free script/BuildARingFarm/00_BuildARingFarm.lua"
+    ],
+    "features": [
+      {
+        "feature": "Auto Roll & Buy Seeds",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy All Seeds",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Unlock Plots",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Sell Crates",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Stop Rolling When Can't Afford",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto General Upgrades",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Floor Upgrades",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect Daily",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Playtime",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Spin Wheel",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Daily Carnival",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Hourly Carnival",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Pass",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Plant Seeds",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Discard Seeds",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Upgrade Plants",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Remove Plant",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Compost Seeds",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Pull Lever",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Egg",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Gear",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Unlock Egg Slot",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect Alien Drops",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect Galaxy Drops",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect Blackhole",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect Fall",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect Crystal",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect Wizard Drop",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect Honeycomb",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Submit Honeycomb",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect Rain",
+        "match": true,
+        "method": "literal label/documentation"
+      }
+    ]
+  },
+  {
+    "source": "CleanAllTheLeave",
+    "script_name": "Clean all the Leave",
+    "files": [
+      "E:/Seisen Hub/Scripts/Free script/CleanAllTheLeave/00_CleanAllTheLeave.lua"
+    ],
+    "features": [
+      {
+        "feature": "Auto Collect Leaves",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Priority Special Leaves",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Sell Leaves",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Stat Upgrades",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Unlock Doors & Vents",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect Duck Bot Parts",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Activate Boosts",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Selected Item",
+        "match": true,
+        "method": "literal label/documentation"
+      }
+    ]
+  },
+  {
+    "source": "DungeonHeroes",
+    "script_name": "Dungeon Heroes",
+    "files": [
+      "E:/Seisen Hub/Scripts/Free script/DungeonHeroes/00_DungeonHeroes.lua"
+    ],
+    "features": [
+      {
+        "feature": "Kill Aura",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Pet Kill Aura",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Skill",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Farm",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Equip Left Hand (Dual Wield)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Equip Weapon",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Equip Armor (Pants & Shirt)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Equip Necklace",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Equip Seasonal",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Sell Items",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Use Bug/Exploit (Multi-Sell)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Open Pet Chests",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Quests",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Open Chests",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Notify on Mythic/Divine",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Event Shop",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Enter Dungeon",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Friends Only (Dungeon)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Friends Only (Raid)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Friends Only (Event Dungeon)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Enter Raid",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Start Dungeon",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Replay Dungeon",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Next Difficulty",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Enter Nightmare Dungeon",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Invite Only",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Enter Event Dungeon",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Enter PvP Arena",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Show Tracker HUD",
+        "match": true,
+        "method": "literal label/documentation"
+      }
+    ]
+  },
+  {
+    "source": "Evomon",
+    "script_name": "Evomon",
+    "files": [
+      "E:/Seisen Hub/Scripts/Free script/Evomon/00_Evomon.lua",
+      "E:/Seisen Hub/Scripts/Premium Script/Evomon/00_Evomon.lua"
+    ],
+    "features": [
+      {
+        "feature": "Auto Catch",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Prismatic Only",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Cancel",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Skill",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Ultimate",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Start Battle",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Daily",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Achievement",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect Quest",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect Weekly",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Battle Pass",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Level Rewards",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect Chests",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect World Quests",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Teleport",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy (World Shop)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Roll",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy (Machine)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Fill Bot (Exp Dungeon)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Friend Only (Exp Dungeon)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Exp Dungeon",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Fill Bot (Equipment Dungeon)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Friend Only (Equipment Dungeon)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Equipment Dungeon",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Enter Tower",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Battle Tower",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Shiny Only (Premium)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Evoballs (Premium)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Boss (Premium)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Super Effective Only (Premium)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Switch Pet (Premium)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Keep Shiny (Premium)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Keep Prismatic (Premium)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Release (Premium)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Release Now (Premium)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Select Card (Premium)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Pick Card 1 (Left) (Premium)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Pick Card 2 (Middle) (Premium)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Pick Card 3 (Right) (Premium)",
+        "match": true,
+        "method": "literal label/documentation"
+      }
+    ]
+  },
+  {
+    "source": "GardenHorizon",
+    "script_name": "Garden Horizon",
+    "files": [
+      "E:/Seisen Hub/Scripts/Free script/GardenHorizon/00_GardenHorizon.lua"
+    ],
+    "features": [
+      {
+        "feature": "Copy Features List",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Show Tracker HUD",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Selected Seed",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Selected Gear",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Sell All",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Sell When Inventory Full",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Save Current Position",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Plant",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Ignore Protection for Selected",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Harvest",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Remove Plants",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Daily Login Reward",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Daily Quests",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Weekly Quests",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Refresh Daily Quests",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Refresh Weekly Quests",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Open Packs",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Get Quest",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Turn In All",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Harvest (Quest Mutation)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect Fruits",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect Lucky Blocks",
+        "match": true,
+        "method": "literal label/documentation"
+      }
+    ]
+  },
+  {
+    "source": "GrowAGarden",
+    "script_name": "Grow a Garden 2",
+    "files": [
+      "E:/Seisen Hub/Scripts/Free script/GrowAGarden/00_GrowAGarden.lua"
+    ],
+    "features": [
+      {
+        "feature": "Auto Harvest",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "No-Teleport Harvest",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Plant",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Remove Plant",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Anti Fling",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Anti Steal",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Steal",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Expand Plot",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Sell Inventory",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Sell on Inventory Full",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect Seed Spawn",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Open Crate",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Seeds",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Buy Once (Seeds Shop)",
+        "match": true,
+        "method": "label plus context"
+      },
+      {
+        "feature": "Auto Buy Gear",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Buy Once (Gear Shop)",
+        "match": true,
+        "method": "label plus context"
+      },
+      {
+        "feature": "Auto Buy Pet",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Rainbow Only",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Hide Full Servers",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Show Servers",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Clear Server List",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Props",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Buy Once (Props Shop)",
+        "match": true,
+        "method": "label plus context"
+      },
+      {
+        "feature": "Auto Gift",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Accept Gift",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Send Mail",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Mail",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Seed Shop Webhook",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Ping User (Seed Shop Webhook)",
+        "match": true,
+        "method": "label plus context"
+      },
+      {
+        "feature": "Only Send on Selected (Seed Shop Webhook)",
+        "match": true,
+        "method": "label plus context"
+      },
+      {
+        "feature": "Gear Shop Webhook",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Ping User (Gear Shop Webhook)",
+        "match": true,
+        "method": "label plus context"
+      },
+      {
+        "feature": "Only Send on Selected (Gear Shop Webhook)",
+        "match": true,
+        "method": "label plus context"
+      },
+      {
+        "feature": "Weather Alert Webhook",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Ping User (Weather Alert Webhook)",
+        "match": true,
+        "method": "label plus context"
+      },
+      {
+        "feature": "Only Send on Selected (Weather Alert Webhook)",
+        "match": true,
+        "method": "label plus context"
+      }
+    ]
+  },
+  {
+    "source": "Hypershot",
+    "script_name": "Hypershot",
+    "files": [
+      "E:/Seisen Hub/Scripts/Free script/Hypershot/00_Hypershot.lua"
+    ],
+    "features": [
+      {
+        "feature": "ESP Chams",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "ESP Only",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Head Lock",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Rapid Fire",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Aimbot",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Spawn",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect Playtime Award",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Pick Up Heal",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Pick Up Ammo",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Pick Up Coins",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Open Chest",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Spin Wheel",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Pick Up Weapons",
+        "match": true,
+        "method": "literal label/documentation"
+      }
+    ]
+  },
+  {
+    "source": "LevelBound",
+    "script_name": "Levelbound",
+    "files": [
+      "E:/Seisen Hub/Scripts/Free script/LevelBound/00_LevelBound.lua",
+      "E:/Seisen Hub/Scripts/Premium Script/LevelBound/00_LevelBound.lua"
+    ],
+    "features": [
+      {
+        "feature": "Kill Aura",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Kill Aura (Players Only)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Highlight Chest",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Highlight Enemies",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Highlight Altar",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Highlight EXP Book",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Highlight Gold Pot",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Highlight Easter Eggs",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Enter Door",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Retry",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Daily",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Solo Mode",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Invasions",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Lucky Dungeon",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Private Group",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Create Dungeon",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Kill Aura (Range) (Premium)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Kill Aura (Fast) (Premium)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Highlight Ruby (Premium)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Highlight Real Players (Premium)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Highlight Secret Chest (Premium)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Rare Chest Notifier (Premium)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Campfire (Premium)",
+        "match": true,
+        "method": "literal label/documentation"
+      }
+    ]
+  },
+  {
+    "source": "PetSimulator99",
+    "script_name": "Pet Simulator 99",
+    "files": [
+      "E:/Seisen Hub/Scripts/Free script/PetSimulator99/00_PetSimulator99.lua"
+    ],
+    "features": [
+      {
+        "feature": "Farm Latest Zone",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Farm Selected Zone",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Click Coins",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Use Ultimate",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Magnet (Collect Drops)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Pick Shiny Relics",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Rank Quest",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Rank Reward",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Free Rewards",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Zone",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Upgrades",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy More Eggs",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy More Pets",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Teleport To Selected Area",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Teleport To Latest Area",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Hatch Latest Egg",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Hatch Egg (per world)",
+        "match": true,
+        "method": "label plus context"
+      },
+      {
+        "feature": "Auto Claim Free Diamonds / Potions / Enchants / Items",
+        "match": true,
+        "method": "verified dynamic label / callback",
+        "evidence": [
+          "\"Auto Claim Free \" .. kind",
+          "{ \"Diamonds\", \"Potions\", \"Enchants\", \"Items\" }"
+        ]
+      },
+      {
+        "feature": "Auto Buy Vending Machines",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Digsite",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Advanced Digsite",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Fishing",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Advanced Fishing",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Classic Obby",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Jungle Obby",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Pyramid Obby",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Ice Obby",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Atlantis",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Minefield",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Chest Rush",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Enchant Loadout",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Make Gold",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Make Rainbow",
+        "match": true,
+        "method": "verified dynamic label / callback",
+        "evidence": [
+          "Name     = \"Make \" .. stage",
+          "{ \"Gold\", \"Rainbow\" }"
+        ]
+      },
+      {
+        "feature": "Auto Use Buffs",
+        "match": true,
+        "method": "verified dynamic label / callback",
+        "evidence": [
+          "Name     = \"Auto Use \" .. section",
+          "\"Buffs\""
+        ]
+      },
+      {
+        "feature": "Auto Use Boosts",
+        "match": true,
+        "method": "verified dynamic label / callback",
+        "evidence": [
+          "Name     = \"Auto Use \" .. section",
+          "\"Boosts\""
+        ]
+      },
+      {
+        "feature": "Auto Use Flag",
+        "match": true,
+        "method": "verified dynamic label / callback",
+        "evidence": [
+          "Name     = \"Auto Use \" .. section",
+          "\"Flag\""
+        ]
+      },
+      {
+        "feature": "Auto Use Gifts",
+        "match": true,
+        "method": "verified dynamic label / callback",
+        "evidence": [
+          "Name     = \"Auto Use \" .. section",
+          "\"Gifts\""
+        ]
+      },
+      {
+        "feature": "Auto Use Potion",
+        "match": true,
+        "method": "verified dynamic label / callback",
+        "evidence": [
+          "Name     = \"Auto Use \" .. section",
+          "\"Potion\""
+        ]
+      },
+      {
+        "feature": "Stay In Latest Zone",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Click Hatch War",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Hatch War Egg",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect Pumpkin Orbs",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Hatch War Boss",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Click Hatch War Boss",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Fill Giant Pumpkin",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Open Giant Pumpkin",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Use Hatch War Items",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Hatch War Upgrades",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Config Manager",
+        "match": true,
+        "method": "verified dynamic label / callback",
+        "evidence": [
+          "ConfigSettings = true"
+        ]
+      }
+    ]
+  },
+  {
+    "source": "Raft 101 Survive",
+    "script_name": "Raft 101 Survival",
+    "files": [
+      "E:/Seisen Hub/Scripts/Free script/Raft 101 Survive/00_Raft 101 Survive.lua"
+    ],
+    "features": [
+      {
+        "feature": "Auto Campfire",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Item Collector",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect Seashells",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Attack",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Ranged Attack",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Fish",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Food Collector",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Chapter NPCs Only",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Highlight Quest NPCs",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Highlight Item",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Open Chest",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Loot",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Store",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Open Easter Chest",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Cut Easter Tree",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect Easter Egg",
+        "match": true,
+        "method": "literal label/documentation"
+      }
+    ]
+  },
+  {
+    "source": "RestaurantTycoon3",
+    "script_name": "Restaurant Tycoon 3",
+    "files": [
+      "E:/Seisen Hub/Scripts/Free script/RestaurantTycoon3/00_RestaurantTycoon3.lua"
+    ],
+    "features": [
+      {
+        "feature": "Hide Notifications",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Pasta ($25) (Supermarket)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Ice ($25) (Supermarket)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Egg ($30) (Supermarket)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Bread ($40) (Supermarket)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Cheese ($60) (Supermarket)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Milk ($70) (Supermarket)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Chocolate ($90) (Supermarket)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Beef ($30) (Butcher)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Chicken ($35) (Butcher)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Pork ($45) (Butcher)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Lamb ($75) (Butcher)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Fish ($35) (Fishmonger)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Egg ($20) (Bakery)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Sugar ($20) (Bakery)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Flour ($20) (Bakery)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Bread ($25) (Bakery)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Sugar ($20) (Farm Shop)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Onion ($20) (Farm Shop)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Tomato ($30) (Farm Shop)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Pepper ($40) (Farm Shop)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Carrot ($60) (Farm Shop)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Lettuce ($90) (Farm Shop)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Teleport to Tycoon/Player",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Plant",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Harvest",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect Tips",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect Cash Drop",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Daily",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Take Order",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Send To Table",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Cook",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Serve",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect Dishes",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Rude Customer",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect Bill",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto DriveThru Order",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto DriveThru Serve",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto DriveThru Bill",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Upgrade",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Unlock All Now",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Show Challenge Tracker",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Challenges",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Like Tycoons",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect Scavenger Hunt",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Teleport to Egg",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect Egg",
+        "match": true,
+        "method": "literal label/documentation"
+      }
+    ]
+  },
+  {
+    "source": "RideAPet",
+    "script_name": "Ride a Pet",
+    "files": [
+      "E:/Seisen Hub/Scripts/Free script/RideAPet/00_RideAPet.lua"
+    ],
+    "features": [
+      {
+        "feature": "Auto Ride Pet",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Dismount Pet",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect Cash",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Pickup Pets",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Place Pets",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Pick World Eggs",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Pick Highest Luck Egg Only",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Return To Base Plot",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Bypass Anti-TP (Hover Fly)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Show World Egg ESP & Labels",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Hatch Eggs",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Place Egg",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Upgrade Luck",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Rebirth",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Index Reward",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Food",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Gears",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Feed Pet",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Sell Pets",
+        "match": true,
+        "method": "literal label/documentation"
+      }
+    ]
+  },
+  {
+    "source": "Rivals",
+    "script_name": "Rivals",
+    "files": [
+      "E:/Seisen Hub/Scripts/Free script/Rivals/00_Rivals.lua"
+    ],
+    "features": [
+      {
+        "feature": "Silent Aim",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Team Check (Silent Aim)",
+        "match": true,
+        "method": "label plus context"
+      },
+      {
+        "feature": "Aim at Head",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Wall Check",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Prediction (0–500ms)",
+        "match": true,
+        "method": "label plus context"
+      },
+      {
+        "feature": "Show FOV Circle",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "FOV Radius",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "FOV Color",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Rapid Fire",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "No Spread",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "No Recoil",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Player ESP",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Team Check (ESP)",
+        "match": true,
+        "method": "label plus context"
+      },
+      {
+        "feature": "Show Tracers",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Enemy Color",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Team Color",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Show Box",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Show Names",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Show Distance",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Show Health Bar",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Show HP Text",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Show Weapon",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Max Distance",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Highlight",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Highlight Fill Transparency",
+        "match": true,
+        "method": "verified dynamic label / callback",
+        "evidence": [
+          "Name      = \"Highlight Fill\"",
+          "RivalsESPHlFillTrans = v / 100"
+        ]
+      },
+      {
+        "feature": "Highlight Outline Transparency",
+        "match": true,
+        "method": "verified dynamic label / callback",
+        "evidence": [
+          "Name      = \"Highlight Outline\"",
+          "RivalsESPHlOutTrans = v / 100"
+        ]
+      },
+      {
+        "feature": "Unlock All Skins & Wraps",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Unlock All Emotes",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Save Equipped",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Load Equipped",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Status Tab (live ON/OFF labels)",
+        "match": true,
+        "method": "label plus context"
+      },
+      {
+        "feature": "AC Bypass",
+        "match": true,
+        "method": "literal label/documentation"
+      }
+    ]
+  },
+  {
+    "source": "RollAnimeToFight",
+    "script_name": "Roll Anime to Fight",
+    "files": [
+      "E:/Seisen Hub/Scripts/Free script/RollAnimeToFight/00_RollAnimeToFight.lua"
+    ],
+    "features": [
+      {
+        "feature": "Auto Roll",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Equip Best",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Start Fight",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Active Skills",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Spin Wheel",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Merchant Items",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Upgrade Stats",
+        "match": true,
+        "method": "literal label/documentation"
+      }
+    ]
+  },
+  {
+    "source": "Run a Restaurant!",
+    "script_name": "Run a Restaurant",
+    "files": [
+      "E:/Seisen Hub/Scripts/Free script/RunARestaurant/00_RunARestaurant.lua"
+    ],
+    "features": [
+      {
+        "feature": "Auto Seat Customer",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Take Order",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Ticket",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Cook",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Wash",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Serve",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect Cash",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Harvest Crops",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Fill Feeders",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Take Animal Drops",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Quest",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Daily Quest",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Daily Login",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Playtime Reward",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Pet",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Black Market",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Black Market Upgrade",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Taco Tuesday Claim",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Shop (7 Categories)",
+        "match": true,
+        "method": "literal label/documentation"
+      }
+    ]
+  },
+  {
+    "source": "Slayer2",
+    "script_name": "Slayer 2",
+    "files": [
+      "E:/Seisen Hub/Scripts/Free script/Slayer2/00_Slayer2.lua",
+      "E:/Seisen Hub/Scripts/Premium Script/Slayer2/00_Slayer2.lua"
+    ],
+    "features": [
+      {
+        "feature": "Farm normal mobs",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto attack while farming",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto abilities while farming",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Use Clan Skills",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Combat Only (Clan Skills)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Dodge",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Equip Weapon",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Equip Accessories",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Equip Best Accessories Now",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Open Chest",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect Drop",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect Soul",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Drink Potion",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Stop Farm Movement",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Farm bosses",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Wait/Skip if on cooldown",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Yeti (Buy heart, summon, kill) (Premium)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Frozen Yeti Teleport (Premium)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Quest (Kill)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Muzan Quests (Bosses)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Crow Quests (Bosses)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Highlight Quest Objective",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Teleport to NPC",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Teleport to Training",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Minigame (Training)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Show Day/Night Cycle (Premium)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Show Final Selection (Premium)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Notify & Track Muzan (Premium)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Notify & Track Roaming Muzan (Premium)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Notify & Track Black Marketer (Premium)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Merchant (Black Marketer) (Premium)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Teleport to Schematic Area",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Collect Current Schematic",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect All Schematics",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Farm Sealed Chests",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Horse ESP",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Fish",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect Fish",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Upgrade Rod",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Farm (Ouwigahara) (Premium)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Ready Up (Start Run) (Premium)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Leave (After Run) (Premium)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Open Cache (Ouwigahara) (Premium)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Open Chest (Ouwigahara) (Premium)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Vote Skip Wave Break (Premium)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Select Card (Premium)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Join Ouwland (Main Menu)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Queue Ouwigahara Normal (Main Menu) (Premium)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Join Lowest-Pop Server",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Roll Clan",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Anti Void",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Anti Fling",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Infinite Stamina (Sprint/Dash)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Infinite Underwater Stamina + Breathing",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Infinite Horse Stamina",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Infinite Climb Stamina",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Anti Sun Damage",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Leave When Staff Joins",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Live Boss Tracker",
+        "match": true,
+        "method": "literal label/documentation"
+      }
+    ]
+  },
+  {
+    "source": "SlimeRNG",
+    "script_name": "Slime RNG",
+    "files": [
+      "E:/Seisen Hub/Scripts/Free script/SlimeRNG/00_SlimeRNG.lua"
+    ],
+    "features": [
+      {
+        "feature": "Auto Roll",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Shoot Slimes",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Rebirth",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect Index",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Main Upgrades",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Potion Upgrades",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Profile Upgrades",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Zones",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Equip Best",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Use Boosts",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect Loot",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Teleport to Highest Zone",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect Recipes",
+        "match": true,
+        "method": "literal label/documentation"
+      }
+    ]
+  },
+  {
+    "source": "SmileSeas",
+    "script_name": "Slime Seas",
+    "files": [
+      "E:/Seisen Hub/Scripts/Free script/SmileSeas/00_SmileSeas.lua"
+    ],
+    "features": [
+      {
+        "feature": "Farm All (Ignores Target)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Farm",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto MiniBoss (Crimson Demon)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Boss (Demon Lord Rima)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Boss (King Sinbad)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Boss (Ogre Lord)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Boss (Monarch Statue)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Boss Chest",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Paid Boss Chest",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Accept Quest",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Quest Item ESP (Mask Pieces)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Chest",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect Mats (Forage)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Stat",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Teleport",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Enter Dungeon",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Enter Dungeon",
+        "match": true,
+        "method": "literal label/documentation"
+      }
+    ]
+  },
+  {
+    "source": "StealAnEgg",
+    "script_name": "Steal an Egg",
+    "files": [
+      "E:/Seisen Hub/Scripts/Free script/StealAnEgg/00_StealAnEgg.lua"
+    ],
+    "features": [
+      {
+        "feature": "Auto Steal Egg",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Enable Speed",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Place Egg On Base",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Treadmill While Waiting",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Show Egg Labels (Pet Screen)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Sell Eggs",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Sell Pets",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Sell If Inventory Full",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Don't Sell Favorite Pets",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Enable Discord Webhook",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Treadmills",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Base",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Trails",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Hatch Egg",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Equip Best",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Index",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Kill Aura",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Beat Dr Scramble",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect Scramble Drops",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Steal Scramble Egg",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Submit Scramble Lab",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Scramble Shop",
+        "match": true,
+        "method": "literal label/documentation"
+      }
+    ]
+  },
+  {
+    "source": "SummonHeroes",
+    "script_name": "Summon Heroes",
+    "files": [
+      "E:/Seisen Hub/Scripts/Free script/SummonHeroes/00_SummonHeroes.lua"
+    ],
+    "features": [
+      {
+        "feature": "Enable Auto Vote",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Force Next",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Force Retry",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Force Lobby (Exit)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Start Dungeon Now",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Sweep Now",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Sweep",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Start Story Now",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Daily",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Unit Dex",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Chests",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Achievements",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Skip Summon Animation",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Notify Summon Result",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Summon",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Summon Now",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Sell Common",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Sell Uncommon",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Sell Rare",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Sell Epic",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Sell Legendary",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Sell Mythic",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Sell Secret",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Execute Money Exploit",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Refresh Unit List",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Lock Attack",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Lock Health",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Lock Speed",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Lock Cooldown",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Enable Auto Reroll",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Buy Rare Fusion Crystal (300 Coins) (Item Shop)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Buy Epic Fusion Crystal (50 Gems) (Item Shop)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Buy Legendary Fusion Crystal (100 Gems) (Item Shop)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Buy Trait Reroll (200 Gems) (Item Shop)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Buy Summon Ticket (50 Gems) (Item Shop)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Buy Any Food Variant (Item Shop)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Buy Rare Fusion Crystal (3 PvP Tokens) (PvP Shop)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Buy Epic Fusion Crystal (4 PvP Tokens) (PvP Shop)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Buy Legendary Fusion Crystal (5 PvP Tokens) (PvP Shop)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Buy Trait Reroll (10 PvP Tokens) (PvP Shop)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Buy Summon Ticket (5 PvP Tokens) (PvP Shop)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Buy Any Food Variant (PvP Shop)",
+        "match": true,
+        "method": "literal label/documentation"
+      }
+    ]
+  },
+  {
+    "source": "TheForge",
+    "script_name": "The Forge",
+    "files": [
+      "E:/Seisen Hub/Scripts/Free script/TheForge/00_TheForge.lua",
+      "E:/Seisen Hub/Scripts/Premium Script/TheForge/00_TheForge.lua"
+    ],
+    "features": [
+      {
+        "feature": "Auto Mine",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Defend",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Attack",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Perfect Forge",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Boss Fight",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Reroll (Race)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Sell",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Ignore Favorited Items",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Claim All Index Rewards",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Rewards",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Craft",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Pickaxe",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Use Potion",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Potion",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Go To NPC",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Teleport to Island",
+        "match": true,
+        "method": "literal label/documentation"
+      }
+    ]
+  },
+  {
+    "source": "WizardAlchemy",
+    "script_name": "Wizard Alchemy",
+    "files": [
+      "E:/Seisen Hub/Scripts/Free script/WizardAlchemy/00_WizardAlchemy.lua",
+      "E:/Seisen Hub/Scripts/Premium Script/WizardAlchemy/00_WizardAlchemy.lua"
+    ],
+    "features": [
+      {
+        "feature": "Auto Farm",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Skill",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Close Range Kill Aura",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Farm Materials",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Farm Chests",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect Formula Fragment",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Pick Drop",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect Owl",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Enchant",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Rebirth",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Teleport Now",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Teleport",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Teleport (to NPC)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Refresh NPCs",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Magic Source",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Server Hop Now",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Block on Dodge",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Dodge",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Camp Respawn",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Respawn",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Boss Health Bar",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Azure Wand Rare",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Trinity SilverBeak Rare",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Demon Trident Wand",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Ember Wand Legendary",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Ice Star Legendary",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Coreflame Rod",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Spark Wand Epic",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Abyssal Water Wand Epic",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Find of the Tides Legendary",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Spider Venom Wand Legendary",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Starmoon Hat Rare",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Golden Reverie Hat Epic",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Starlight Hat Epic",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Lava Wizard Hat Epic",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Venomous Master Legendary Hat",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Starmoon Robe Rare",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Golden Reverie Robe Epic",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Starlight Robe Epic",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Venomous Master Legendary Clothe",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Apprentice Broom",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Lava Broom Epic",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Poison Spider Broom",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Upgrade Mats Bag",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Upgrade Potion Bag",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Sell Now",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Sell",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Reset Shop",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Buy Now",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Merchant",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Sell Potions",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Claim All Codes",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Refresh Materials",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Brew",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Farm Event",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Event Shop",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Open Egg",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Buy Egg",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Sell Egg",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Enter Challenge",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect Online Reward",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Daily",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Pickup Egg",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Legendary Only",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Server Hop if No Eggs",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Farm Bosses (Premium)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Accept Quest (Premium)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Quest Claim (Premium)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Roll (Premium)",
+        "match": true,
+        "method": "literal label/documentation"
+      }
+    ]
+  },
+  {
+    "source": "WorldZero",
+    "script_name": "World Zero",
+    "files": [
+      "E:/Seisen Hub/Scripts/Free script/WorldZero/00_WorldZero.lua"
+    ],
+    "features": [
+      {
+        "feature": "Kill Aura (Best Class: Arcane Mage & Elementalist)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Skill",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Dodge",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Class Override",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect (coins, items, orbs)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Collect Trash (Scavenger Hunt)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Quests (daily, world, weekly)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Starter Pass",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Claim Battlepass",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Equip Best Gear",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Sell (Max Rarity & Max Level filters)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Delete Clown Cosmetics",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Mob Follow (Target Mob, Follow Position, Follow Distance)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "World Hub Teleport (World 1–10 + Trading Hub)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Waystone Teleport (Select, Teleport, Unlock All)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Dungeon Progression (Worlds 1–10)",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Towers: Prison, Atlantis, Mezuvian, Oasis, Aether, Arcane",
+        "match": true,
+        "method": "literal label/documentation"
+      },
+      {
+        "feature": "Auto Play Again",
+        "match": true,
+        "method": "literal label/documentation"
+      }
+    ]
+  }
+]

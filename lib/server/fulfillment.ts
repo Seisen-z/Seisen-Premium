@@ -50,6 +50,7 @@ async function issueKeys(
     amountPerUnit: number,
     currency: string,
     transactionId: string,
+    discordId?: string,
 ): Promise<{ allKeys: string[]; lastKeyResult: JunkieResponse | null }> {
     let allKeys: string[] = [];
     let lastKeyResult: JunkieResponse | null = null;
@@ -62,7 +63,7 @@ async function issueKeys(
                 tier,
                 validity,
                 quantity: 1,
-                userInfo: { email: customerEmail, payerId: 'Premium Purchase' },
+                userInfo: { email: customerEmail, payerId: 'Premium Purchase', discordId },
                 paymentInfo: {
                     amount: amountPerUnit,
                     currency,
@@ -161,7 +162,7 @@ export async function fulfillOrder(db: TicketDatabase, params: FulfillOrderParam
         }
 
         // The claimant hasn't finished (or failed) — fill in keys without re-decrementing stock.
-        const { allKeys, lastKeyResult } = await issueKeys(junkie, tier, quantity, validity, customerEmail, amountPerUnit, currency, transactionId);
+        const { allKeys, lastKeyResult } = await issueKeys(junkie, tier, quantity, validity, customerEmail, amountPerUnit, currency, transactionId, discordId);
         await db.updatePaymentKeys(transactionId, allKeys, allKeys.length > 0 ? 'completed' : 'key_failed');
         if (allKeys.length > 0) {
             void emailService.sendKeyEmail(customerEmail, allKeys[0], tier, transactionId);
@@ -183,7 +184,7 @@ export async function fulfillOrder(db: TicketDatabase, params: FulfillOrderParam
         if (anyDecremented) void db.notifyDiscordBotOfStockChange();
     }
 
-    const { allKeys, lastKeyResult } = await issueKeys(junkie, tier, quantity, validity, customerEmail, amountPerUnit, currency, transactionId);
+    const { allKeys, lastKeyResult } = await issueKeys(junkie, tier, quantity, validity, customerEmail, amountPerUnit, currency, transactionId, discordId);
     await db.updatePaymentKeys(transactionId, allKeys, allKeys.length > 0 ? 'completed' : 'key_failed');
 
     if (allKeys.length > 0) {

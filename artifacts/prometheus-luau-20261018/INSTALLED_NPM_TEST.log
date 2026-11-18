@@ -1,0 +1,129 @@
+INSTALLED NPM TEST
+COMMAND: npm.cmd test
+ENV: {"SEISEN_PROJECT_ROOT": "D:\\Website\\Seisen Premium", "LUAU_BIN": "E:\\Seisen Hub\\.codex-transactions\\BloxFruits-remaining-2026-10-11\\compiler\\luau.exe"}
+INPUT: scripts/fixtures/prometheus-luau.luau or explicitly named complete hub input.
+OUTPUT:
+
+> seisen-nextjs@0.1.0 test
+> node --test lib/*.test.ts && node scripts/test-prometheus.cjs
+
+(node:2352) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Website/Seisen%20Premium/lib/trackstat-chart.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Website\Seisen Premium\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ the axis ends on a round number just above the data (3.2956ms)
+✔ a single point makes a path that is just a start (0.423ms)
+✔ the curve passes through every point (0.6987ms)
+✔ the curve never bulges past the points next to it (2.4547ms)
+✔ a rising line stays rising between its points (2.662ms)
+(node:21072) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Website/Seisen%20Premium/lib/trackstat-merge.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\D:\Website\Seisen Premium\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ devices of one Roblox account become one entry with every key and id (5.3924ms)
+✔ different Roblox accounts stay separate and keep their order (0.8331ms)
+✔ sessions are combined newest first (33.6501ms)
+✔ daily gains add up per day and game, and other days are kept (1.6362ms)
+✔ an account is live when any device is, without duplicates (0.8544ms)
+✔ the loaded histories are not changed by merging (0.8862ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 11
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 529.5858
+[0m[35mPROMETHEUS: [0mApplying Obfuscation Pipeline to regression.lua ...
+[0m[35mPROMETHEUS: [0mParsing ...
+[0m[33mPROMETHEUS: Warning at Position 12:56, assigning 1 value to 2 variables initializes extra variables with nil, add a nil value to silence[0m
+[0m[35mPROMETHEUS: [0mParsing Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mRenaming Variables ...
+[0m[35mPROMETHEUS: [0mRenaming Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mGenerating Code ...
+[0m[35mPROMETHEUS: [0mCode Generation Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mObfuscation Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mGenerated Code size is 127.65% of the Source Code size
+[0m[33mPROMETHEUS: Warning at Position 1:955, assigning 1 value to 2 variables initializes extra variables with nil, add a nil value to silence[0m
+PASS: Minify LuaU parse, compile and runtime equivalence
+[0m[35mPROMETHEUS: [0mApplying Obfuscation Pipeline to regression.lua ...
+[0m[35mPROMETHEUS: [0mParsing ...
+[0m[33mPROMETHEUS: Warning at Position 12:56, assigning 1 value to 2 variables initializes extra variables with nil, add a nil value to silence[0m
+[0m[35mPROMETHEUS: [0mParsing Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mApplying Step "Vmify" ...
+[0m[35mPROMETHEUS: [0mStep "Vmify" Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mApplying Step "Constant Array" ...
+[0m[35mPROMETHEUS: [0mStep "Constant Array" Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mApplying Step "Wrap in Function" ...
+[0m[35mPROMETHEUS: [0mStep "Wrap in Function" Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mRenaming Variables ...
+[0m[35mPROMETHEUS: [0mRenaming Done in 1.00 seconds
+[0m[35mPROMETHEUS: [0mGenerating Code ...
+[0m[35mPROMETHEUS: [0mCode Generation Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mObfuscation Done in 1.00 seconds
+[0m[35mPROMETHEUS: [0mGenerated Code size is 563.94% of the Source Code size
+PASS: Weak LuaU parse, compile and runtime equivalence
+[0m[35mPROMETHEUS: [0mApplying Obfuscation Pipeline to regression.lua ...
+[0m[35mPROMETHEUS: [0mParsing ...
+[0m[33mPROMETHEUS: Warning at Position 12:56, assigning 1 value to 2 variables initializes extra variables with nil, add a nil value to silence[0m
+[0m[35mPROMETHEUS: [0mParsing Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mApplying Step "Encrypt Strings" ...
+[0m[35mPROMETHEUS: [0mStep "Encrypt Strings" Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mApplying Step "Anti Tamper" ...
+[0m[35mPROMETHEUS: [0mStep "Anti Tamper" Done in 1.00 seconds
+[0m[35mPROMETHEUS: [0mApplying Step "Vmify" ...
+[0m[35mPROMETHEUS: [0mStep "Vmify" Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mApplying Step "Constant Array" ...
+[0m[35mPROMETHEUS: [0mStep "Constant Array" Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mApplying Step "Numbers To Expressions" ...
+[0m[35mPROMETHEUS: [0mStep "Numbers To Expressions" Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mApplying Step "Wrap in Function" ...
+[0m[35mPROMETHEUS: [0mStep "Wrap in Function" Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mRenaming Variables ...
+[0m[35mPROMETHEUS: [0mRenaming Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mGenerating Code ...
+[0m[35mPROMETHEUS: [0mCode Generation Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mObfuscation Done in 1.00 seconds
+[0m[35mPROMETHEUS: [0mGenerated Code size is 1650.42% of the Source Code size
+PASS: Medium LuaU parse, compile and runtime equivalence
+[0m[35mPROMETHEUS: [0mApplying Obfuscation Pipeline to regression.lua ...
+[0m[35mPROMETHEUS: [0mParsing ...
+[0m[33mPROMETHEUS: Warning at Position 12:56, assigning 1 value to 2 variables initializes extra variables with nil, add a nil value to silence[0m
+[0m[35mPROMETHEUS: [0mParsing Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mApplying Step "Vmify" ...
+[0m[35mPROMETHEUS: [0mStep "Vmify" Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mApplying Step "Encrypt Strings" ...
+[0m[35mPROMETHEUS: [0mStep "Encrypt Strings" Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mApplying Step "Anti Tamper" ...
+[0m[35mPROMETHEUS: [0mStep "Anti Tamper" Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mApplying Step "Vmify" ...
+[0m[35mPROMETHEUS: [0mStep "Vmify" Done in 1.00 seconds
+[0m[35mPROMETHEUS: [0mApplying Step "Constant Array" ...
+[0m[35mPROMETHEUS: [0mStep "Constant Array" Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mApplying Step "Numbers To Expressions" ...
+[0m[35mPROMETHEUS: [0mStep "Numbers To Expressions" Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mApplying Step "Wrap in Function" ...
+[0m[35mPROMETHEUS: [0mStep "Wrap in Function" Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mRenaming Variables ...
+[0m[35mPROMETHEUS: [0mRenaming Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mGenerating Code ...
+[0m[35mPROMETHEUS: [0mCode Generation Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mObfuscation Done in 1.00 seconds
+[0m[35mPROMETHEUS: [0mGenerated Code size is 6155.86% of the Source Code size
+PASS: Strong LuaU parse, compile and runtime equivalence
+[0m[31mPROMETHEUS: Parsing Error at Position 1:22, unexpected token <Eof> "", expected <Keyword> "else"[0m
+[0m[31mPROMETHEUS: Parsing Error at Position 1:20, Unexpected Token "else". Expected a Expression![0m
+[0m[31mPROMETHEUS: Parsing Error at Position 1:12, Unexpected Token "". Expected a Expression![0m
+[0m[31mPROMETHEUS: Parsing Error at Position 1:8, Unexpected Token "if". Expected a Expression![0m
+[0m[31mPROMETHEUS: Parsing Error at Position 1:11, Unexpected Token "/". Expected a Expression![0m
+[0m[35mPROMETHEUS: [0mApplying Obfuscation Pipeline to regression.lua ...
+[0m[35mPROMETHEUS: [0mParsing ...
+[0m[35mPROMETHEUS: [0mParsing Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mRenaming Variables ...
+[0m[35mPROMETHEUS: [0mRenaming Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mGenerating Code ...
+[0m[35mPROMETHEUS: [0mCode Generation Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mObfuscation Done in 0.00 seconds
+[0m[35mPROMETHEUS: [0mGenerated Code size is 98.21% of the Source Code size
+PASS: malformed-input rejection and Lua51 compatibility
+EXIT STATUS: 0

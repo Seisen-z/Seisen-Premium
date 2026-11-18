@@ -1,0 +1,38 @@
+﻿Changed field: public.script_metadata.features, matched by exact script_name. Existing descriptions, IDs and creation dates preserved. 20 existing rows updated; 15 rows inserted. 13 unrelated rows unchanged. Live Supabase remains updated.
+Source: E:\Seisen Hub\.dontsearch\feature-list.md
+34 source sections / 1068 source features. Anime Ranger maps to two catalog names: 35 targets / 1105 stored feature strings.
+Anime Dice and Roll Anime to Fight have metadata stored but are absent from the current GitHub tab catalog. No catalog entries or website source were changed.
+MODIFIED_FILE: D:\Website\Seisen Premium\artifacts\feature-import-2026-10-10\MODIFIED_FILE.json
+DIFF_FILE: D:\Website\Seisen Premium\artifacts\feature-import-2026-10-10\DIFF_FILE.diff
+VERIFICATION: D:\Website\Seisen Premium\artifacts\feature-import-2026-10-10\VERIFICATION.txt
+ROLLBACK: D:\Website\Seisen Premium\artifacts\feature-import-2026-10-10\ROLLBACK.sh
+HASHES:
+{
+  "source": "25b087f92b28aa513a3aeff2cbeff3d681efa7dee19ef8cd2627d4d8de22c080",
+  "baseline": "64dfca8241570a45582837542f00424e8e0f6b2d56fda7a9fa0cd40ae5d518f6",
+  "modified": "a5f7a81fbdd65e1ccef4e3cd652b1bd9f0473f591bdaffc582493a1827bd1600"
+}
+
+Working directory for commands: D:\Website\Seisen Premium
+BASELINE command: node --env-file=.env.local artifacts/feature-import-2026-10-10/import.mjs baseline
+Input: BASELINE_FILE.json and live script_metadata.
+Literal output: BASELINE PASS: 33 live rows match backup
+Exit status: 0
+APPLY command: node --env-file=.env.local artifacts/feature-import-2026-10-10/import.mjs apply
+Input: CHANGES.json, 35 target rows.
+Literal output: APPLY PASS: 35 rows written
+Exit status: 0
+MODIFIED command: node --env-file=.env.local artifacts/feature-import-2026-10-10/import.mjs verify
+Input: CHANGES.json, BASELINE_FILE.json, live script_metadata.
+Literal output: MODIFIED PASS: 35 target rows; 1105 stored features exact; 13 unrelated rows unchanged; 48 total live rows
+Exit status: 0
+ROLLBACK command: & 'C:\Program Files\Git\bin\sh.exe' -c 'chmod +x artifacts/feature-import-2026-10-10/ROLLBACK.sh && artifacts/feature-import-2026-10-10/ROLLBACK.sh artifacts/feature-import-2026-10-10/ROLLBACK_TEST.json'
+Input: separate copy of MODIFIED_FILE.json at ROLLBACK_TEST.json.
+Literal output: ROLLBACK PASS: separate copy restored; SHA256 matches baseline; 33 original rows restored; live database remains updated
+Exit status: 0
+Restored status: local rollback copy exactly matches original backup. Live rollback is available with ROLLBACK.sh --live and was not run against production.
+SOURCE AUDIT commands: node artifacts/feature-import-2026-10-10/audit.mjs; node artifacts/feature-import-2026-10-10/audit-complete.mjs
+Literal final output: SOURCE AUDIT PASS: 34 scripts; all 1068 source features found in free/premium Lua labels, documentation, or verified dynamic controls; 35 database name mappings checked
+Exit status: 0
+Source correctness: static Lua audit, not a runtime test of every game feature. Premium qualifiers retained. Context qualifiers and dynamic labels checked. SOURCE_AUDIT.json retains per-feature evidence.
+Mapping evidence: GrowAGarden SetGameId(10200395747) -> Grow a Garden 2; SmileSeas SetGameId(9073775318) -> Slime Seas; Soccer Squad SetGameId(10265803948) -> Build a Soccer Team; AnimeRanger SetGameId(9774981774) -> both catalog names. Raft 101 Survive -> Raft 101 Survival.

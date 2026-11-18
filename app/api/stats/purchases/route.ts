@@ -6,7 +6,7 @@ export const revalidate = 60; // Cache for 60 seconds
 export async function GET() {
   try {
     const realCount = await db.getPurchaseCount();
-    const totalCount = realCount + 41; // +41 legacy/offset per user request
+    const totalCount = realCount + 1041; // legacy/offset
     
     return NextResponse.json({ 
       count: totalCount,

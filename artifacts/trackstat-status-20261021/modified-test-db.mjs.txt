@@ -1,0 +1,10 @@
+PASS running library is connected
+PASS stopped library becomes offline after presence timeout
+PASS reset keeps only reset status and label
+PASS reset still deletes old identity and tracking data; new key is empty
+PASS reset invalidates page fingerprint
+PASS email-only read retains reset marker and cookie read does not duplicate it
+PASS other user cannot read or detach marker and direct table access denied
+PASS invalid key is not a reset and old key cannot save new ownership
+PASS owner removes reset marker and email cache invalidates
+RESULT 9 database cases passed

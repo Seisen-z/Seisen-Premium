@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { RobloxIntegration, ROBUX_PRICES } from '@/lib/server/roblox';
-import { JunkieKeySystem } from '@/lib/server/junkie';
+import { createJunkieFromEnv } from '@/lib/server/junkie';
 import { TicketDatabase } from '@/lib/server/db';
 import {
     DiscordAuth,
@@ -13,20 +13,7 @@ import {
 
 const robloxIntegration = new RobloxIntegration();
 const db = new TicketDatabase();
-
-const junkieSystem = new JunkieKeySystem({
-    webhookUrl: process.env.JUNKIE_WEBHOOK_URL,
-    webhookUrlWeekly: process.env.JUNKIE_WEBHOOK_URL_WEEKLY,
-    webhookUrlMonthly: process.env.JUNKIE_WEBHOOK_URL_MONTHLY,
-    webhookUrlAnnual: process.env.JUNKIE_WEBHOOK_URL_ANNUAL,
-    webhookUrlAnnualWeekly: process.env.JUNKIE_WEBHOOK_URL_ANNUAL_WEEKLY,
-    webhookUrlLifetime: process.env.JUNKIE_WEBHOOK_URL_LIFETIME,
-    hmacSecret: process.env.JUNKIE_HMAC_SECRET,
-    hmacSecretAnnual: process.env.JUNKIE_HMAC_SECRET_ANNUAL,
-    hmacHeaderAnnual: process.env.JUNKIE_HMAC_HEADER_ANNUAL,
-    provider: process.env.JUNKIE_PROVIDER,
-    defaultService: process.env.JUNKIE_SERVICE
-});
+const junkieSystem = createJunkieFromEnv();
 
 const VALIDITY_HOURS: Record<string, number> = { monthly: 720, lifetime: 0 };
 const USERNAME_PATTERN = /^[A-Za-z0-9_]{3,20}$/;
@@ -250,7 +237,7 @@ export async function POST(req: Request) {
             tier,
             validity: validityHours,
             quantity: 1,
-            userInfo: { email, payerId: `ROBLOX_${order.userId}`, robloxUsername: order.username },
+            userInfo: { email, payerId: `ROBLOX_${order.userId}`, robloxUsername: order.username, discordId: discord.id },
             paymentInfo: { amount: 0, currency: 'ROBUX', transactionId }
         });
 

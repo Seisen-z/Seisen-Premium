@@ -1,0 +1,2 @@
+REPRODUCED: empty successful RPC makes DELETE return 503
+RESULT BASELINE/ROLLBACK reproduced removal failure

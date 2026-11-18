@@ -1,0 +1,27 @@
+Changed branch/field: app/getkey/page.tsx: KEY_URL now points directly to https://jnkie.com/get-key/seisenhub; the Get Free Key anchor uses href={KEY_URL}.
+
+MODIFIED_FILE: D:\Website\Seisen Premium\artifacts\getkey-direct-key-20260903\MODIFIED_FILE.tsx
+DIFF_FILE: D:\Website\Seisen Premium\artifacts\getkey-direct-key-20260903\DIFF_FILE.diff
+VERIFICATION: D:\Website\Seisen Premium\artifacts\getkey-direct-key-20260903\VERIFICATION.txt
+ROLLBACK: D:\Website\Seisen Premium\artifacts\getkey-direct-key-20260903\ROLLBACK.sh
+
+BASELINE
+Command: npx.cmd eslint artifacts\getkey-direct-key-20260903\BASELINE_FILE.tsx
+Input: unmodified Get Key page copy
+Literal result: 2 react/no-unescaped-entities errors (lines 36, 99); 2 img warnings (lines 105, 108).
+Exit status: 1
+
+MODIFIED
+Command: npx.cmd eslint app\getkey\page.tsx
+Input: changed Get Key page
+Literal result: see modified-eslint.txt; result matches the pre-existing 2 react/no-unescaped-entities errors and 2 img warnings.
+Exit status: 1
+
+ROLLBACK
+Command: C:\Program Files\Git\bin\sh.exe D:\Website\Seisen Premium\artifacts\getkey-direct-key-20260903\ROLLBACK.sh D:\Website\Seisen Premium\artifacts\getkey-direct-key-20260903\ROLLBACK_TARGET.tsx
+Input: separate changed rollback target copy
+Literal output: RESTORED: D:\Website\Seisen Premium\artifacts\getkey-direct-key-20260903\ROLLBACK_TARGET.tsx
+Exit status: 0
+Restored behavior/status: ROLLBACK_TARGET.tsx SHA256 equals BASELINE_FILE.tsx SHA256 (91B48B4B9915F4B5E4C174DDC875FD521F2613B054550FF4B0DE81D737394170).
+
+Project-wide lint was also run with npm.cmd run lint after the change and exited 1 with pre-existing repository findings (227 errors, 1093 warnings); it is unrelated to app/getkey/page.tsx.

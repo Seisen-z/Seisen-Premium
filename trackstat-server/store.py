@@ -34,6 +34,9 @@ def connect(path: str) -> sqlite3.Connection:
     if not any(row[1] == 'version' for row in db.execute('pragma table_info(meta)')):
         db.execute("alter table meta add column version text not null default ''")
         db.execute("update meta set version=lower(hex(randomblob(16)))")
+    for table in ('stacks', 'meta', 'changes'):
+        db.execute(f'delete from {table} where game=?', ('10563114921',))
+    db.execute("delete from thumbnail_jobs where game='stealanegg'")
     db.execute('pragma optimize')
     db.commit()
     return db

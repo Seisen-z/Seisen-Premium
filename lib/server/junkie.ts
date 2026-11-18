@@ -1,245 +1,135 @@
 import crypto from 'crypto';
 
 interface JunkieConfig {
-  webhookUrl?: string;
-  webhookUrlWeekly?: string;
-  webhookUrlMonthly?: string;
-  webhookUrlAnnual?: string;
-  webhookUrlAnnualWeekly?: string;
-  webhookUrlLifetime?: string;
-  hmacSecret?: string;
-  hmacSecretAnnual?: string;
-  hmacHeader?: string;
-  hmacHeaderAnnual?: string;
-  provider?: string;
-  defaultService?: string;
+  apiKey: string;
+  providerId: number;
+  serviceId?: number;
 }
 
 export interface JunkieResponse {
   success: boolean;
   keys?: string[];
-  webhookResponse?: any;
   error?: string;
   details?: any;
 }
 
+const VALIDITY_MINUTES: Record<string, number | null> = {
+  weekly:        10080,   // 168 h
+  monthly:       43200,   // 720 h
+  annual:        525600,  // 8760 h
+  annual_weekly: 525600,
+  lifetime:      null,    // never expires
+};
+
 export class JunkieKeySystem {
-  private webhookUrls: Record<string, string | undefined>;
-  private hmacSecret?: string;
-  private hmacSecrets: Record<string, string | undefined>;
-  private hmacHeader: string;
-  private hmacHeaders: Record<string, string | undefined>;
-  private provider: string;
-  private defaultService: string;
+  private apiKey: string;
+  private providerId: number;
+  private serviceId?: number;
 
   constructor(config: JunkieConfig) {
-    this.webhookUrls = {
-      weekly: config.webhookUrlWeekly || config.webhookUrl,
-      monthly: config.webhookUrlMonthly || config.webhookUrl,
-      annual: config.webhookUrlAnnual || config.webhookUrl,
-      annual_weekly: config.webhookUrlAnnualWeekly || config.webhookUrlAnnual || config.webhookUrl,
-      lifetime: config.webhookUrlLifetime || config.webhookUrl
-    };
-    this.hmacSecret = config.hmacSecret ? config.hmacSecret.trim() : undefined;
-    this.hmacSecrets = {
-      annual: config.hmacSecretAnnual ? config.hmacSecretAnnual.trim() : undefined,
-      annual_weekly: config.hmacSecretAnnual ? config.hmacSecretAnnual.trim() : undefined,
-    };
-    this.hmacHeader = config.hmacHeader || 'X-Webhook-Signature';
-    this.hmacHeaders = {
-      annual: config.hmacHeaderAnnual?.trim(),
-      annual_weekly: config.hmacHeaderAnnual?.trim(),
-    };
-    this.provider = config.provider || 'seisenhub';
-    this.defaultService = config.defaultService || 'Premium Key';
+    this.apiKey = config.apiKey;
+    this.providerId = config.providerId;
+    this.serviceId = config.serviceId;
   }
 
-  generateHMAC(payload: any, secret = this.hmacSecret): string | null {
-    if (!secret) {
-      return null;
-    }
-    const payloadString = JSON.stringify(payload);
-    return crypto
-      .createHmac('sha256', secret)
-      .update(payloadString)
-      .digest('hex');
-  }
+  async generateKey(options: any): Promise<JunkieResponse> {
+    const { tier = 'weekly', userInfo = {}, paymentInfo = {} } = options;
 
-  /**
-   * POST with manual redirect following so the method is ALWAYS preserved as POST.
-   * axios (and Node's built-in http) silently convert POST → GET on 301/302 redirects —
-   * that causes Junkie's server to see "Cannot GET /path".
-   */
-  private async postWithRedirects(
-    url: string,
-    body: any,
-    headers: Record<string, string>,
-    maxRedirects = 5
-  ): Promise<{ status: number; data: any }> {
-    let currentUrl = url;
-    const bodyStr = JSON.stringify(body);
+    const validityMinutes = VALIDITY_MINUTES[tier] ?? 10080;
 
-    for (let attempt = 0; attempt <= maxRedirects; attempt++) {
-      const res = await fetch(currentUrl, {
+    // Derive a stable UUID from the transactionId so retries stay idempotent.
+    const requestId = paymentInfo.transactionId
+      ? this.hexToUUID(crypto.createHash('sha256').update(String(paymentInfo.transactionId)).digest('hex'))
+      : crypto.randomUUID();
+
+    const body: Record<string, any> = {
+      provider_id: this.providerId,
+      request_id:  requestId,
+      is_premium:  true,
+    };
+
+    if (this.serviceId)         body.service_id       = this.serviceId;
+    if (validityMinutes !== null) body.validity_minutes = validityMinutes;
+    if (userInfo.discordId)     body.discord_id        = String(userInfo.discordId);
+
+    try {
+      const res = await fetch('https://api.jnkie.com/api/v2/keys', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json, */*',
-          'User-Agent': 'SeisenHub-Webhook/1.0',
-          ...headers,
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Type':  'application/json',
         },
-        body: bodyStr,
-        // Disable auto-follow so we can re-send as POST instead of GET
-        redirect: 'manual',
-      } as RequestInit);
-
-      // 3xx — manually follow while keeping POST + body
-      if (res.status >= 300 && res.status < 400) {
-        const location = res.headers.get('location');
-        if (!location) {
-          throw new Error(`Redirect (HTTP ${res.status}) with no Location header`);
-        }
-        const next = new URL(location, currentUrl).toString();
-        console.log(`Junkie redirect ${res.status}: ${currentUrl} → ${next}`);
-        currentUrl = next;
-        continue;
-      }
+        body: JSON.stringify(body),
+      });
 
       const text = await res.text();
       let data: any;
       try { data = JSON.parse(text); } catch { data = text; }
 
-      // Treat 4xx/5xx as errors so they hit our catch block
-      if (res.status >= 400) {
-        const err: any = new Error(`HTTP ${res.status}`);
-        err.response = { status: res.status, data };
-        throw err;
+      if (!res.ok) {
+        const errMsg = data?.error?.message || data?.message || `HTTP ${res.status}`;
+        return { success: false, error: errMsg, details: res.status };
       }
 
-      return { status: res.status, data };
-    }
-
-    throw new Error('Too many redirects when calling Junkie webhook');
-  }
-
-  async generateKey(options: any): Promise<JunkieResponse> {
-    const {
-      tier = 'weekly',
-      validity = 168,
-      quantity = 1,
-      userInfo = {},
-      paymentInfo = {}
-    } = options;
-
-    const payload = {
-      item: {
-        product: {
-          name: 'Premium Key'
-        },
-        quantity: quantity
-      },
-      user: {
-        email: userInfo.email || '',
-        payerId: userInfo.payerId || '',
-        robloxUsername: userInfo.robloxUsername || userInfo.custom || ''
-      },
-      payment: {
-        tier: tier,
-        amount: paymentInfo.amount || 0,
-        currency: paymentInfo.currency || 'EUR',
-        transactionId: paymentInfo.transactionId || '',
-        timestamp: new Date().toISOString()
-      },
-      metadata: {
-        provider: this.provider,
-        service: this.defaultService,
-        validity: validity,
-        source: 'paypal_webhook'
-      }
-    };
-
-    try {
-      const headers: Record<string, string> = {};
-
-      const hmacSecret = this.hmacSecrets[tier] || this.hmacSecret;
-      if (hmacSecret) {
-        const hmacHeader = this.hmacHeaders[tier] || this.hmacHeader;
-        headers[hmacHeader] = this.generateHMAC(payload, hmacSecret) ?? '';
+      const keyValue: string | undefined = data?.key?.key_value;
+      if (!keyValue) {
+        return { success: false, error: 'No key_value in API response', details: data };
       }
 
-      const webhookUrl = this.webhookUrls[tier] || this.webhookUrls.weekly;
-
-      if (!webhookUrl) {
-        throw new Error('No webhook URL configured for this tier');
-      }
-
-      console.log('Calling Junkie webhook for tier:', tier, '| URL:', webhookUrl);
-
-      const { status, data: responseBody } = await this.postWithRedirects(webhookUrl, payload, headers);
-
-      console.log('Junkie webhook response status:', status, '| body:', responseBody);
-
-      // Detect HTML error pages (Cloudflare challenge / "Cannot GET /...")
-      if (typeof responseBody === 'string' && responseBody.trim().startsWith('<')) {
-        console.error('Junkie returned HTML — endpoint inactive or URL wrong:', responseBody.substring(0, 300));
-        return {
-          success: false,
-          error: 'Key service is unavailable (received HTML instead of JSON). Please check the Junkie webhook is active.',
-          details: status
-        };
-      }
-
-      let keys: string[] = [];
-      if (typeof responseBody === 'string') {
-        keys = [responseBody];
-      } else if (responseBody.keys && Array.isArray(responseBody.keys)) {
-        keys = responseBody.keys;
-      } else if (responseBody.key) {
-        keys = [responseBody.key];
-      } else if (Array.isArray(responseBody)) {
-        keys = responseBody;
-      }
-
-      return {
-        success: true,
-        keys,
-        webhookResponse: responseBody
-      };
+      return { success: true, keys: [keyValue] };
 
     } catch (error: any) {
-      const rawError = error.response?.data;
-      const status  = error.response?.status;
-      console.error('Junkie webhook error (status:', status ?? 'none', '):', rawError ?? error.message);
-
-      // Sanitise HTML errors — never expose raw markup to callers
-      let cleanError: string;
-      if (typeof rawError === 'string' && rawError.trim().startsWith('<')) {
-        cleanError = `Webhook endpoint returned HTTP ${status ?? 'unknown'} — the key service URL may be incorrect or inactive.`;
-      } else {
-        cleanError = (typeof rawError === 'string' ? rawError : null) ?? error.message ?? 'Unknown webhook error';
-      }
-
-      return {
-        success: false,
-        error: cleanError,
-        details: status ?? 'Unknown error'
-      };
+      return { success: false, error: error.message ?? 'Unknown error', details: null };
     }
+  }
+
+  async findKeyByValue(keyValue: string): Promise<{ id: number; expires_at: string | null } | null> {
+    const url = new URL('https://api.jnkie.com/api/v2/keys');
+    url.searchParams.set('key', keyValue);
+    url.searchParams.set('provider_id', String(this.providerId));
+    url.searchParams.set('limit', '10');
+
+    const res = await fetch(url.toString(), {
+      headers: { 'Authorization': `Bearer ${this.apiKey}` },
+    });
+    if (!res.ok) return null;
+
+    const data = await res.json();
+    const keys: any[] = data?.keys ?? [];
+    const match = keys.find((k: any) => k.key_value === keyValue);
+    return match ? { id: match.id, expires_at: match.expires_at ?? null } : null;
+  }
+
+  async extendKey(keyId: number, addDays: number, currentExpiresAt: string | null): Promise<boolean> {
+    const base = currentExpiresAt ? new Date(currentExpiresAt) : new Date();
+    if (base.getTime() < Date.now()) base.setTime(Date.now());
+    const newExpiry = new Date(base.getTime() + addDays * 86_400_000);
+
+    const res = await fetch(`https://api.jnkie.com/api/v2/keys/${keyId}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${this.apiKey}`,
+        'Content-Type':  'application/json',
+      },
+      body: JSON.stringify({ expires_at: newExpiry.toISOString() }),
+    });
+    return res.ok;
+  }
+
+  private hexToUUID(hex: string): string {
+    return `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20,32)}`;
   }
 }
 
 export function createJunkieFromEnv(): JunkieKeySystem {
-  return new JunkieKeySystem({
-    webhookUrl: process.env.JUNKIE_WEBHOOK_URL,
-    webhookUrlWeekly: process.env.JUNKIE_WEBHOOK_URL_WEEKLY,
-    webhookUrlMonthly: process.env.JUNKIE_WEBHOOK_URL_MONTHLY,
-    webhookUrlAnnual: process.env.JUNKIE_WEBHOOK_URL_ANNUAL,
-    webhookUrlAnnualWeekly: process.env.JUNKIE_WEBHOOK_URL_ANNUAL_WEEKLY,
-    webhookUrlLifetime: process.env.JUNKIE_WEBHOOK_URL_LIFETIME,
-    hmacSecret: process.env.JUNKIE_HMAC_SECRET,
-    hmacSecretAnnual: process.env.JUNKIE_HMAC_SECRET_ANNUAL,
-    hmacHeaderAnnual: process.env.JUNKIE_HMAC_HEADER_ANNUAL,
-    provider: process.env.JUNKIE_PROVIDER,
-    defaultService: process.env.JUNKIE_SERVICE
-  });
+  const apiKey     = process.env.JUNKIE_API_KEY;
+  const providerId = parseInt(process.env.JUNKIE_PROVIDER_ID || '0', 10);
+  const serviceId  = process.env.JUNKIE_SERVICE_ID
+    ? parseInt(process.env.JUNKIE_SERVICE_ID, 10)
+    : undefined;
+
+  if (!apiKey)     throw new Error('JUNKIE_API_KEY is not set');
+  if (!providerId) throw new Error('JUNKIE_PROVIDER_ID is not set');
+
+  return new JunkieKeySystem({ apiKey, providerId, serviceId });
 }

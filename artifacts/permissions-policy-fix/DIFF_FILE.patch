@@ -1,0 +1,22 @@
+diff --git a/next.config.ts b/next.config.ts
+index 51fa243..85f0b64 100644
+--- a/next.config.ts
++++ b/next.config.ts
+@@ -32,6 +32,17 @@ const nextConfig: NextConfig = {
+       },
+     ],
+   },
++  // Replace any host-default policy that includes unsupported attribution-reporting.
++  // That directive produces the browser console warning: Unrecognized feature.
++  async headers() {
++    return [{
++      source: '/:path*',
++      headers: [{
++        key: 'Permissions-Policy',
++        value: 'camera=(), geolocation=(), microphone=()',
++      }],
++    }];
++  },
+ };
+ 
+ export default nextConfig;

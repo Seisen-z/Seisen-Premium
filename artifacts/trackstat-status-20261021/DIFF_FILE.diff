@@ -1,0 +1,213 @@
+--- a/lib/server/trackstat.ts
++++ b/lib/server/trackstat.ts
+@@ -28,7 +28,8 @@
+     signal: AbortSignal.timeout(12000),
+   });
+   if (!response.ok) throw new Error(response.status === 400 ? 'Invalid connection key' : `Trackstat ${name} failed (${response.status})`);
+-  return response.json() as Promise<T>;
++  const body = await response.text();
++  return (body ? JSON.parse(body) : null) as T;
+ }
+ 
+ // Public Roblox images are copied once; private images are captured by the library.
+--- a/lib/trackstat.ts
++++ b/lib/trackstat.ts
+@@ -23,6 +23,7 @@
+ export type TrackstatSession = { history_expired?: boolean; id: string; game_id: string; started_at: string; updated_at: string; snapshot: TrackstatSnapshot };
+ export type TrackstatDailyGains = { day: string; game_id: string; gained: Counts };
+ export type TrackstatHistory = {
++  connectionStatus?: 'reset';
+   daily?: TrackstatDailyGains[];
+   activeGames?: string[];
+   account: { id?: string; username: string; roblox_id: string };
+--- a/lib/trackstat-merge.ts
++++ b/lib/trackstat-merge.ts
+@@ -12,6 +12,8 @@
+     if (key) entry.keys.push(key);
+     if (history.account.id) entry.ids.push(history.account.id);
+     const merged = entry.history;
++    // A valid device connection takes precedence over an old reset marker.
++    if (merged.connectionStatus === 'reset' && history.connectionStatus !== 'reset') { merged.account = history.account; merged.connectionStatus = undefined; }
+     merged.sessions = [...merged.sessions, ...history.sessions].sort((a, b) => b.updated_at.localeCompare(a.updated_at));
+     merged.activeGames = [...new Set([...merged.activeGames ?? [], ...history.activeGames ?? []])];
+     for (const day of history.daily ?? []) {
+--- a/app/api/trackstat/route.ts
++++ b/app/api/trackstat/route.ts
+@@ -63,8 +63,8 @@
+     const same = current.entries.findIndex(e => e.history.account.roblox_id === connected.account.roblox_id);
+     if (current.entries.length >= maxAccounts && same < 0) return NextResponse.json({ error: 'You can connect up to 10 accounts.' }, { status: 400, headers });
+     if (token) await trackstatRPC('trackstat_user_account_save', { p_key: key }, token);
+-    // Keys that were reset are dropped; every other connected key stays, even for the same Roblox account on another device
+-    const others = [...current.entries.flatMap(entry => entry.keys), ...current.failed].filter(other => other !== key);
++    // A new key replaces reset markers for this Roblox account; other device keys stay.
++    const others = [...current.entries.flatMap(entry => entry.history.connectionStatus === 'reset' && entry.history.account.roblox_id === connected.account.roblox_id ? [] : entry.keys), ...current.failed].filter(other => other !== key);
+     if (others.length >= maxKeys) return NextResponse.json({ error: `You can connect up to ${maxKeys} keys. Remove an account first.` }, { status: 400, headers });
+     const response = NextResponse.json({ connected: true, index: same < 0 ? current.entries.filter(entry => entry.keys.length).length : same }, { headers });
+     writeKeys(response, [...others, key]);
+@@ -75,15 +75,17 @@
+   }
+ }
+ 
+-// Body { index } removes one account; no body removes them all
++// Body { robloxId } removes one account by stable identity; legacy { index } is also accepted.
+ export async function DELETE(req: NextRequest) {
+   if (req.headers.get('origin') && req.headers.get('origin') !== req.nextUrl.origin) return new NextResponse(null, { status: 403 });
+   const text = await req.text();
+   const response = NextResponse.json({ connected: false }, { headers });
+-  let index: unknown;
+-  try { index = text ? JSON.parse(text).index : undefined; } catch { return new NextResponse(null, { status: 400 }); }
++  let index: unknown, robloxId: unknown;
++  try { ({ index, robloxId } = text ? JSON.parse(text) : {}); } catch { return new NextResponse(null, { status: 400 }); }
+   try {
+-    const { entries, token } = await trackstatEntries(req);
++    const { entries, token, degraded } = await trackstatEntries(req);
++    if (degraded) return NextResponse.json({ error: 'Accounts could not be refreshed. Try again.' }, { status: 503, headers });
++    if (robloxId !== undefined) index = entries.findIndex(entry => entry.history.account.roblox_id === robloxId);
+     if (index !== undefined && (!Number.isInteger(index) || Number(index) < 0 || Number(index) >= entries.length)) return NextResponse.json({ error: 'Invalid account.' }, { status: 400, headers });
+     const removed = index === undefined ? entries : [entries[Number(index)]];
+     if (token) for (const id of removed.flatMap(entry => entry.ids)) await trackstatRPC('trackstat_user_account_remove', { p_account: id }, token);
+--- a/app/trackstat/TrackstatPanel.tsx
++++ b/app/trackstat/TrackstatPanel.tsx
+@@ -116,10 +116,14 @@
+     finally { setBusy(false); }
+   }
+   async function removeAccount(index: number) {
+-    setBusy(true);
++    const robloxId = data?.accounts.find(account => account.index === index)?.account.roblox_id;
++    if (!robloxId) return;
++    setBusy(true); setError('');
+     try {
+-      const response = await trackstatFetch('/api/trackstat', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ index }) });
++      const response = await trackstatFetch('/api/trackstat', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ robloxId }) });
+       if (!response.ok) throw new Error('Could not remove the account. Try again.');
++      etag.current = '';
++      void cacheClear();
+       setSessionId(''); setGame(null); setActiveIndex(0);
+       await load();
+     } catch (e) { setError(e instanceof Error ? e.message : 'Could not remove the account.'); }
+@@ -235,13 +239,13 @@
+   else if (!game) {
+     main = (
+       <>
+-        {!history ? <div className="mb-6"><Welcome onConnect={() => setPage('connection')} /></div> : !allSessions.length ? <div className="mb-6"><Welcome waiting onConnect={() => setPage('connection')} /></div> : (
++        {!history ? <div className="mb-6"><Welcome onConnect={() => setPage('connection')} /></div> : !allSessions.length && history.connectionStatus !== 'reset' ? <div className="mb-6"><Welcome waiting onConnect={() => setPage('connection')} /></div> : (
+         <div className={`${card} mb-6 flex flex-wrap items-center gap-5 p-5`}>
+           {history ? <Avatar src={avatarOf(history.account.roblox_id)} name={history.account.username} /> : <span className="grid h-16 w-16 place-items-center rounded-full bg-ts-fg/[0.05] text-2xl text-ts-fg/40">?</span>}
+           <div className="min-w-0 flex-1 basis-56">
+             <h2 className="break-words text-2xl font-semibold text-ts-fg">{history ? nameOf(history) : 'Not connected'}</h2>
+-            <p className={`mt-1 flex items-center gap-2 text-sm ${libraryLive ? 'text-ts-pos' : 'text-ts-fg/40'}`}><span className={`h-2 w-2 rounded-full ${libraryLive ? 'bg-ts-pos' : 'bg-ts-fg/30'}`} />{history ? libraryLive ? 'Connected' : 'Offline' : 'Not connected'}</p>
+-            <p className="mt-2 text-xs text-ts-fg/45">{history ? libraryLive ? 'Your inventory, session gains, and history are being tracked.' : 'Library offline. Your saved inventory and history are still available.' : 'Open Connection and paste your library key to start.'}</p>
++            <p className={`mt-1 flex items-center gap-2 text-sm ${libraryLive ? 'text-ts-pos' : 'text-ts-fg/40'}`}><span className={`h-2 w-2 rounded-full ${libraryLive ? 'bg-ts-pos' : 'bg-ts-fg/30'}`} />{history?.connectionStatus === 'reset' ? 'Key reset' : history ? libraryLive ? 'Connected' : 'Offline' : 'Not connected'}</p>
++            <p className="mt-2 text-xs text-ts-fg/45">{history?.connectionStatus === 'reset' ? 'This key was reset in the library. Add the new connection key to reconnect.' : history ? libraryLive ? 'The library is running and tracking your account.' : 'Your account is linked, but the library is not currently running.' : 'Open Connection and paste your library key to start.'}</p>
+           </div>
+           {history && (
+             <div className="grid w-full grid-cols-2 gap-3 xl:w-auto xl:grid-cols-4">
+--- a/app/trackstat/ConnectionPage.tsx
++++ b/app/trackstat/ConnectionPage.tsx
+@@ -3,7 +3,7 @@
+ import { ArrowDown, ArrowUp, Pencil } from 'lucide-react';
+ import { trackstatAuth } from '@/lib/client/trackstat-auth';
+ import { STEAL_AN_EGG, PET_SIMULATOR_99, ANIME_DICE, type TrackstatAccount } from '@/lib/trackstat';
+-import { Avatar, ago, button } from './ui';
++import { Avatar, button } from './ui';
+ 
+ const gameName: Record<string, string> = { [PET_SIMULATOR_99]: 'PS99', [STEAL_AN_EGG]: 'Steal an Egg', [ANIME_DICE]: 'Anime Dice' };
+ 
+@@ -40,8 +40,9 @@
+                       : <span className="flex items-center gap-1.5 text-sm text-ts-fg"><span className="truncate">{nameOf(a)}</span><button onClick={() => setEditing(robloxId)} aria-label={`Rename ${a.account.username}`} className="text-ts-fg/35 hover:text-ts-fg"><Pencil size={12} /></button></span>}
+                     <span className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-ts-fg/40">
+                       <span>ID {robloxId}</span>
+-                      <span className={`flex items-center gap-1.5 ${live ? 'text-ts-pos' : ''}`}><span className={`h-1.5 w-1.5 rounded-full ${live ? 'bg-ts-pos' : 'bg-ts-fg/30'}`} />{live ? 'Syncing now' : a.sessions[0] ? `Last sync ${ago(a.sessions[0].updated_at)}` : 'Never synced'}</span>
++                      <span className={`flex items-center gap-1.5 ${live ? 'text-ts-pos' : ''}`}><span className={`h-1.5 w-1.5 rounded-full ${live ? 'bg-ts-pos' : 'bg-ts-fg/30'}`} />{a.connectionStatus === 'reset' ? 'Key reset' : live ? 'Connected' : 'Offline'}</span>
+                     </span>
++                    {a.connectionStatus === 'reset' && <span className="mt-1 block text-xs text-ts-warn">Add the new key from the library to reconnect.</span>}
+                     {games.length > 0 && <span className="mt-0.5 block text-xs text-ts-fg/35">{games.map(g => gameName[g] ?? g).join(' / ')}</span>}
+                   </span>
+                   <span className="flex shrink-0 flex-col">
+--- /dev/null
++++ b/supabase/migrations/20261052_trackstat_reset_status.sql
+@@ -0,0 +1,84 @@
++begin;
++
++-- A reset retains only an account label and its previous website owners, never tracking data.
++create table public.trackstat_reset_connections (
++ id uuid primary key,
++ key_hash text not null unique,
++ history jsonb not null,
++ created_at timestamptz not null default now(),
++ user_ids uuid[] not null default '{}'
++);
++alter table public.trackstat_reset_connections enable row level security;
++revoke all on public.trackstat_reset_connections from public, anon, authenticated;
++
++create function public.trackstat_remember_reset()
++returns trigger language plpgsql security definer set search_path='' as $$
++begin
++ if exists(select 1 from public.trackstat_revoked_keys where key_hash=old.key_hash) then
++  insert into public.trackstat_reset_connections(id,key_hash,history,user_ids)
++  values(old.id,old.key_hash,
++   jsonb_build_object('account',jsonb_build_object('id',old.id,'username',old.username,'roblox_id',old.roblox_id),
++     'sessions','[]'::jsonb,'daily','[]'::jsonb,'activeGames','[]'::jsonb,'connectionStatus','reset'),
++   array(select user_id from public.trackstat_user_accounts where account_id=old.id));
++ end if;
++ return old;
++end $$;
++revoke all on function public.trackstat_remember_reset() from public, anon, authenticated;
++create trigger trackstat_remember_reset before delete on public.trackstat_accounts
++for each row execute function public.trackstat_remember_reset();
++
++create or replace function public.trackstat_private(p_key text, p_slim boolean default false)
++returns jsonb language plpgsql security definer set search_path='' as $$
++declare a uuid; marker jsonb;
++begin
++ select id into a from public.trackstat_accounts where key_hash=encode(extensions.digest(p_key,'sha256'),'hex');
++ if a is not null then return public.trackstat_private_data(a,p_slim); end if;
++ select history into marker from public.trackstat_reset_connections where key_hash=encode(extensions.digest(p_key,'sha256'),'hex');
++ if marker is null then raise exception 'Invalid connection key'; end if;
++ return marker;
++end $$;
++
++create or replace function public.trackstat_user_accounts_read(p_skip_keys text[] default '{}', p_slim boolean default false)
++returns jsonb language plpgsql security definer set search_path='' as $$
++begin
++ if auth.uid() is null then raise exception 'Sign in required'; end if;
++ if cardinality(p_skip_keys)>60 then raise exception 'Too many keys'; end if;
++ return (select coalesce(jsonb_agg(history order by sort_at,id),'[]'::jsonb) from (
++  select ua.created_at sort_at, ua.account_id id, public.trackstat_private_data(ua.account_id,p_slim) history
++  from public.trackstat_user_accounts ua where ua.user_id=auth.uid()
++  and not exists(select 1 from public.trackstat_accounts k where k.id=ua.account_id
++   and k.key_hash in (select encode(extensions.digest(x,'sha256'),'hex') from unnest(p_skip_keys) x))
++  union all
++  select r.created_at,r.id,r.history from public.trackstat_reset_connections r where auth.uid()=any(r.user_ids)
++  and r.key_hash not in (select encode(extensions.digest(x,'sha256'),'hex') from unnest(p_skip_keys) x)
++ ) records);
++end $$;
++
++create or replace function public.trackstat_user_account_remove(p_account uuid)
++returns void language plpgsql security definer set search_path='' as $$
++begin
++ if auth.uid() is null then raise exception 'Sign in required'; end if;
++ delete from public.trackstat_user_accounts where user_id=auth.uid() and account_id=p_account;
++ update public.trackstat_reset_connections set user_ids=array_remove(user_ids,auth.uid())
++ where id=p_account and auth.uid()=any(user_ids);
++end $$;
++
++create or replace function public.trackstat_version(p_keys text[] default '{}')
++returns text language plpgsql stable security definer set search_path='' as $$
++declare v text; resets text;
++begin
++ if cardinality(p_keys)>60 then raise exception 'Too many keys'; end if;
++ with mine as (
++  select a.id from public.trackstat_accounts a where a.key_hash in (select encode(extensions.digest(k,'sha256'),'hex') from unnest(p_keys) k)
++  union select ua.account_id from public.trackstat_user_accounts ua where ua.user_id=auth.uid()
++ )
++ select md5(coalesce(string_agg(m.id::text || ':' || public.trackstat_active_games(x.id,x.presence,x.presence_sessions)::text || ':' ||
++  coalesce((select max(s.updated_at)::text from public.trackstat_sessions s where s.account_id=m.id),''),'|' order by m.id),''))
++ into v from mine m join public.trackstat_accounts x on x.id=m.id;
++ select coalesce(string_agg(id::text,'|' order by id),'') into resets from public.trackstat_reset_connections
++ where key_hash in (select encode(extensions.digest(k,'sha256'),'hex') from unnest(p_keys) k) or auth.uid()=any(user_ids);
++ return md5(v || ':' || resets);
++end $$;
++
++notify pgrst,'reload schema';
++commit;

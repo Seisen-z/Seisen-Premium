@@ -1,0 +1,24 @@
+Changed field: next.config.ts -> nextConfig.headers() -> Permissions-Policy
+MODIFIED_FILE: D:\Website\Seisen Premium\artifacts\permissions-policy-fix\MODIFIED_FILE.ts
+DIFF_FILE: D:\Website\Seisen Premium\artifacts\permissions-policy-fix\DIFF_FILE.patch
+VERIFICATION: D:\Website\Seisen Premium\artifacts\permissions-policy-fix\VERIFICATION.txt
+ROLLBACK: D:\Website\Seisen Premium\artifacts\permissions-policy-fix\ROLLBACK.sh
+
+BASELINE
+Command: npm.cmd run lint
+Input: original next.config.ts SHA256 CE64425DBC82EAA690DA37373AEA298F087E292EA9931AA6F06248B6C045FEAD
+Literal output/result: eslint
+Exit status: 0
+
+MODIFIED
+Command: npm.cmd run lint
+Input: next.config.ts SHA256 233B429B60D194DFB487378CFD7AAA0689D2F146BE1586CDDAA54C384D6B81FD
+Literal output/result: eslint
+Exit status: 0
+
+ROLLBACK
+Command: C:\Program Files\Git\bin\sh.exe ROLLBACK.sh rollback-target.ts
+Input: rollback-target.ts copied from MODIFIED_FILE.ts
+Literal output/result: ROLLBACK_RESULT=restored D:\Website\Seisen Premium\artifacts\permissions-policy-fix\rollback-target.ts
+Exit status: 0
+Restored behavior/status: rollback-target.ts SHA256 CE64425DBC82EAA690DA37373AEA298F087E292EA9931AA6F06248B6C045FEAD; equals original SHA256 CE64425DBC82EAA690DA37373AEA298F087E292EA9931AA6F06248B6C045FEAD = True

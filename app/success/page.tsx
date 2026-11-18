@@ -2,160 +2,11 @@
 
 import { Suspense, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import { CheckCircle, Copy, Home, Download, Shield, ShoppingBag, Calendar, CreditCard, Key, Clock, MessageCircle, Gamepad2, Loader2 } from 'lucide-react';
+import { CheckCircle, Copy, Home, Download, Shield, ShoppingBag, Calendar, CreditCard, Key, Clock, MessageCircle } from 'lucide-react';
 import { Card } from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import { copyToClipboard } from "@/lib/utils";
 import Link from "next/link";
-
-function GameSelectionModal({
-  orderId,
-  onDone,
-}: {
-  orderId: string;
-  onDone: () => void;
-}) {
-  const [games, setGames] = useState<string[]>([]);
-  const [selected, setSelected] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-
-  useEffect(() => {
-    fetch('/api/games')
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.games) setGames(d.games);
-      })
-      .catch(() => {
-        setGames([
-          'Blox Fruits', 'Pet Simulator 99', 'Anime Defenders', 'Fisch',
-          'Rivals', 'Slap Battles', 'Murder Mystery 2', 'Da Hood',
-          'Brookhaven', 'Arsenal',
-        ]);
-      })
-      .finally(() => setLoading(false));
-  }, []);
-
-  const toggleGame = (game: string) => {
-    setSelected((prev) =>
-      prev.includes(game) ? prev.filter((g) => g !== game) : [...prev, game]
-    );
-  };
-
-  const handleSubmit = async () => {
-    if (selected.length === 0 || submitting) return;
-    setSubmitting(true);
-    try {
-      await fetch(`/api/orders/${orderId}/game-selection`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ games: selected }),
-      });
-    } catch {
-      // non-critical — proceed regardless
-    }
-    setSubmitted(true);
-    setTimeout(onDone, 1400);
-  };
-
-  return (
-    /* Full-screen lock — no pointer events outside modal, no close on backdrop click */
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md">
-      <div className="relative w-full max-w-lg bg-[#141414] border border-[#2a2a2a] rounded-2xl shadow-2xl overflow-hidden">
-
-        {/* Header */}
-        <div className="flex items-center gap-4 px-6 pt-6 pb-5 border-b border-[#2a2a2a]">
-          <div className="w-12 h-12 rounded-xl accent-bg flex items-center justify-center flex-shrink-0">
-            <Gamepad2 className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <h2 className="text-white font-bold text-lg leading-tight">
-              One last step before your order!
-            </h2>
-            <p className="text-gray-500 text-sm mt-0.5">
-              Which game(s) will you use this script for? <span className="text-red-400">*Required</span>
-            </p>
-          </div>
-        </div>
-
-        {/* Body */}
-        {submitted ? (
-          <div className="flex flex-col items-center justify-center py-14 px-6 gap-3">
-            <div className="w-16 h-16 rounded-full accent-bg flex items-center justify-center mb-2">
-              <CheckCircle className="w-8 h-8 text-white" />
-            </div>
-            <p className="text-white font-semibold text-xl">All set!</p>
-            <p className="text-gray-400 text-sm text-center">Loading your order receipt…</p>
-          </div>
-        ) : loading ? (
-          <div className="flex items-center justify-center py-14">
-            <Loader2 className="w-8 h-8 accent-text animate-spin" />
-          </div>
-        ) : (
-          <>
-            <div className="px-6 py-4 grid grid-cols-2 gap-2 max-h-64 overflow-y-auto">
-              {games.map((game) => {
-                const active = selected.includes(game);
-                return (
-                  <button
-                    key={game}
-                    onClick={() => toggleGame(game)}
-                    className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-sm font-medium transition-all text-left ${
-                      active
-                        ? 'accent-bg text-white border-[var(--accent)]'
-                        : 'bg-[#1a1a1a] border-[#2a2a2a] text-gray-400 hover:border-[#3a3a3a] hover:text-white'
-                    }`}
-                  >
-                    <span
-                      className={`flex-shrink-0 w-4 h-4 rounded border-2 flex items-center justify-center transition-colors ${
-                        active ? 'border-white bg-white/20' : 'border-gray-600'
-                      }`}
-                    >
-                      {active && <CheckCircle className="w-3 h-3 text-white" />}
-                    </span>
-                    <span className="truncate">{game}</span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Footer */}
-            <div className="px-6 py-4 border-t border-[#2a2a2a]">
-              {selected.length === 0 && (
-                <p className="text-center text-xs text-red-400 mb-3">
-                  Please select at least one game to continue.
-                </p>
-              )}
-              <button
-                onClick={handleSubmit}
-                disabled={selected.length === 0 || submitting}
-                className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
-                  selected.length === 0
-                    ? 'bg-[#2a2a2a] text-gray-600 cursor-not-allowed'
-                    : 'accent-bg text-white hover:opacity-90 shadow-lg'
-                }`}
-              >
-                {submitting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Saving…
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle className="w-4 h-4" />
-                    Confirm &amp; View My Order
-                    {selected.length > 0 && ` (${selected.length} selected)`}
-                  </>
-                )}
-              </button>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
 
 // ─── Discord session type + reader ──────────────────────────────────────────
 type DiscordSession = {
@@ -175,7 +26,6 @@ function SuccessContent() {
   const searchParams = useSearchParams();
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const isAdminView = searchParams.get('admin') === '1';
-  const [gameModalDone, setGameModalDone] = useState(false);
   const [discordSession, setDiscordSession] = useState<DiscordSession | null>(null);
 
   useEffect(() => {
@@ -249,16 +99,7 @@ function SuccessContent() {
 
   return (
     <div className="min-h-screen py-10 px-4 flex items-center justify-center animate-fade-in">
-        {/* Required Game Selection Modal — shown over blurred content until user confirms */}
-        {!isAdminView && !gameModalDone && orderId && (
-          <GameSelectionModal
-            orderId={orderId}
-            onDone={() => setGameModalDone(true)}
-          />
-        )}
-
-        {/* Order content — blurred & non-interactive until game selection is done */}
-        <div className={`max-w-5xl w-full space-y-8 transition-all duration-300 ${!isAdminView && !gameModalDone ? 'blur-sm pointer-events-none select-none' : ''}`}>
+        <div className="max-w-5xl w-full space-y-8">
             {/* Header Section */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>

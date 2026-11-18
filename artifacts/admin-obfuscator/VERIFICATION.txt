@@ -1,0 +1,13 @@
+Changed branch/field: app/admin/obfuscator/page.tsx renders a persistent Back to admin link to /admin above the obfuscator.
+
+Paths:
+MODIFIED_FILE: D:\Website\Seisen Premium\artifacts\admin-obfuscator\MODIFIED_FILE.tsx
+DIFF_FILE: D:\Website\Seisen Premium\artifacts\admin-obfuscator\DIFF_FILE.patch
+VERIFICATION: D:\Website\Seisen Premium\artifacts\admin-obfuscator\VERIFICATION.txt
+ROLLBACK: D:\Website\Seisen Premium\artifacts\admin-obfuscator\ROLLBACK.sh
+
+MODIFIED
+Command: cmd /c "npx eslint app/admin/obfuscator/page.tsx"
+Literal output: (no output)
+Exit status: 0
+Result: pass

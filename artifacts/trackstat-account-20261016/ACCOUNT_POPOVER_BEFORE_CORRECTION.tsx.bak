@@ -1,0 +1,80 @@
+"use client";
+import { useEffect, useState, type FormEvent } from 'react';
+import type { User } from '@supabase/supabase-js';
+import { ChevronRight, LogOut, Mail, ShieldCheck, UserRound, X } from 'lucide-react';
+import { trackstatAuth, trackstatFetch } from '@/lib/client/trackstat-auth';
+import { button } from './ui';
+
+export default function AccountPopover({ onChange }: { onChange: () => void }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [email, setEmail] = useState('');
+  const [code, setCode] = useState('');
+  const [sent, setSent] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState('');
+  useEffect(() => {
+    let live = true;
+    void trackstatAuth.auth.getSession().then(({ data }) => { if (live) setUser(data.session?.user ?? null); });
+    const { data: { subscription } } = trackstatAuth.auth.onAuthStateChange((_event, session) => {
+      if (live) setUser(session?.user ?? null);
+      // Run refresh outside Supabase's auth callback lock.
+      if (live) setTimeout(onChange, 0);
+    });
+    return () => { live = false; subscription.unsubscribe(); };
+  }, [onChange]);
+
+  async function saveConnections() {
+    const response = await trackstatFetch('/api/trackstat/profile', { method: 'POST' });
+    const body = await response.json();
+    if (!response.ok) throw new Error(body.error || 'Could not save your connections.');
+  }
+  async function submit(event: FormEvent) {
+    event.preventDefault(); setBusy(true); setMessage('');
+    try {
+      if (!sent) {
+        const { error } = await trackstatAuth.auth.signInWithOtp({ email: email.trim().toLowerCase(), options: { shouldCreateUser: true } });
+        if (error) throw error;
+        setSent(true); setMessage('Check your inbox for your verification code.');
+      } else {
+        const { error } = await trackstatAuth.auth.verifyOtp({ email: email.trim().toLowerCase(), token: code.trim(), type: 'email' });
+        if (error) throw error;
+        await saveConnections();
+        setCode(''); setMessage('Signed in. Your connected Trackstat accounts are saved.'); onChange();
+      }
+    } catch (error) { setMessage(error instanceof Error ? error.message : 'Please try again.'); }
+    finally { setBusy(false); }
+  }
+  async function signOut() {
+    setBusy(true); setMessage('');
+    try {
+      const response = await trackstatFetch('/api/trackstat/profile', { method: 'DELETE' });
+      if (!response.ok) throw new Error('Could not clear this browser connection.');
+      const { error } = await trackstatAuth.auth.signOut({ scope: 'local' });
+      if (error) throw error;
+      setSent(false); setEmail(''); setCode(''); onChange();
+    } catch (error) { setMessage(error instanceof Error ? error.message : 'Sign out failed.'); }
+    finally { setBusy(false); }
+  }
+  return <>
+    <button popoverTarget="trackstat-account" className="flex w-full items-center gap-3 rounded-xl border border-white/10 bg-white/[0.025] p-3 text-left text-white/75 hover:border-[#c9a97a]/40" aria-label="Open Trackstat account">
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#c9a97a]/10 text-[#c9a97a]"><UserRound size={17} /></span>
+      <span className="min-w-0 flex-1"><span className="block text-sm font-medium text-white">{user ? 'My account' : 'Save your Trackstat'}</span><span className="block truncate text-xs text-white/40">{user?.email ?? 'Optional email sign-in'}</span></span><ChevronRight size={14} />
+    </button>
+    <div id="trackstat-account" popover="auto" role="dialog" aria-labelledby="trackstat-account-title" className="fixed inset-auto bottom-4 left-4 m-0 w-[min(360px,calc(100vw-32px))] rounded-2xl border border-[#c9a97a]/25 bg-[#101010] p-5 text-white shadow-[0_24px_90px_#000a] md:left-[262px]">
+      <div className="mb-5 flex items-center justify-between"><div className="flex items-center gap-2 text-[#c9a97a]"><ShieldCheck size={17} /><h2 id="trackstat-account-title" className="text-sm font-semibold">Your Trackstat account</h2></div><button popoverTarget="trackstat-account" popoverTargetAction="hide" aria-label="Close account panel" className="p-1 text-white/40 hover:text-white"><X size={17} /></button></div>
+      {user ? <div className="space-y-4">
+        <div className="rounded-lg border border-white/[0.07] bg-white/[0.02] p-3"><p className="mb-1 text-[10px] uppercase tracking-[0.18em] text-white/35">Verified email</p><p className="break-all text-sm">{user.email}</p></div>
+        <p className="text-xs leading-6 text-white/50">Sign in with this email on another browser to open your saved Trackstat accounts. Resetting a library key deletes its data and removes that connection here too.</p>
+        <button disabled={busy} className={`${button} w-full`} onClick={async () => { setBusy(true); setMessage(''); try { await saveConnections(); setMessage('Browser connections saved.'); onChange(); } catch (e) { setMessage(e instanceof Error ? e.message : 'Could not save.'); } finally { setBusy(false); } }}>Save browser connections</button>
+        <button disabled={busy} onClick={() => void signOut()} className="flex items-center gap-2 text-xs text-white/50 hover:text-white"><LogOut size={14} />Sign out of this browser</button>
+      </div> : <form onSubmit={submit} className="space-y-4">
+        <p className="text-sm leading-6 text-white/55">Keep your connected accounts across browsers. No password, and signing in is optional.</p>
+        <label className="block text-xs text-white/60">Email address<input autoComplete="email" type="email" required maxLength={254} value={email} disabled={sent || busy} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" className="mt-2 w-full rounded-lg border border-white/10 bg-[#090909] px-3 py-2.5 text-sm text-white outline-none focus:border-[#c9a97a] disabled:opacity-60" /></label>
+        {sent && <label className="block text-xs text-white/60">Verification code<input autoComplete="one-time-code" inputMode="numeric" pattern="[0-9]{6,8}" required minLength={6} maxLength={8} value={code} onChange={e => setCode(e.target.value.replace(/\D/g, ''))} placeholder="Enter email code" className="mt-2 w-full rounded-lg border border-[#c9a97a]/30 bg-[#090909] px-3 py-2.5 font-mono text-sm tracking-[0.2em] text-white outline-none focus:border-[#c9a97a]" /></label>}
+        <button disabled={busy} className={`${button} flex w-full items-center justify-center gap-2 border-[#c9a97a]/40 bg-[#c9a97a]/10 text-[#c9a97a]`}><Mail size={15} />{busy ? 'Please wait?' : sent ? 'Verify & sign in' : 'Send verification code'}</button>
+        {sent && <button type="button" disabled={busy} onClick={() => { setSent(false); setCode(''); setMessage(''); }} className="text-xs text-white/45 hover:text-white">Change email or resend code</button>}
+      </form>}
+      {message && <p role="status" className="mt-4 text-xs leading-6 text-[#d6bd98]">{message}</p>}
+    </div>
+  </>;
+}
