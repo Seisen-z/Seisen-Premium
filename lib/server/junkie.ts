@@ -76,6 +76,23 @@ export class JunkieKeySystem {
         return { success: false, error: 'No key_value in API response', details: data };
       }
 
+      // Omitting validity_minutes makes Junkie fall back to the service default (7 days),
+      // so a lifetime key must have its expiry explicitly cleared after creation.
+      if (validityMinutes === null) {
+        const keyId = data?.key?.id;
+        const expiresAt = data?.key?.expires_at;
+        if (expiresAt && keyId) {
+          const clear = await fetch(`https://api.jnkie.com/api/v2/keys/${keyId}`, {
+            method: 'PUT',
+            headers: { 'Authorization': `Bearer ${this.apiKey}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ expires_at: null }),
+          });
+          if (!clear.ok) {
+            console.error(`Failed to clear expiry on lifetime key ${keyId}: HTTP ${clear.status}`, await clear.text());
+          }
+        }
+      }
+
       return { success: true, keys: [keyValue] };
 
     } catch (error: any) {

@@ -85,7 +85,7 @@ async function issueKeys(
     return { allKeys, lastKeyResult };
 }
 
-function notifyDiscord(params: FulfillOrderParams, amount: number, keys: string[]) {
+async function notifyDiscord(params: FulfillOrderParams, amount: number, keys: string[]) {
     const { tier, quantity, transactionId, customerEmail, discordId, discordTag, providerLabel, embedColor, amountPerUnit, currencySymbol } = params;
 
     const keyDisplay = keys.length > 0
@@ -93,8 +93,9 @@ function notifyDiscord(params: FulfillOrderParams, amount: number, keys: string[
         : '⚠️ Key generation failed — check Junkie webhook';
     const amountDisplay = `${currencySymbol}${amountPerUnit}${quantity > 1 ? ` × ${quantity} = ${currencySymbol}${amount}` : ''}`;
 
-    // sendDiscordWebhook never throws (it catches internally) — safe to fire-and-forget.
-    void sendDiscordWebhook(
+    // Must be awaited: on serverless hosts the function is frozen once the response is sent,
+    // which silently drops un-awaited requests. sendDiscordWebhook never throws.
+    await sendDiscordWebhook(
         `<@442317061104861184> 💰 New ${providerLabel} Purchase!`,
         [{
             title: `💎 New Premium Purchase (${providerLabel})${quantity > 1 ? ` ×${quantity}` : ''}`,
@@ -191,7 +192,7 @@ export async function fulfillOrder(db: TicketDatabase, params: FulfillOrderParam
         void emailService.sendKeyEmail(customerEmail, allKeys[0], tier, transactionId);
     }
 
-    notifyDiscord(params, amount, allKeys);
+    await notifyDiscord(params, amount, allKeys);
 
     return {
         success: allKeys.length > 0, transactionId, tier, amount, currency, keys: allKeys, quantity, payerEmail: customerEmail, payerId,
