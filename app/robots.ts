@@ -9,6 +9,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ['/admin', '/api/', '/client/'],
       },
     ],
-    sitemap: 'https://seisen.vercel.app/sitemap.xml',
+    sitemap: 'https://seisen.store/sitemap.xml',
   };
 }

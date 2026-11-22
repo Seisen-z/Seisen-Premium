@@ -22,7 +22,7 @@ const firaCode = Fira_Code({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://seisen.vercel.app'),
+  metadataBase: new URL('https://seisen.store'),
   title: { default: 'Seisen', template: '%s — Seisen' },
   description: 'Premium Roblox scripts for enhanced gaming. Free access available — no sign-up required.',
   keywords: 'roblox scripts, seisen, premium scripts, roblox hub, free scripts, roblox exploit',

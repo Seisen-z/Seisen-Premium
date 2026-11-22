@@ -23,7 +23,7 @@ interface Payment {
   updated_at: string;
 }
 
-const SITE_URL = 'https://seisen.vercel.app';
+const SITE_URL = 'https://seisen.store';
 
 export default function EvidencePage() {
   const { transactionId } = useParams();

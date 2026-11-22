@@ -23,9 +23,10 @@ const communityLinks = [
 ];
 
 const legalLinks = [
-  { href: '/legal#terms', label: 'Terms of Service' },
-  { href: '/legal#privacy', label: 'Privacy Policy' },
-  { href: '/legal#license', label: 'License (AGPL v3.0)' },
+  { href: '/terms', label: 'Terms of Service' },
+  { href: '/privacy', label: 'Privacy Policy' },
+  { href: '/refund', label: 'Refund Policy' },
+  { href: 'mailto:seisen.noreply@gmail.com', label: 'Support Email' },
 ];
 
 export default function Footer() {

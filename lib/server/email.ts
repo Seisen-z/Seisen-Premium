@@ -1,15 +1,31 @@
 import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
 // One pooled connection per warm server instance instead of a new login for every email
 let sharedTransporter: nodemailer.Transporter | undefined;
+let sharedResend: Resend | undefined;
 
 export class EmailService {
   private transporter: nodemailer.Transporter | null;
+  private resend: Resend | null;
   private fromEmail: string;
 
   constructor() {
-    this.fromEmail = process.env.SMTP_FROM_NAME 
-      ? `"${process.env.SMTP_FROM_NAME}" <${process.env.SMTP_USER}>` 
+    this.resend = null;
+
+    // Preferred: Resend API (RESEND_API_KEY + RESEND_FROM_EMAIL, e.g. noreply@seisen.store).
+    if (process.env.RESEND_API_KEY) {
+      this.resend = sharedResend ??= new Resend(process.env.RESEND_API_KEY);
+      const address = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
+      this.fromEmail = `${process.env.SMTP_FROM_NAME || 'Seisen'} <${address}>`;
+      this.transporter = null;
+      console.log(`📧 Email Service Initialized: Resend API (from ${address})`);
+      return;
+    }
+
+    // Fallback: classic SMTP, used only when no Resend key is set.
+    this.fromEmail = process.env.SMTP_FROM_NAME
+      ? `"${process.env.SMTP_FROM_NAME}" <${process.env.SMTP_USER}>`
       : `"${process.env.SMTP_USER}" <${process.env.SMTP_USER}>`;
 
     if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
@@ -40,8 +56,29 @@ export class EmailService {
     }
   }
 
+  private get isConfigured() {
+      return Boolean(this.resend || this.transporter);
+  }
+
+  // Sends through Resend when configured, otherwise through SMTP.
+  private async deliver(to: string, subject: string, html: string) {
+      if (this.resend) {
+          const { data, error } = await this.resend.emails.send({
+              from: this.fromEmail,
+              to,
+              subject,
+              html,
+          });
+          if (error) throw new Error(error.message);
+          return { messageId: data?.id, provider: 'resend' as const };
+      }
+      const info = await this.transporter!.sendMail({ from: this.fromEmail, to, subject, html });
+      return { messageId: info.messageId, provider: 'smtp' as const };
+  }
+
   // Verify connection logic
   async verifyConnection() {
+      if (this.resend) return true; // API-based, nothing to pre-verify
       if (!this.transporter) return false;
       try {
           await this.transporter.verify();
@@ -54,8 +91,8 @@ export class EmailService {
   }
 
   async sendKeyEmail(to: string, key: string, tier: string, transactionId: string) {
-    if (!this.transporter) {
-        console.error('❌ Email service not configured (SMTP missing).');
+    if (!this.isConfigured) {
+        console.error('❌ Email service not configured (RESEND_API_KEY or SMTP missing).');
         return { success: false, error: 'Email service not configured' };
     }
 
@@ -323,25 +360,20 @@ export class EmailService {
 </html>`;
 
     try {
-        console.log('📧 Attempting to send via SMTP...');
-        const info = await this.transporter.sendMail({
-            from: this.fromEmail,
-            to: to,
-            subject: subject,
-            html: emailHtml,
-        });
+        console.log('📧 Attempting to send key email...');
+        const info = await this.deliver(to, subject, emailHtml);
 
-        console.log('✅ Email sent via SMTP:', info.messageId);
-        return { success: true, messageId: info.messageId, provider: 'smtp' };
+        console.log(`✅ Email sent via ${info.provider}:`, info.messageId);
+        return { success: true, messageId: info.messageId, provider: info.provider };
 
     } catch (error: any) {
-        console.error('❌ SMTP sending failed:', error);
+        console.error('❌ Email sending failed:', error);
         return { success: false, error: error.message };
     }
   }
 
   async sendVerificationCode(to: string, code: string, purpose: 'client' | 'trackstat' = 'client') {
-    if (!this.transporter && !process.env.SMTP_HOST) {
+    if (!this.isConfigured) {
          console.warn('⚠️ No email transport available for OTP');
          return { success: false, error: 'Email service not configured' };
     }
@@ -374,18 +406,8 @@ export class EmailService {
 </html>`;
 
     try {
-        if (!this.transporter) {
-             console.error('❌ Transporter is null');
-             return { success: false, error: 'Email transporter not initialized' };
-        }
-        
         console.log(`📧 Sending OTP to ${to}...`);
-        await this.transporter.sendMail({
-            from: this.fromEmail,
-            to: to,
-            subject: subject,
-            html: emailHtml,
-        });
+        await this.deliver(to, subject, emailHtml);
         console.log('✅ OTP sent successfully');
         return { success: true };
     } catch (error: any) {
