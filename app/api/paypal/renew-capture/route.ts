@@ -84,8 +84,8 @@ export async function POST(req: NextRequest) {
       discordAvatar: discordUser.avatar,
     });
 
-    // 5. Fire-and-forget Discord notification
-    void sendDiscordWebhook(
+    // 5. Discord notification. Awaited: serverless hosts drop un-awaited requests once the response is sent.
+    await sendDiscordWebhook(
       `<@442317061104861184> 🔄 Key Renewed!`,
       [{
         title: '🔄 Monthly Key Renewal',

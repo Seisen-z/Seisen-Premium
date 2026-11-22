@@ -252,7 +252,9 @@ export async function POST(req: Request) {
 
         const robuxPrice = ROBUX_PRICES[tier] ?? 0;
         const keyDisplay = keyResult.keys.map((k: string, i: number) => `**Key ${i + 1}:** ||${k}||`).join('\n');
-        void sendDiscordWebhook(
+        // Awaited on purpose: on Vercel the function is frozen once the response is sent,
+        // which silently drops un-awaited requests. sendDiscordWebhook never throws.
+        await sendDiscordWebhook(
             `<@442317061104861184> 💰 New Robux Purchase!`,
             [{
                 title: `💎 New Premium Purchase (Robux)`,
