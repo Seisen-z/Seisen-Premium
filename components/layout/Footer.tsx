@@ -26,7 +26,7 @@ const legalLinks = [
   { href: '/terms', label: 'Terms of Service' },
   { href: '/privacy', label: 'Privacy Policy' },
   { href: '/refund', label: 'Refund Policy' },
-  { href: 'mailto:seisen.noreply@gmail.com', label: 'Support Email' },
+  { href: 'mailto:support@seisen.store', label: 'Support Email' },
 ];
 
 export default function Footer() {

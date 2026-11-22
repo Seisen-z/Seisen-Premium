@@ -245,8 +245,8 @@ function TermsOfService() {
           <p>
             For questions about these terms, billing or your account, contact us through our
             Discord server or by email at{' '}
-            <a href="mailto:seisen.noreply@gmail.com" className="text-white underline">
-              seisen.noreply@gmail.com
+            <a href="mailto:support@seisen.store" className="text-white underline">
+              support@seisen.store
             </a>
             .
           </p>
@@ -387,8 +387,8 @@ function PrivacyPolicy() {
           <p>
             For privacy questions or to exercise your data rights, contact us through our Discord
             server or by email at{' '}
-            <a href="mailto:seisen.noreply@gmail.com" className="text-white underline">
-              seisen.noreply@gmail.com
+            <a href="mailto:support@seisen.store" className="text-white underline">
+              support@seisen.store
             </a>
             .
           </p>
