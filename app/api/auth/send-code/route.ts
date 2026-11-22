@@ -1,33 +1,50 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { randomInt } from 'crypto';
 import { TicketDatabase } from '@/lib/server/db';
 import { EmailService } from '@/lib/server/email';
+import { getClientIp, rateLimit, rateLimitResponse } from '@/lib/server/rate-limit';
 
 const db = new TicketDatabase();
 const emailService = new EmailService();
 
-export async function POST(req: NextRequest) {
-  try {
-    const { email } = await req.json();
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    if (!email) {
-      return NextResponse.json({ error: 'Email is required' }, { status: 400 });
+export async function POST(req: NextRequest) {
+  // Per-visitor cap: stops one client from mass-mailing codes or probing which emails have accounts
+  const ipLimit = rateLimit(`auth:send:ip:${getClientIp(req)}`, 10, 15 * 60 * 1000);
+  if (!ipLimit.allowed) return rateLimitResponse(ipLimit);
+
+  try {
+    const body = await req.json().catch(() => ({}));
+    const email = typeof body?.email === 'string' ? body.email.trim() : '';
+
+    if (!email || email.length > 254 || !EMAIL_PATTERN.test(email)) {
+      return NextResponse.json({ error: 'Enter a valid email address.' }, { status: 400 });
     }
+
+    // Per-address cap: nobody can flood one inbox with codes, whatever IPs they use
+    const emailKey = email.toLowerCase();
+    const cooldown = rateLimit(`auth:send:cooldown:${emailKey}`, 1, 45 * 1000);
+    if (!cooldown.allowed) {
+      return NextResponse.json(
+        { error: 'A code was just sent. Please wait a moment before requesting another.' },
+        { status: 429, headers: { 'Retry-After': String(Math.max(1, Math.ceil((cooldown.resetAt - Date.now()) / 1000))) } }
+      );
+    }
+    const hourly = rateLimit(`auth:send:email:${emailKey}`, 5, 60 * 60 * 1000);
+    if (!hourly.allowed) return rateLimitResponse(hourly);
 
     // 1. Check if user exists (has purchased before)
     const exists = await db.checkUserExists(email);
-    
+
     if (!exists) {
-        // Security: Don't reveal if user exists or not, but for this specific flow "Client Area" 
-        // implies they must be a client. 
-        // We can either return generic success or specific error.
-        // User requested: "if it has a record of them".
-        return NextResponse.json({ 
-            error: 'No account found with this email. Please ensure you are using the email from your purchase.' 
+        return NextResponse.json({
+            error: 'No account found with this email. Please ensure you are using the email from your purchase.'
         }, { status: 404 });
     }
 
-    // 2. Generate Code
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    // 2. Generate a code with a cryptographically secure RNG
+    const code = randomInt(100000, 1000000).toString();
 
     // 3. Save Code to DB
     await db.createVerificationCode(email, code);
@@ -43,6 +60,7 @@ export async function POST(req: NextRequest) {
 
   } catch (error: any) {
     console.error('Send Code Error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    // Don't leak internal error text to the client
+    return NextResponse.json({ error: 'Something went wrong. Please try again.' }, { status: 500 });
   }
 }

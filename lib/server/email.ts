@@ -385,23 +385,25 @@ export class EmailService {
 <!DOCTYPE html>
 <html>
 <head>
-    <style>
-        body { background-color: #09090b; color: #ffffff; font-family: sans-serif; padding: 20px; text-align: center; }
-        .container { max-width: 400px; margin: 0 auto; background: #18181b; padding: 40px; border-radius: 16px; border: 1px solid #27272a; }
-        .logo { color: #10b981; font-weight: bold; font-size: 24px; margin-bottom: 20px; }
-        .code { font-family: monospace; font-size: 32px; letter-spacing: 5px; color: #10b981; margin: 30px 0; font-weight: bold; background: #000; padding: 15px; border-radius: 8px; border: 1px dashed #10b981; }
-        .text { color: #a1a1aa; margin-bottom: 20px; line-height: 1.5; }
-        .footer { font-size: 12px; color: #52525b; margin-top: 30px; }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 </head>
-<body>
-    <div class="container">
-        <div class="logo">⚡ SEISEN</div>
-        <p class="text">Use the code below to sign in to ${purpose === 'trackstat' ? 'Trackstat' : 'your Client Area'}.</p>
-        <div class="code">${code}</div>
-        <p class="text">${purpose === 'trackstat' ? 'This is a one-time sign-in code. It expires in 3 minutes.' : 'This code will expire in 15 minutes.'}<br>If you didn't request this, you can ignore this email.</p>
-        <div class="footer">Seisen Hub Security</div>
-    </div>
+<body style="margin:0;padding:32px 16px;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#18181b;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        <tr><td align="center">
+            <table role="presentation" width="100%" style="max-width:420px;background:#ffffff;border:1px solid #e4e4e7;border-radius:12px;" cellpadding="0" cellspacing="0">
+                <tr><td style="padding:32px;">
+                    <p style="margin:0 0 20px;font-size:15px;font-weight:700;letter-spacing:0.5px;">Seisen</p>
+                    <p style="margin:0 0 20px;font-size:15px;line-height:1.5;color:#3f3f46;">Your ${purpose === 'trackstat' ? 'Trackstat sign-in' : 'verification'} code is:</p>
+                    <p style="margin:0 0 20px;font-family:'SFMono-Regular',Consolas,monospace;font-size:30px;font-weight:700;letter-spacing:6px;color:#18181b;">${code}</p>
+                    <p style="margin:0;font-size:13px;line-height:1.5;color:#71717a;">
+                        It expires in ${purpose === 'trackstat' ? '3' : '15'} minutes and can only be used once.
+                        If you didn't request it, you can safely ignore this email.
+                    </p>
+                </td></tr>
+            </table>
+            <p style="margin:16px 0 0;font-size:12px;color:#a1a1aa;">Seisen &middot; This is an automated message, please don't reply.</p>
+        </td></tr>
+    </table>
 </body>
 </html>`;
 

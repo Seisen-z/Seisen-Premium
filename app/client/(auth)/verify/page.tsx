@@ -4,13 +4,17 @@ import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/lib/client/auth';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
-import { Card } from '@/components/ui/Card';
+
+const CODE_LENGTH = 6;
+const RESEND_COOLDOWN = 60;
 
 export default function VerifyPage() {
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [digits, setDigits] = useState<string[]>(Array(CODE_LENGTH).fill(''));
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
   const [loading, setLoading] = useState(false);
-  const { verify, email } = useAuth();
+  const [cooldown, setCooldown] = useState(RESEND_COOLDOWN);
+  const { verify, login, email } = useAuth();
   const router = useRouter();
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -19,116 +23,165 @@ export default function VerifyPage() {
     if (!email) router.replace('/client/login');
   }, [email, router]);
 
-  const handleChange = (index: number, value: string) => {
-    if (isNaN(Number(value))) return;
-    const newOtp = [...otp];
-    newOtp[index] = value;
-    setOtp(newOtp);
+  useEffect(() => {
+    inputRefs.current[0]?.focus();
+  }, [email]);
 
-    // Auto-focus next input
-    if (value && index < 5) {
+  // Resend countdown
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const timer = setTimeout(() => setCooldown(c => c - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [cooldown]);
+
+  const submit = async (code: string) => {
+    if (loading) return;
+    setLoading(true);
+    setError('');
+    setNotice('');
+    const res = await verify(code);
+    setLoading(false);
+    if (!res.success) {
+      setError(res.error || 'Verification failed');
+      setDigits(Array(CODE_LENGTH).fill(''));
+      inputRefs.current[0]?.focus();
+    }
+  };
+
+  const fill = (start: number, raw: string) => {
+    const incoming = raw.replace(/\D/g, '').slice(0, CODE_LENGTH - start).split('');
+    if (incoming.length === 0) return;
+    const next = [...digits];
+    incoming.forEach((d, i) => { next[start + i] = d; });
+    setDigits(next);
+    const nextIndex = Math.min(start + incoming.length, CODE_LENGTH - 1);
+    inputRefs.current[nextIndex]?.focus();
+    if (next.every(Boolean)) submit(next.join(''));
+  };
+
+  const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
+    if (e.key === 'Backspace') {
+      if (digits[index]) {
+        const next = [...digits];
+        next[index] = '';
+        setDigits(next);
+      } else if (index > 0) {
+        inputRefs.current[index - 1]?.focus();
+      }
+    } else if (e.key === 'ArrowLeft' && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    } else if (e.key === 'ArrowRight' && index < CODE_LENGTH - 1) {
       inputRefs.current[index + 1]?.focus();
     }
   };
 
-  const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
-    if (e.key === 'Backspace' && !otp[index] && index > 0) {
-      inputRefs.current[index - 1]?.focus();
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const code = digits.join('');
+    if (code.length !== CODE_LENGTH) {
+      setError('Enter all 6 digits of the code.');
+      return;
     }
+    submit(code);
   };
 
-  const handlePaste = (e: React.ClipboardEvent) => {
-    e.preventDefault();
-    const pastedData = e.clipboardData.getData('text').slice(0, 6).split('');
-    const newOtp = [...otp];
-    pastedData.forEach((val, i) => {
-        if (i < 6 && !isNaN(Number(val))) newOtp[i] = val;
-    });
-    setOtp(newOtp);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const code = otp.join('');
-    if (code.length !== 6) {
-        setError('Please enter the full 6-digit code');
-        return;
-    }
-
-    setLoading(true);
+  const handleResend = async () => {
+    if (!email || cooldown > 0) return;
     setError('');
-    
-    const res = await verify(code);
-    
-    setLoading(false);
-    if (!res.success) {
-        setError(res.error || 'Verification failed');
+    setNotice('');
+    const res = await login(email);
+    if (res.success) {
+      setNotice('A new code has been sent.');
+      setDigits(Array(CODE_LENGTH).fill(''));
+      inputRefs.current[0]?.focus();
+      setCooldown(RESEND_COOLDOWN);
+    } else {
+      setError(res.error || 'Could not send a new code.');
     }
   };
 
   if (!email) return null;
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen px-4 bg-[#050505]">
-      <Card className="w-full max-w-md p-10 bg-[#0f0f0f] border border-[#1f1f1f] shadow-2xl rounded-2xl">
-        <div className="text-center mb-10">
-            <h1 className="text-3xl font-bold text-white mb-4 tracking-tight">Nearly there...</h1>
-            <p className="text-gray-400 text-sm leading-relaxed">
-                We've sent a verification code to<br/>
-                <span className="text-white font-semibold">{email}</span>. Please enter it below.
-            </p>
+    <div className="flex items-center justify-center min-h-[85vh] px-4">
+      <div className="w-full max-w-sm">
+
+        <div className="text-center mb-8">
+          <h1 className="text-2xl font-bold text-white">Check your email</h1>
+          <p className="text-sm text-[#555] mt-1">
+            Enter the 6-digit code we sent to{' '}
+            <span className="text-[#aaa] break-all">{email}</span>.
+          </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-8">
-            <div className="flex justify-center gap-3">
-                {otp.map((digit, index) => (
-                    <input
-                        key={index}
-                        ref={(el) => { inputRefs.current[index] = el }}
-                        type="text"
-                        maxLength={1}
-                        value={digit}
-                        onChange={(e) => handleChange(index, e.target.value)}
-                        onKeyDown={(e) => handleKeyDown(index, e)}
-                        onPaste={handlePaste}
-                        className="w-12 h-14 bg-[#141414] border border-[#2a2a2a] rounded-lg text-center text-xl font-bold text-white focus:outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)] transition-all placeholder-transparent"
-                    />
-                ))}
+        <div className="bg-[#0e0e0e] rounded-2xl border border-[#1a1a1a] p-6">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="flex justify-between gap-2">
+              {digits.map((digit, index) => (
+                <input
+                  key={index}
+                  ref={(el) => { inputRefs.current[index] = el; }}
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete={index === 0 ? 'one-time-code' : 'off'}
+                  pattern="[0-9]*"
+                  maxLength={CODE_LENGTH}
+                  value={digit}
+                  disabled={loading}
+                  aria-label={`Digit ${index + 1}`}
+                  onChange={(e) => fill(index, e.target.value)}
+                  onKeyDown={(e) => handleKeyDown(index, e)}
+                  onFocus={(e) => e.target.select()}
+                  onPaste={(e) => {
+                    e.preventDefault();
+                    fill(0, e.clipboardData.getData('text'));
+                  }}
+                  className="w-full min-w-0 aspect-[4/5] bg-[#111] border border-[#222] rounded-xl text-center text-lg font-semibold text-white outline-none transition-colors focus:border-[var(--accent)] disabled:opacity-50"
+                />
+              ))}
             </div>
 
             {error && (
-                <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm text-center animate-pulse">
-                    {error}
-                </div>
+              <div className="rounded-xl border border-red-500/30 bg-red-500/5 px-3 py-2.5 text-sm text-red-400">
+                {error}
+              </div>
+            )}
+            {notice && !error && (
+              <div className="rounded-xl border border-[#222] bg-[#111] px-3 py-2.5 text-sm text-[#aaa]">
+                {notice}
+              </div>
             )}
 
             <button
-                type="submit"
-                disabled={loading}
-                className="w-full accent-bg hover-accent-bg text-white font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_4px_20px_rgba(var(--accent-rgb),0.2)] hover:shadow-[0_4px_25px_rgba(var(--accent-rgb),0.3)] hover:-translate-y-0.5"
+              type="submit"
+              disabled={loading}
+              className="w-full bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-black font-semibold py-2.5 text-sm rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-                {loading ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                    'Sign in'
-                )}
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Verify and sign in'}
             </button>
-            
-            <div className="text-center">
-                <button 
-                    type="button" 
-                    onClick={() => router.push('/client/login')}
-                    className="text-xs text-gray-500 hover-accent transition-colors"
-                >
-                    Entered the wrong email?
-                </button>
-            </div>
-        </form>
-      </Card>
-      
-      <p className="mt-8 text-center text-xs text-gray-600">
-        &copy; 2026 Seisen Hub. All rights reserved.
-      </p>
+          </form>
+
+          <div className="mt-5 flex items-center justify-between text-xs text-[#555]">
+            <button
+              type="button"
+              onClick={handleResend}
+              disabled={cooldown > 0}
+              className="transition-colors enabled:hover:text-white disabled:cursor-not-allowed"
+            >
+              {cooldown > 0 ? `Resend code in ${cooldown}s` : 'Resend code'}
+            </button>
+            <button
+              type="button"
+              onClick={() => router.push('/client/login')}
+              className="transition-colors hover:text-white"
+            >
+              Use a different email
+            </button>
+          </div>
+        </div>
+
+        <p className="mt-6 text-xs text-[#333] text-center">The code expires in 15 minutes.</p>
+      </div>
     </div>
   );
 }
