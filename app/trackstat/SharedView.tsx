@@ -3,19 +3,17 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Activity, Moon, Sun } from 'lucide-react';
-import { PET_SIMULATOR_99, TAP_SIMULATOR, ANIME_DICE, BLOX_FRUITS, type CatalogEntry, type InventoryStack, type TrackstatAccount, type TrackstatHistory } from '@/lib/trackstat';
+import { PET_SIMULATOR_99, BLOX_FRUITS, type CatalogEntry, type InventoryStack, type TrackstatAccount, type TrackstatHistory } from '@/lib/trackstat';
 import Dashboard from './Dashboard';
 import InventoryView from './InventoryView';
-import { AnimeDiceInventory } from './AnimeDiceView';
 import { BloxFruitsInventory } from './BloxFruitsView';
-import { InventoryView as TapInventoryView } from './TapSimulatorView';
 import { useTrackstatTheme } from './theme';
 import type { Theme } from './themeConfig';
 import { Avatar, ago } from './ui';
 
-type Game = 'ps' | 'tap' | 'ad' | 'bf';
+type Game = 'ps' | 'bf';
 type Loaded = { catalog: Record<string, CatalogEntry>; inventory: InventoryStack[] | null };
-const gameName: Record<Game, string> = { ps: 'Pet Simulator 99', tap: 'Tap Simulator', ad: 'Anime Dice', bf: 'Blox Fruits' };
+const gameName: Record<Game, string> = { ps: 'Pet Simulator 99', bf: 'Blox Fruits' };
 
 // The read-only page behind a share link: the dashboard and the inventory of one account, refreshed every minute
 export default function SharedView({ data, avatar, token, initialTheme }: { data: TrackstatHistory; avatar: string | null; token: string; initialTheme: Theme }) {
@@ -30,7 +28,7 @@ export default function SharedView({ data, avatar, token, initialTheme }: { data
   }, [router]);
 
   const withInventory = (id: string) => data.sessions.some(s => s.game_id === id && s.snapshot.has_inventory);
-  const games = ([withInventory(PET_SIMULATOR_99) && 'ps', withInventory(TAP_SIMULATOR) && 'tap', withInventory(ANIME_DICE) && 'ad', withInventory(BLOX_FRUITS) && 'bf'].filter(Boolean)) as Game[];
+  const games = ([withInventory(PET_SIMULATOR_99) && 'ps', withInventory(BLOX_FRUITS) && 'bf'].filter(Boolean)) as Game[];
   const shown = game && games.includes(game) ? game : games[0];
   useEffect(() => {
     if (!shown) return;
@@ -75,9 +73,7 @@ export default function SharedView({ data, avatar, token, initialTheme }: { data
             </div>
             {shown === 'ps'
               ? <InventoryView stacks={current?.inventory ?? undefined} catalog={current?.catalog ?? {}} loading={!current} />
-              : shown === 'bf' ? <BloxFruitsInventory stacks={current?.inventory ?? undefined} catalog={current?.catalog ?? {}} loading={!current} />
-              : shown === 'ad' ? <AnimeDiceInventory stacks={current?.inventory ?? undefined} catalog={current?.catalog ?? {}} loading={!current} />
-              : <TapInventoryView stacks={current?.inventory ?? undefined} catalog={current?.catalog ?? {}} loading={!current} />}
+              : <BloxFruitsInventory stacks={current?.inventory ?? undefined} catalog={current?.catalog ?? {}} loading={!current} />}
           </section>
         )}
         <footer className="mt-10 flex items-center justify-center gap-2 text-xs text-ts-fg/35"><Activity size={13} />Tracked with <Link href="/" className="text-ts-fg/55 hover:text-ts-accent">Trackstat by Seisen Hub</Link></footer>

@@ -19,13 +19,11 @@ export async function GET(req: NextRequest) {
   try {
     void markSeen(readKeys(req));
     // A short fingerprint of everything shown (plus a 30 minute step for the community totals); an unchanged page downloads nothing
-    const fingerprint = trackstatRPC<string>('trackstat_version', { p_keys: readKeys(req) }, bearer(req)).then(version => `"v4-bf-${version}-${Math.floor(Date.now() / 1800000)}"`).catch(() => null);
+    const fingerprint = trackstatRPC<string>('trackstat_version', { p_keys: readKeys(req) }, bearer(req)).then(version => `"v5-ps-bf-${version}-${Math.floor(Date.now() / 1800000)}"`).catch(() => null);
     const known = req.headers.get('if-none-match');
     if (known && await fingerprint === known) return new NextResponse(null, { status: 304, headers: { ...headers, ETag: known } });
-    const [totals, totalsTapSimulator, totalsAnimeDice, totalsBloxFruits, { entries: valid, dropped, failed, degraded }] = await Promise.all([
+    const [totals, totalsBloxFruits, { entries: valid, dropped, failed, degraded }] = await Promise.all([
       trackstatRPC<TrackstatPublic>('trackstat_public').catch(() => null),
-      trackstatRPC<TrackstatPublic>('trackstats_tapsimulator_public').catch(() => null),
-      trackstatRPC<TrackstatPublic>('trackstats_animedice_public').catch(() => null),
       trackstatRPC<TrackstatPublic>('trackstats_bloxfruits_public').catch(() => null),
       trackstatEntries(req),
     ]);
@@ -37,7 +35,7 @@ export async function GET(req: NextRequest) {
     }));
     const media = await trackstatMedia(accounts.map(a => a.account.roblox_id));
     const etag = degraded || dropped ? null : await fingerprint;
-    const response = NextResponse.json({ public: totals, publicTapSimulator: totalsTapSimulator, publicAnimeDice: totalsAnimeDice, publicBloxFruits: totalsBloxFruits, accounts, media, reconnect: dropped, degraded }, { headers: etag ? { ...headers, ETag: etag } : headers });
+    const response = NextResponse.json({ public: totals, publicBloxFruits: totalsBloxFruits, accounts, media, reconnect: dropped, degraded }, { headers: etag ? { ...headers, ETag: etag } : headers });
     if (dropped) writeKeys(response, [...valid.flatMap(v => v.keys), ...failed]);
     return response;
   } catch (error) {

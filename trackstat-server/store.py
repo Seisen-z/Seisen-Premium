@@ -6,7 +6,7 @@ import sqlite3
 import threading
 import time
 
-GAMES = {'3317771874', '10629695169', '10708913337', '994732206'}
+GAMES = {'3317771874', '994732206'}
 MAX_STACKS = 1000
 # Fields that move on their own (amount, market numbers, income). They are saved but never decide which stack is which.
 VOLATILE = {'a', 'x', 'r', 'p'}
@@ -35,8 +35,8 @@ def connect(path: str) -> sqlite3.Connection:
         db.execute("alter table meta add column version text not null default ''")
         db.execute("update meta set version=lower(hex(randomblob(16)))")
     for table in ('stacks', 'meta', 'changes'):
-        db.execute(f'delete from {table} where game=?', ('10563114921',))
-    db.execute("delete from thumbnail_jobs where game='stealanegg'")
+        db.execute(f'delete from {table} where game in (?,?,?)', ('10563114921', '10629695169', '10708913337'))  # removed games
+    db.execute("delete from thumbnail_jobs where game in ('stealanegg','tapsimulator','animedice')")
     db.execute('pragma optimize')
     db.commit()
     return db

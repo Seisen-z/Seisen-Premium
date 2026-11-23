@@ -7,15 +7,14 @@ import { loadInventory } from '@/lib/client/trackstat-inventory';
 
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import Link from 'next/link';
-import { Activity, ArrowLeft, Boxes, CalendarDays, ChevronRight, Clock, Gem, LayoutGrid, Link2, List, PawPrint, RefreshCw, Search, TrendingUp, Users, Egg, Plus, Sun, Moon, LayoutDashboard, Settings as SettingsIcon, Sparkles, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { Activity, ArrowLeft, Boxes, CalendarDays, ChevronRight, Clock, Gem, LayoutGrid, Link2, List, PawPrint, RefreshCw, Search, TrendingUp, Users, Plus, Sun, Moon, LayoutDashboard, Settings as SettingsIcon, Layers, Sparkles, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useTrackstatTheme } from './theme';
 import type { Theme } from './themeConfig';
-import { PET_SIMULATOR_99, TAP_SIMULATOR, ANIME_DICE, BLOX_FRUITS, tapCounts, compactCount, type CatalogEntry, type Counts, type InventoryStack, type TrackstatAccount, type TrackstatResponse } from '@/lib/trackstat';
-import TapSimulatorView from './TapSimulatorView';
-import AnimeDiceView from './AnimeDiceView';
+import { PET_SIMULATOR_99, BLOX_FRUITS, compactCount, type CatalogEntry, type Counts, type InventoryStack, type TrackstatAccount, type TrackstatResponse } from '@/lib/trackstat';
 import BloxFruitsView from './BloxFruitsView';
 import AccountPopover from './AccountPopover';
 import Dashboard from './Dashboard';
+import CombinedInventory from './CombinedInventory';
 import Welcome from './Welcome';
 import InventoryView, { categories } from './InventoryView';
 import Freshness from './Freshness';
@@ -39,8 +38,8 @@ export default function TrackstatPanel({ initialTheme }: { initialTheme: Theme }
   const [key, setKey] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const [page, setPage] = useState<'games' | 'connection' | 'dashboard' | 'settings' | 'whatsnew'>('games');
-  const [game, setGame] = useState<'ps99' | 'tap' | 'ad' | 'bf' | null>(null);
+  const [page, setPage] = useState<'games' | 'connection' | 'dashboard' | 'combined' | 'settings' | 'whatsnew'>('games');
+  const [game, setGame] = useState<'ps99' | 'bf' | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [accountQuery, setAccountQuery] = useState('');
   const { settings, update } = useSettings();
@@ -85,7 +84,7 @@ export default function TrackstatPanel({ initialTheme }: { initialTheme: Theme }
     void load();
   }, [load]);
   // The library syncs every 30 seconds while it runs; with nothing running there is nothing new to fetch that often
-  const pollMs = (data?.accounts.some(a => a.activeGames.some(g => [PET_SIMULATOR_99, TAP_SIMULATOR, ANIME_DICE, BLOX_FRUITS].includes(g))) ?? true) ? (settings.relaxedRefresh ? 60000 : 30000) : 60000;
+  const pollMs = (data?.accounts.some(a => a.activeGames.some(g => [PET_SIMULATOR_99, BLOX_FRUITS].includes(g))) ?? true) ? (settings.relaxedRefresh ? 60000 : 30000) : 60000;
   useEffect(() => {
     let live = true;
     void (async () => {
@@ -149,21 +148,17 @@ export default function TrackstatPanel({ initialTheme }: { initialTheme: Theme }
   };
   const history = accounts.find(a => a.index === activeIndex) ?? accounts[0];
   const avatarOf = (id?: string) => (id ? data?.media?.avatars?.[id] : null);
-  const allSessions = (history?.sessions ?? []).filter(s => [PET_SIMULATOR_99, TAP_SIMULATOR, ANIME_DICE, BLOX_FRUITS].includes(s.game_id));
+  const allSessions = (history?.sessions ?? []).filter(s => [PET_SIMULATOR_99, BLOX_FRUITS].includes(s.game_id));
   const sessions = allSessions.filter(s => s.game_id === PET_SIMULATOR_99);
-  const tapSessions = allSessions.filter(s => s.game_id === TAP_SIMULATOR);
-  const adSessions = allSessions.filter(s => s.game_id === ANIME_DICE);
   const bfSessions = allSessions.filter(s => s.game_id === BLOX_FRUITS);
   const liveBf = history?.activeGames?.includes(BLOX_FRUITS) ?? false;
-  const liveAd = history?.activeGames?.includes(ANIME_DICE) ?? false;
   const lastAny = allSessions[0];
   const gamesTracked = new Set(allSessions.map(s => s.game_id)).size;
   const latest = sessions[0];
   const counts = dailySnapshot(sessions, (history?.daily ?? []).filter(row => row.game_id === PET_SIMULATOR_99), shownDay);
-  const totalGains = (history?.daily ?? []).filter(row => [PET_SIMULATOR_99, TAP_SIMULATOR, ANIME_DICE, BLOX_FRUITS].includes(row.game_id) && row.day === new Date().toISOString().slice(0, 10)).reduce((n, row) => n + total(row.game_id === TAP_SIMULATOR ? tapCounts(row.gained) : row.gained), 0);
-  const liveTap = history?.activeGames?.includes(TAP_SIMULATOR) ?? false;
+  const totalGains = (history?.daily ?? []).filter(row => [PET_SIMULATOR_99, BLOX_FRUITS].includes(row.game_id) && row.day === new Date().toISOString().slice(0, 10)).reduce((n, row) => n + total(row.gained), 0);
   const live = history?.activeGames?.includes(PET_SIMULATOR_99) ?? false;
-  const libraryLive = history?.activeGames?.some(g => [PET_SIMULATOR_99, TAP_SIMULATOR, ANIME_DICE, BLOX_FRUITS].includes(g)) ?? false;
+  const libraryLive = history?.activeGames?.some(g => [PET_SIMULATOR_99, BLOX_FRUITS].includes(g)) ?? false;
   const robloxId = history?.account.roblox_id;
   const hasInventory = !!latest?.snapshot.has_inventory;
   const inventoryKey = `${robloxId}:${latest?.id}`;
@@ -203,6 +198,7 @@ export default function TrackstatPanel({ initialTheme }: { initialTheme: Theme }
   let main: ReactNode;
   if (!data) main = error ? <p className="py-12 text-sm text-ts-fg/40">Refresh to try again.</p> : <PageSkeleton />;
   else if (page === 'dashboard') main = accounts.length ? <Dashboard accounts={ordered} avatarOf={avatarOf} nameOf={nameOf} /> : <Welcome onConnect={() => setPage('connection')} />;
+  else if (page === 'combined') main = accounts.length ? <CombinedInventory accounts={ordered} nameOf={nameOf} avatarOf={avatarOf} media={data.media} /> : <Welcome onConnect={() => setPage('connection')} />;
   else if (page === 'settings') main = <SettingsPage settings={settings} update={update} onClearData={() => { etag.current = ''; void cacheClear(); }}><ShareLinks accounts={ordered} nameOf={nameOf} /></SettingsPage>;
   else if (page === 'whatsnew') main = <WhatsNew />;
   else if (page === 'connection') main = (
@@ -231,11 +227,6 @@ export default function TrackstatPanel({ initialTheme }: { initialTheme: Theme }
             <Img src={data?.media?.game} className="h-14 w-14 shrink-0 rounded-lg bg-gradient-to-br from-ts-accent/25 to-ts-raised" fallback={<PawPrint size={24} className="text-ts-accent" />} />
             <div className="min-w-0"><p className="text-sm font-medium text-ts-fg">Pet Simulator 99</p><p className="mt-1 text-xs text-ts-fg/45">Full inventory, Huge / Titanic / Gargantuan pets, items, enchants and daily gains.</p></div>
           </div>
-          <div className="mt-3 flex items-center gap-4 rounded-lg border border-ts-fg/[0.06] bg-ts-fg/[0.02] p-3">
-            <Img src={data?.media?.tapSimulator} className="h-14 w-14 shrink-0 rounded-lg bg-gradient-to-br from-ts-accent/25 to-ts-raised" fallback={<Egg size={24} className="text-ts-accent" />} />
-            <div className="min-w-0"><p className="text-sm font-medium text-ts-fg">Tap Simulator</p><p className="mt-1 text-xs text-ts-fg/45">Secret 1, Secret 2, Secret 3 and Secret X pets, items, potions, coins, gems, Candy Corn and rebirths.</p></div>
-          </div>
-          <div className="mt-3 flex items-center gap-4 rounded-lg border border-ts-fg/[0.06] p-3"><Img src={data?.media?.animeDice} className="h-14 w-14 shrink-0 rounded-lg" fallback={<Boxes size={24} />} /><div><p className="text-sm font-medium text-ts-fg">Anime Dice</p><p className="mt-1 text-xs text-ts-fg/45">Units, boosts, gear, tokens, money, rolls, rebirths and daily gains.</p></div></div>
           <div className="mt-3 flex items-center gap-4 rounded-lg border border-ts-fg/[0.06] p-3"><Img src={data?.media?.bloxFruits} className="h-14 w-14 shrink-0 rounded-lg" fallback={<Boxes size={24} />} /><div><p className="text-sm font-medium text-ts-fg">Blox Fruits</p><p className="mt-1 text-xs text-ts-fg/45">Complete inventory, fruits, weapons, accessories, materials, item details, balances and daily gains.</p></div></div>
           <p className="mt-3 text-xs text-ts-fg/35">More games will be added over time.</p>
         </div>
@@ -263,7 +254,7 @@ export default function TrackstatPanel({ initialTheme }: { initialTheme: Theme }
           )}
         </div>)}
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <h3 className="text-lg font-semibold text-ts-fg">Supported Games (4)</h3>
+          <h3 className="text-lg font-semibold text-ts-fg">Supported Games (2)</h3>
           <div className="flex items-center gap-2">
             <label className="relative"><Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ts-fg/35" /><input aria-label="Search game" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search game…" className="w-48 rounded-lg border border-ts-fg/10 bg-ts-surface py-2 pl-9 pr-3 text-sm text-ts-fg outline-none focus:border-ts-accent" /></label>
             {([false, true] as const).map(l => <button key={String(l)} aria-label={l ? 'List view' : 'Grid view'} aria-pressed={listView === l} onClick={() => setListView(l)} className={`grid h-9 w-9 place-items-center rounded-lg border ${listView === l ? 'border-ts-accent/50 bg-ts-accent/10 text-ts-accent' : 'border-ts-fg/10 text-ts-fg/50'}`}>{l ? <List size={16} /> : <LayoutGrid size={16} />}</button>)}
@@ -272,8 +263,6 @@ export default function TrackstatPanel({ initialTheme }: { initialTheme: Theme }
         {(() => {
           const list = [
             { id: 'ps99' as const, name: 'Pet Simulator 99', image: data?.media?.game, icon: <PawPrint size={36} className="text-ts-accent" />, live, played: !!latest },
-            { id: 'tap' as const, name: 'Tap Simulator', image: data?.media?.tapSimulator, icon: <Egg size={36} className="text-ts-accent" />, live: liveTap, played: tapSessions.length > 0 },
-            { id: 'ad' as const, name: 'Anime Dice', image: data?.media?.animeDice, icon: <Boxes size={36} className="text-ts-accent" />, live: liveAd, played: adSessions.length > 0 },
             { id: 'bf' as const, name: 'Blox Fruits', image: data?.media?.bloxFruits, icon: <Boxes size={36} className="text-ts-accent" />, live: liveBf, played: bfSessions.length > 0 },
           ].filter(g => g.name.toLowerCase().includes(search.trim().toLowerCase()));
           return list.length ? (
@@ -294,10 +283,6 @@ export default function TrackstatPanel({ initialTheme }: { initialTheme: Theme }
     );
   } else if (game === 'bf') {
     main = <BloxFruitsView sessions={bfSessions} daily={(history?.daily ?? []).filter(day => day.game_id === BLOX_FRUITS)} media={data?.media} community={data?.publicBloxFruits} live={liveBf} roblox={history?.account.roblox_id ?? ''} onBack={() => setGame(null)} />;
-  } else if (game === 'ad') {
-    main = <AnimeDiceView sessions={adSessions} daily={(history?.daily ?? []).filter(day => day.game_id === ANIME_DICE)} media={data?.media} community={data?.publicAnimeDice} live={liveAd} roblox={history?.account.roblox_id ?? ''} onBack={() => setGame(null)} />;
-  } else if (game === 'tap') {
-    main = <TapSimulatorView sessions={tapSessions} daily={(history?.daily ?? []).filter(day => day.game_id === TAP_SIMULATOR)} media={data.media} community={data.publicTapSimulator} live={liveTap} roblox={history?.account.roblox_id ?? ''} onBack={() => setGame(null)} />;
   } else {
     main = (
       <>
@@ -369,7 +354,7 @@ export default function TrackstatPanel({ initialTheme }: { initialTheme: Theme }
   const bar = <span className="absolute bottom-2 left-0 top-2 w-0.5 rounded-full bg-ts-accent" />;
   const divider = <div className="my-3 h-px bg-ts-fg/[0.07]" />;
   const shown = ordered.filter(a => nameOf(a).toLowerCase().includes(accountQuery.trim().toLowerCase()));
-  const anyLive = accounts.some(a => a.activeGames.some(g => [PET_SIMULATOR_99, TAP_SIMULATOR, ANIME_DICE, BLOX_FRUITS].includes(g)));
+  const anyLive = accounts.some(a => a.activeGames.some(g => [PET_SIMULATOR_99, BLOX_FRUITS].includes(g)));
   const text = (label: string) => (collapsed ? null : label);
   const phoneItem = (active: boolean, label: string, icon: ReactNode, onClick: () => void) => (
     <button key={label} onClick={onClick} aria-label={label} aria-current={active ? 'page' : undefined} className={`flex w-16 flex-col items-center gap-1 rounded-lg py-1.5 text-[11px] ${active ? 'text-ts-accent' : 'text-ts-fg/55'}`}>{icon}{label}</button>
@@ -386,6 +371,7 @@ export default function TrackstatPanel({ initialTheme }: { initialTheme: Theme }
         {divider}
         {!collapsed && <p className="mb-1 px-3 text-xs text-ts-fg/40">Menu</p>}
         <button onClick={() => setPage('dashboard')} title="Dashboard" aria-label="Dashboard" className={row(page === 'dashboard')}>{page === 'dashboard' && bar}<LayoutDashboard size={17} />{text('Dashboard')}</button>
+        <button onClick={() => setPage('combined')} title="All Accounts" aria-label="All Accounts" className={row(page === 'combined')}>{page === 'combined' && bar}<Layers size={17} />{text('All Accounts')}</button>
         <button onClick={() => setPage('connection')} title="Connection" aria-label="Connection" className={row(page === 'connection')}>{page === 'connection' && bar}<Link2 size={17} />{text('Connection')}</button>
         {divider}
         {collapsed ? null : <div className="mb-1 flex items-center justify-between px-3"><p className="text-xs text-ts-fg/40">Accounts</p><button onClick={() => setPage('connection')} aria-label="Add account" className="text-ts-fg/45 hover:text-ts-fg"><Plus size={15} /></button></div>}
@@ -421,6 +407,7 @@ export default function TrackstatPanel({ initialTheme }: { initialTheme: Theme }
       </section>
       <nav aria-label="Main" className="fixed inset-x-0 bottom-0 z-10 flex items-center justify-around bg-ts-side/95 px-2 py-1.5 backdrop-blur md:hidden">
         {phoneItem(page === 'dashboard', 'Dashboard', <LayoutDashboard size={19} />, () => setPage('dashboard'))}
+        {phoneItem(page === 'combined', 'All', <Layers size={19} />, () => setPage('combined'))}
         {phoneItem(page === 'games', 'Accounts', <Users size={19} />, () => { setPage('games'); setGame(null); })}
         {phoneItem(page === 'connection', 'Connect', <Link2 size={19} />, () => setPage('connection'))}
         {phoneItem(page === 'settings', 'Settings', <SettingsIcon size={19} />, () => setPage('settings'))}

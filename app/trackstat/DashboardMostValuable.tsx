@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { CircleDollarSign, Gem } from 'lucide-react';
-import { ANIME_DICE, BLOX_FRUITS, TAP_SECRET_RARITIES, PET_SIMULATOR_99, TAP_SIMULATOR, compactCount, type InventoryStack, type TrackstatAccount } from '@/lib/trackstat';
+import { Gem } from 'lucide-react';
+import { BLOX_FRUITS, PET_SIMULATOR_99, compactCount, type InventoryStack, type TrackstatAccount } from '@/lib/trackstat';
 import { loadInventory, type InventoryResult } from '@/lib/client/trackstat-inventory';
 import { Avatar, CardSkeleton, Img, card } from './ui';
 
@@ -11,8 +11,6 @@ type Loaded = Record<string, { data?: InventoryResult; error?: boolean }>;
 // Each game uses its available value: RAP, amount, or income.
 const games = [
   { id: PET_SIMULATOR_99, key: 'ps', title: 'Pet Simulator 99', note: 'ranked by total stack RAP', value: (s: InventoryStack) => (s.r ?? 0) * s.a },
-  { id: TAP_SIMULATOR, key: 'tap', title: 'Tap Simulator', note: 'ranked by owned amount', value: (s: InventoryStack) => s.a },
-  { id: ANIME_DICE, key: 'ad', title: 'Anime Dice', note: 'ranked by money per second', value: (s: InventoryStack) => s.p ?? 0 },
   { id: BLOX_FRUITS, key: 'bf', title: 'Blox Fruits', note: 'ranked by owned amount', value: (s: InventoryStack) => s.a },
 ] as const;
 
@@ -24,7 +22,7 @@ export function rankMostValuable(accounts: TrackstatAccount[], loaded: Loaded, v
     seen.add(id);
     const data = loaded[`${prefix}:${id}`]?.data;
     return (data?.inventory ?? []).map((stack, index) => ({ account, stack, index, info: data?.catalog[stack.k], value: value(stack) }));
-  }).filter(row => (prefix !== 'tap' || !row.stack.k.startsWith('pet:') || TAP_SECRET_RARITIES.has(row.info?.rarity ?? '')) && Number.isFinite(row.value) && row.value > 0).sort((a, b) => b.value - a.value).slice(0, limit);
+  }).filter(row => Number.isFinite(row.value) && row.value > 0).sort((a, b) => b.value - a.value).slice(0, limit);
 }
 
 export default function DashboardMostValuable({ accounts, game: filter, avatarOf, nameOf }: { accounts: TrackstatAccount[]; game: string; avatarOf: (id?: string) => string | null | undefined; nameOf: (a: TrackstatAccount) => string }) {
@@ -62,8 +60,7 @@ export default function DashboardMostValuable({ accounts, game: filter, avatarOf
       <p className="mt-2 truncate text-xs font-medium text-ts-fg" title={info?.name ?? stack.k}>{info?.name ?? stack.k.split(':')[1]}</p>
       {game.key === 'ps'
         ? <p className="mt-1 flex items-center justify-center gap-1 font-mono text-xs text-ts-cyan" title={String(value)}><Gem size={11} />{compactCount(value)}</p>
-        : game.key === 'tap' ? <p className="mt-1 font-mono text-xs text-ts-pos">x{compactCount(value)} owned</p>
-        : <p className="mt-1 flex items-center justify-center gap-1 font-mono text-xs text-ts-pos" title={String(value)}><CircleDollarSign size={11} />${compactCount(value)}/s</p>}
+        : <p className="mt-1 font-mono text-xs text-ts-pos">x{compactCount(value)} owned</p>}
       {stack.a > 1 && <p className="text-[10px] text-ts-fg/35">x{compactCount(stack.a)}</p>}
       {filter === 'all' && <p className="text-[10px] text-ts-fg/35">{game.title}</p>}
       <div className="mt-2 flex min-w-0 items-center justify-center gap-2 text-xs text-ts-fg/45"><Avatar src={avatarOf(account.account.roblox_id)} name={account.account.username} small /><span className="truncate" title={nameOf(account)}>{nameOf(account)}</span></div>

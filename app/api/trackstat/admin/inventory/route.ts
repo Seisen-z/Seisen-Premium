@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { isAdminRequest } from '@/lib/server/trackstat-admin';
 import { serverInventory } from '@/lib/server/trackstat-inventory';
 import { buildCatalog } from '@/lib/server/trackstat-catalog';
-import { PET_SIMULATOR_99, TAP_SIMULATOR, ANIME_DICE, BLOX_FRUITS } from '@/lib/trackstat';
+import { PET_SIMULATOR_99, BLOX_FRUITS } from '@/lib/trackstat';
 
 export const dynamic = 'force-dynamic';
 const headers = { 'Cache-Control': 'private, no-store', 'Referrer-Policy': 'no-referrer' };
@@ -12,8 +12,8 @@ export async function GET(req: NextRequest) {
   if (!isAdminRequest(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers });
   const account = req.nextUrl.searchParams.get('account') ?? '';
   const game = req.nextUrl.searchParams.get('game');
-  if (!/^[0-9a-f-]{36}$/.test(account) || (game !== 'ps' && game !== 'tap' && game !== 'ad' && game !== 'bf')) return NextResponse.json({ error: 'Invalid request' }, { status: 400, headers });
-  const found = await serverInventory(account, game === 'bf' ? BLOX_FRUITS : game === 'ad' ? ANIME_DICE : game === 'tap' ? TAP_SIMULATOR : PET_SIMULATOR_99);
+  if (!/^[0-9a-f-]{36}$/.test(account) || (game !== 'ps' && game !== 'bf')) return NextResponse.json({ error: 'Invalid request' }, { status: 400, headers });
+  const found = await serverInventory(account, game === 'bf' ? BLOX_FRUITS : PET_SIMULATOR_99);
   if (!found) return NextResponse.json({ catalog: {}, inventory: null, updated: null }, { headers });
-  return NextResponse.json({ catalog: await buildCatalog(found.inventory, game === 'bf' ? 'bf' : game === 'ad' ? 'ad' : game === 'tap'), inventory: found.inventory, updated: found.updated }, { headers });
+  return NextResponse.json({ catalog: await buildCatalog(found.inventory, game === 'bf' ? 'bf' : 'ps'), inventory: found.inventory, updated: found.updated }, { headers });
 }
