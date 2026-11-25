@@ -2,6 +2,8 @@ import { createHmac, timingSafeEqual } from 'crypto';
 
 // Server-trusted identity for the client area. The readable `discord_session` cookie is only for UI;
 // anything that decides access (like claiming a Robux key) must use these signed, httpOnly cookies.
+export const VERIFIED_CLIENT_EMAIL_COOKIE = 'seisen_verified_client_email';
+const VERIFIED_CLIENT_EMAIL_TTL = 60 * 60 * 24 * 7;
 export const DISCORD_AUTH_COOKIE = 'discord_auth';
 export const ROBUX_ORDER_COOKIE = 'robux_order';
 export const DISCORD_AUTH_TTL_SECONDS = 60 * 60 * 24 * 7;
@@ -68,4 +70,27 @@ export function readDiscordAuth(cookieHeader: string | null): DiscordAuth | null
 
 export function readRobuxOrder(cookieHeader: string | null): RobuxOrder | null {
   return readSignedValue<RobuxOrder>(readCookie(cookieHeader, ROBUX_ORDER_COOKIE));
+}
+
+export function normalizeClientEmail(value: unknown): string | null {
+  const email = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  return email.length <= 254 && /^[^s@]+@[^s@]+.[^s@]+$/.test(email) ? email : null;
+}
+
+export function verifiedClientEmailCookie(email: string) {
+  return {
+    name: VERIFIED_CLIENT_EMAIL_COOKIE,
+    value: signValue({ purpose: 'client_email', email, exp: Math.floor(Date.now() / 1000) + VERIFIED_CLIENT_EMAIL_TTL }),
+    httpOnly: true,
+    sameSite: 'lax' as const,
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: VERIFIED_CLIENT_EMAIL_TTL,
+    path: '/',
+  };
+}
+
+export function readVerifiedClientEmail(raw: string | undefined): string | null {
+  const session = readSignedValue<{ purpose?: string; email?: unknown; exp?: number }>(raw);
+  if (session?.purpose !== 'client_email' || !Number.isSafeInteger(session.exp)) return null;
+  return normalizeClientEmail(session.email);
 }

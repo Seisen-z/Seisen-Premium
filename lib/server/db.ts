@@ -648,7 +648,17 @@ export class TicketDatabase {
         return { success: false, error: 'Invalid code' };
     }
 
-    await this.client.from('verification_codes').delete().eq('email', email);
+    const { data: consumed, error: consumeError } = await this.client
+      .from('verification_codes')
+      .delete()
+      .eq('email', email)
+      .eq('code', code)
+      .eq('expires_at', data.expires_at)
+      .gt('expires_at', new Date().toISOString())
+      .select('email')
+      .maybeSingle();
+
+    if (consumeError || !consumed) return { success: false, error: 'Code expired or already used' };
 
     return { success: true };
   }

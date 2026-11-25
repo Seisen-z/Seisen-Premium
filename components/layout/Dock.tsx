@@ -60,6 +60,7 @@ const navLinks = [
   { href: '/scripts', label: 'Scripts' },
   { href: '/getkey', label: 'Get Key' },
   { href: '/premium', label: 'Premium' },
+  { href: '/reiya', label: 'Reiya' },
   { href: '/updates', label: 'Updates' },
   { href: '/trackstat', label: 'Trackstat' },
 ];
@@ -113,7 +114,7 @@ function NavPill({ pathname }: { pathname: string }) {
               key={href}
               href={href}
               ref={el => { linkRefs.current[i] = el; }}
-              className="relative z-10 px-3.5 py-1.5 rounded-full text-[13px] transition-colors duration-150"
+              className="relative z-10 px-2.5 py-1.5 rounded-full lg:px-3.5 text-[13px] transition-colors duration-150"
               style={{ color: active ? '#000000' : 'rgba(255,255,255,0.45)', fontWeight: active ? 600 : 400 }}
               onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.8)'; }}
               onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.45)'; }}

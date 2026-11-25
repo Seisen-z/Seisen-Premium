@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { normalizeClientEmail, verifiedClientEmailCookie } from '@/lib/server/clientSession';
 import { TicketDatabase } from '@/lib/server/db';
 import { getClientIp, rateLimit, rateLimitResponse } from '@/lib/server/rate-limit';
 
@@ -14,7 +15,8 @@ export async function POST(req: NextRequest) {
     const email = typeof body?.email === 'string' ? body.email.trim() : '';
     const code = typeof body?.code === 'string' ? body.code.trim() : '';
 
-    if (!email || !code) {
+    const verifiedEmail = normalizeClientEmail(email);
+    if (!verifiedEmail || !code) {
       return NextResponse.json({ error: 'Email and code are required' }, { status: 400 });
     }
     if (!/^\d{6}$/.test(code)) {
@@ -38,10 +40,9 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: verification.error }, { status: 400 });
     }
 
-    // 2. Return Success
-    // In a real app we'd set a cookie here.
-    // For this implementation, we'll return success and let the client handle state.
-    return NextResponse.json({ success: true, message: 'Verified successfully' });
+    const response = NextResponse.json({ success: true, message: 'Verified successfully' });
+    response.cookies.set(verifiedClientEmailCookie(verifiedEmail));
+    return response;
 
   } catch (error: any) {
     console.error('Verify Code Error:', error);

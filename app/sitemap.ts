@@ -6,6 +6,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   return [
     { url: base,              lastModified: now, changeFrequency: 'daily',   priority: 1.0 },
+    { url: `${base}/reiya`,   lastModified: now, changeFrequency: 'weekly',  priority: 0.8 },
     { url: `${base}/premium`, lastModified: now, changeFrequency: 'weekly',  priority: 0.9 },
     { url: `${base}/scripts`, lastModified: now, changeFrequency: 'daily',   priority: 0.9 },
     { url: `${base}/getkey`,  lastModified: now, changeFrequency: 'monthly', priority: 0.7 },

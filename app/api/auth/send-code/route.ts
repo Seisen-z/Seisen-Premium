@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { randomInt } from 'crypto';
+import { loadReiyaPurchases } from '@/lib/server/reiya-client';
+import { reiyaStorageConfigured } from '@/lib/server/reiya-purchase';
 import { TicketDatabase } from '@/lib/server/db';
 import { EmailService } from '@/lib/server/email';
 import { getClientIp, rateLimit, rateLimitResponse } from '@/lib/server/rate-limit';
@@ -35,13 +37,13 @@ export async function POST(req: NextRequest) {
     if (!hourly.allowed) return rateLimitResponse(hourly);
 
     // 1. Check if user exists (has purchased before)
-    const exists = await db.checkUserExists(email);
+    const existingClient = await db.checkUserExists(email);
+    const reiyaPurchases = !existingClient && reiyaStorageConfigured()
+      ? await loadReiyaPurchases(emailKey, 1)
+      : [];
 
-    if (!exists) {
-        return NextResponse.json({
-            error: 'No account found with this email. Please ensure you are using the email from your purchase.'
-        }, { status: 404 });
-    }
+    const accepted = { success: true, message: 'If you have a purchase on this email, we will send a verification code.' };
+    if (!existingClient && !reiyaPurchases.length) return NextResponse.json(accepted);
 
     // 2. Generate a code with a cryptographically secure RNG
     const code = randomInt(100000, 1000000).toString();
@@ -56,7 +58,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Failed to send verification email.' }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, message: 'Verification code sent.' });
+    return NextResponse.json(accepted);
 
   } catch (error: any) {
     console.error('Send Code Error:', error);

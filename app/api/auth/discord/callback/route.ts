@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { normalizeClientEmail, verifiedClientEmailCookie, VERIFIED_CLIENT_EMAIL_COOKIE } from '@/lib/server/clientSession';
 import { DISCORD_AUTH_COOKIE, DISCORD_AUTH_TTL_SECONDS, signValue } from '@/lib/server/clientSession';
 
 export async function GET(req: NextRequest) {
@@ -102,6 +103,10 @@ export async function GET(req: NextRequest) {
       }),
       { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', maxAge: DISCORD_AUTH_TTL_SECONDS, path: '/' }
     );
+
+    const verifiedEmail = user.verified === true ? normalizeClientEmail(user.email) : null;
+    if (verifiedEmail) response.cookies.set(verifiedClientEmailCookie(verifiedEmail));
+    else response.cookies.delete(VERIFIED_CLIENT_EMAIL_COOKIE);
 
     return response;
   } catch (err: any) {

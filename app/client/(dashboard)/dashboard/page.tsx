@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useAuth, readDiscordSession } from '@/lib/client/auth';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import ReiyaPremiumPanel from '../../components/ReiyaPremiumPanel';
 import { ArrowRight, ShoppingBag, DollarSign, Crown, Activity, AlertTriangle, Clock } from 'lucide-react';
 
 export default function DashboardPage() {
@@ -104,6 +105,8 @@ export default function DashboardPage() {
           </Link>
         </div>
       )}
+
+      <ReiyaPremiumPanel key={email ?? 'guest'} email={email} />
 
       {/* Stats grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
