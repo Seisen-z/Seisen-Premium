@@ -26,25 +26,26 @@ export default async function ReiyaPage({ searchParams }: { searchParams: Promis
         <p className="mt-4 max-w-xl text-base leading-relaxed text-white/70 md:text-lg">
           Organize your Roblox accounts, save games, and launch multiple instances from one Windows app.
         </p>
-        <div className="mt-8 flex flex-wrap items-center gap-4">
-          {release ? (
-            <>
-              <a href={downloadPath(release)} className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 font-semibold text-black hover:bg-white/85">
-                <Download size={18} aria-hidden="true" /> Download for Windows
-              </a>
-              <span className="text-sm text-white/65">Version {release.version} ? Free</span>
-              {release.checksums && (
-                <a href={downloadPath(release, release.checksums)} className="text-sm text-white/65 underline underline-offset-4 hover:text-white">SHA-256 checksum</a>
-              )}
-            </>
-          ) : (
-            <p role="status" className="rounded-xl border border-white/10 px-4 py-3 text-sm text-white/70">
-              The download will appear here after the first signed Seisen Premium build is published.
-            </p>
-          )}
-        </div>
       </section>
 
+      <section aria-labelledby="reiya-download" className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-white/10 bg-white/[0.04] p-6 md:px-10">
+        <div>
+          <h2 id="reiya-download" className="text-xl font-semibold text-white">Windows download</h2>
+          <p className="mt-1 text-sm text-white/70">
+            {release ? 'Version ' + release.version + ' · Free' : 'The Windows installer is not available on Seisen yet.'}
+          </p>
+        </div>
+        {release && (
+          <div className="flex flex-wrap items-center gap-4">
+            <a href={downloadPath(release)} className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 font-semibold text-black hover:bg-white/85">
+              <Download size={18} aria-hidden="true" /> Download for Windows
+            </a>
+            {release.checksums && (
+              <a href={downloadPath(release, release.checksums)} className="text-sm text-white/65 underline underline-offset-4 hover:text-white">SHA-256 checksum</a>
+            )}
+          </div>
+        )}
+      </section>
       <section aria-labelledby="reiya-premium" className="mt-6 grid gap-6 rounded-3xl border border-white/10 bg-white/[0.04] p-6 md:grid-cols-2 md:items-start md:p-10">
         <div>
           <h2 id="reiya-premium" className="text-2xl font-semibold tracking-tight text-white">Reiya Premium</h2>

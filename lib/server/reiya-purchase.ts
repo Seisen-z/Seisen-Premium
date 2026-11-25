@@ -283,20 +283,28 @@ function payerInfo(subscription: PayPalSubscription) {
   };
 }
 
+export function canEmailReiyaKey(): boolean {
+  return reiyaBillingMode() === 'live' && Boolean(process.env.RESEND_API_KEY && process.env.RESEND_FROM_EMAIL);
+}
+
+export async function sendReiyaKey(email: string, orderId: string, plan: string, key: string): Promise<boolean> {
+  const text = [
+    'Purchase: ' + orderId, 'Plan: ' + plan, 'Premium key: ' + key, '',
+    'Keep this key private. In Reiya, open Premium, paste your key, and select Activate.',
+    'Manage or cancel recurring payments in PayPal. Find your purchases at https://seisen.store/client/dashboard.',
+  ].join('\n');
+  return new EmailService().sendReiyaPremiumKey(email, text);
+}
+
 async function emailPurchase(order: Order, email: string | null, key: string): Promise<boolean> {
   if (order.email_delivery_status === 'sent') return true;
-  if (!email || reiyaBillingMode() !== 'live' || !process.env.RESEND_API_KEY || !process.env.RESEND_FROM_EMAIL) return false;
+  if (!email || !canEmailReiyaKey()) return false;
   const path = 'seisen_reiya_orders?id=eq.' + order.id;
   const claimed = await database<Order[]>(path + '&email_delivery_status=is.null', 'PATCH', { email_delivery_status: 'sending' });
   if (!claimed.length) return false;
   let sent = false;
   try {
-    const text = [
-      'Purchase: ' + order.id, 'Plan: ' + order.plan, 'Premium key: ' + key, '',
-      'Keep this key private. In Reiya, open Premium, paste your key, and select Activate.',
-      'Manage or cancel recurring payments in PayPal. Find your purchases at https://seisen.store/reiya/account.',
-    ].join('\n');
-    sent = await new EmailService().sendReiyaPremiumKey(email, text);
+    sent = await sendReiyaKey(email, order.id, order.plan, key);
   } finally {
     await database(path, 'PATCH', { email_delivery_status: sent ? 'sent' : 'failed' }).catch(() => {});
   }

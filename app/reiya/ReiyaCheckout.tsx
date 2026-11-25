@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, type FormEvent } from 'react';
+import Link from 'next/link';
 import { REIYA_PLANS, REIYA_TERMS_VERSION, type ReiyaPlan } from '@/lib/reiya-purchase';
 
 const plans = ['monthly', 'yearly'] as const;
@@ -30,6 +31,7 @@ export default function ReiyaCheckout({ checkoutEnabled, sandbox, purchaseId, ca
   const [error, setError] = useState('');
   const [receipt, setReceipt] = useState<{ key: string; emailed: boolean } | null>(null);
   const [copied, setCopied] = useState(false);
+  const selected = REIYA_PLANS[plan];
 
   async function checkout(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -91,30 +93,52 @@ export default function ReiyaCheckout({ checkoutEnabled, sandbox, purchaseId, ca
           <fieldset className="grid gap-2 sm:grid-cols-2" disabled={busy !== null}>
             <legend className="mb-2 text-sm font-medium text-white">Billing plan</legend>
             {plans.map(value => (
-              <label key={value} className="flex items-center gap-3 rounded-xl border border-white/15 bg-white/[0.03] p-3 text-white">
-                <input type="radio" name="plan" value={value} checked={plan === value} onChange={() => { setPlan(value); setAccepted(false); }} />
-                <span><strong className="block">{REIYA_PLANS[value].label}</strong><span className="text-sm text-white/70">€{REIYA_PLANS[value].amount} / {REIYA_PLANS[value].period}</span></span>
+              <label key={value} className={
+                'flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 text-white transition focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-white/60 ' +
+                (plan === value ? 'border-white/60 bg-white/10' : 'border-white/15 bg-white/[0.03] hover:border-white/40')
+              }>
+                <input type="radio" name="plan" value={value} checked={plan === value} className="size-4 shrink-0 accent-white"
+                  onChange={() => { setPlan(value); setAccepted(false); }} />
+                <span>
+                  <strong className="block">{REIYA_PLANS[value].label}</strong>
+                  <span className="text-sm text-white/75">€{REIYA_PLANS[value].amount} / {REIYA_PLANS[value].period}</span>
+                </span>
               </label>
             ))}
           </fieldset>
-          <label className="flex items-start gap-3 text-sm leading-relaxed text-white/75">
-            <input type="checkbox" required className="mt-1" checked={accepted} disabled={busy !== null} onChange={event => setAccepted(event.target.checked)} />
-            <span>
-              I agree to the <a href="/reiya/policies#terms" target="_blank" rel="noopener noreferrer" className="underline">Terms</a> and{' '}
-              <a href="/reiya/policies#refunds" target="_blank" rel="noopener noreferrer" className="underline">Refund &amp; Cancellation Policy</a>.
-              I authorize €{REIYA_PLANS[plan].amount} each {REIYA_PLANS[plan].period} until I cancel in PayPal.
-            </span>
-          </label>
-          <button className={primaryButton} disabled={!checkoutEnabled || !accepted || busy !== null}>
-            {busy === 'checkout' ? 'Opening PayPal…' : 'Continue with PayPal'}
-          </button>
-          <a href="/reiya/policies#privacy" target="_blank" rel="noopener noreferrer" className="ml-4 text-sm text-white/75 underline underline-offset-4">Privacy Policy</a>
-          {!checkoutEnabled && <p role="status" className="text-sm text-white/70">You can preview the plans. Payment requires a configured PayPal checkout.</p>}
+          <div className="space-y-3 rounded-xl border border-white/10 bg-black/25 p-4">
+            <p className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-sm text-white/75" aria-live="polite">
+              Recurring charge <strong className="text-base text-white">€{selected.amount} every {selected.period}</strong>
+            </p>
+            <label className="flex items-start gap-3 text-sm leading-relaxed text-white/80">
+              <input type="checkbox" required className="mt-1 size-4 shrink-0 accent-white" checked={accepted}
+                disabled={!checkoutEnabled || busy !== null} onChange={event => setAccepted(event.target.checked)} />
+              <span>
+                I agree to the <a href="/reiya/policies#terms" target="_blank" rel="noopener noreferrer" className="underline">Terms</a> and{' '}
+                <a href="/reiya/policies#refunds" target="_blank" rel="noopener noreferrer" className="underline">Refund &amp; Cancellation Policy</a>.
+                I authorize €{selected.amount} each {selected.period} until I cancel in PayPal.
+              </span>
+            </label>
+            <button className={primaryButton + ' w-full'} disabled={!checkoutEnabled || !accepted || busy !== null}
+              aria-describedby={!checkoutEnabled ? 'reiya-checkout-availability' : undefined}>
+              {busy === 'checkout' ? 'Opening PayPal…' : 'Continue with PayPal'}
+            </button>
+            {!checkoutEnabled && (
+              <p id="reiya-checkout-availability" role="status" className="text-sm text-white/75">
+                PayPal checkout is currently unavailable on Seisen.
+              </p>
+            )}
+            <a href="/reiya/policies#privacy" target="_blank" rel="noopener noreferrer"
+              className="inline-block text-sm text-white/75 underline underline-offset-4">Privacy Policy</a>
+          </div>
         </form>
       )}
 
       {error && <p role="alert" className="text-sm text-red-200">{error}</p>}
-      <a href="/reiya/account" className="inline-block text-sm text-white/70 underline underline-offset-4 hover:text-white">My Reiya Premium</a>
+      <div className="border-t border-white/10 pt-4 text-sm">
+        <Link href="/client/dashboard" className="font-semibold text-white underline underline-offset-4">Already have Reiya Premium?</Link>
+        <p className="mt-1 text-white/70">Sign in to Seisen with the email from your PayPal receipt.</p>
+      </div>
     </div>
   );
 }

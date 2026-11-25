@@ -57,7 +57,7 @@ export default function ReiyaAccount() {
         {error && <p role="alert" className="text-sm text-red-200">{error}</p>}
       </form>
       <p className="mt-6 text-sm text-white/70">
-        Manage recurring charges in PayPal. If you lost your key, check your receipt email or contact{' '}
+        Manage recurring charges in PayPal. If you need help accessing your purchase, contact{' '}
         <a href="mailto:support@seisen.store" className="underline">Seisen support</a> with your PayPal purchase ID.
       </p>
     </div>
