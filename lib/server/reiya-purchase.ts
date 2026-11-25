@@ -1,7 +1,7 @@
 import 'server-only';
 
 import { createCipheriv, createDecipheriv, createHmac, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
-import nodemailer from 'nodemailer';
+import { EmailService } from './email';
 import { REIYA_PLANS, REIYA_PURCHASE_ID, REIYA_TERMS_VERSION, isReiyaPlan, type ReiyaPlan } from '@/lib/reiya-purchase';
 
 export const REIYA_SITE_ORIGIN = 'https://seisen.store';
@@ -12,11 +12,27 @@ export class ReiyaPurchaseError extends Error {
   constructor(public readonly status: number, message: string) { super(message); }
 }
 
-const STORAGE_KEYS = ['REIYA_SUPABASE_URL', 'REIYA_SUPABASE_ADMIN_KEY', 'REIYA_PREMIUM_KEY_PEPPER'] as const;
-const PAYPAL_KEYS = [
-  'REIYA_PAYPAL_CLIENT_ID', 'REIYA_PAYPAL_CLIENT_SECRET',
-  'REIYA_PAYPAL_MONTHLY_PLAN_ID', 'REIYA_PAYPAL_YEARLY_PLAN_ID', 'REIYA_PAYPAL_WEBHOOK_ID',
-] as const;
+const PAYPAL_KEYS = ['REIYA_PAYPAL_MONTHLY_PLAN_ID', 'REIYA_PAYPAL_YEARLY_PLAN_ID', 'REIYA_PAYPAL_WEBHOOK_ID'] as const;
+
+function storageSettings() {
+  const { REIYA_SUPABASE_URL, REIYA_SUPABASE_ADMIN_KEY, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = process.env;
+  const dedicated = Boolean(REIYA_SUPABASE_URL || REIYA_SUPABASE_ADMIN_KEY);
+  const url = dedicated ? REIYA_SUPABASE_URL : SUPABASE_URL;
+  const key = dedicated ? REIYA_SUPABASE_ADMIN_KEY : SUPABASE_SERVICE_ROLE_KEY;
+  return url && key ? { url, key } : null;
+}
+
+function payPalSettings() {
+  const { REIYA_PAYPAL_CLIENT_ID, REIYA_PAYPAL_CLIENT_SECRET, REIYA_PAYPAL_SANDBOX,
+    PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, PAYPAL_SANDBOX } = process.env;
+  const dedicated = Boolean(REIYA_PAYPAL_CLIENT_ID || REIYA_PAYPAL_CLIENT_SECRET);
+  const clientId = dedicated ? REIYA_PAYPAL_CLIENT_ID : PAYPAL_CLIENT_ID;
+  const clientSecret = dedicated ? REIYA_PAYPAL_CLIENT_SECRET : PAYPAL_CLIENT_SECRET;
+  const sandbox = dedicated ? REIYA_PAYPAL_SANDBOX : PAYPAL_SANDBOX;
+  if (!clientId || !clientSecret || (sandbox !== 'true' && sandbox !== 'false')) return null;
+  if (!dedicated && REIYA_PAYPAL_SANDBOX && REIYA_PAYPAL_SANDBOX !== sandbox) return null;
+  return { clientId, clientSecret, mode: sandbox === 'true' ? 'sandbox' as const : 'live' as const };
+}
 
 function env(name: string): string {
   const value = process.env[name];
@@ -25,14 +41,14 @@ function env(name: string): string {
 }
 
 export function reiyaStorageConfigured(): boolean {
-  return STORAGE_KEYS.every(key => process.env[key]) && /^[0-9a-f]{64}$/i.test(process.env.REIYA_PREMIUM_WRAPPING_KEY ?? '');
+  return Boolean(storageSettings() && process.env.REIYA_PREMIUM_KEY_PEPPER)
+    && /^[0-9a-f]{64}$/i.test(process.env.REIYA_PREMIUM_WRAPPING_KEY ?? '');
 }
 
 export function reiyaBillingMode(): 'sandbox' | 'live' | null {
-  const mode = process.env.REIYA_PAYPAL_SANDBOX;
-  if ((mode !== 'true' && mode !== 'false') || !reiyaStorageConfigured() || !PAYPAL_KEYS.every(key => process.env[key])) return null;
+  if (!reiyaStorageConfigured() || !PAYPAL_KEYS.every(key => process.env[key])) return null;
   if (process.env.REIYA_PAYPAL_MONTHLY_PLAN_ID === process.env.REIYA_PAYPAL_YEARLY_PLAN_ID) return null;
-  return mode === 'true' ? 'sandbox' : 'live';
+  return payPalSettings()?.mode ?? null;
 }
 
 export function reiyaCheckoutEnabled(): boolean {
@@ -83,9 +99,12 @@ export function unseal(value: string, context: string): string {
 }
 
 export async function database<T>(path: string, method = 'GET', data?: object, prefer = 'return=representation'): Promise<T> {
-  const base = env('REIYA_SUPABASE_URL').replace(/\/$/, '');
-  if (new URL(base).protocol !== 'https:') throw new ReiyaPurchaseError(503, 'Reiya Premium database is unavailable.');
-  const key = env('REIYA_SUPABASE_ADMIN_KEY');
+  const storage = storageSettings();
+  if (!storage || new URL(storage.url).protocol !== 'https:') {
+    throw new ReiyaPurchaseError(503, 'Reiya Premium database is unavailable.');
+  }
+  const base = storage.url.replace(/\/$/, '');
+  const { key } = storage;
   const response = await fetch(base + '/rest/v1/' + path, {
     method, cache: 'no-store', redirect: 'error', signal: AbortSignal.timeout(15000),
     headers: { apikey: key, Authorization: 'Bearer ' + key, 'Content-Type': 'application/json', Prefer: prefer },
@@ -105,10 +124,11 @@ export async function limit(key: string, count: number, seconds: number): Promis
 let payPalToken: { value: string; expires: number } | undefined;
 
 async function paypal<T>(path: string, data?: object, requestId?: string): Promise<T> {
-  const mode = reiyaBillingMode();
-  const base = mode === 'sandbox' ? 'https://api-m.sandbox.paypal.com' : 'https://api-m.paypal.com';
+  const settings = payPalSettings();
+  if (!settings) throw new ReiyaPurchaseError(503, 'Reiya Premium PayPal settings are unavailable.');
+  const base = settings.mode === 'sandbox' ? 'https://api-m.sandbox.paypal.com' : 'https://api-m.paypal.com';
   if (!payPalToken || payPalToken.expires <= Date.now()) {
-    const credentials = env('REIYA_PAYPAL_CLIENT_ID') + ':' + env('REIYA_PAYPAL_CLIENT_SECRET');
+    const credentials = settings.clientId + ':' + settings.clientSecret;
     const response = await fetch(base + '/v1/oauth2/token', {
       method: 'POST', cache: 'no-store', redirect: 'error', signal: AbortSignal.timeout(15000),
       headers: {
@@ -265,32 +285,19 @@ function payerInfo(subscription: PayPalSubscription) {
 
 async function emailPurchase(order: Order, email: string | null, key: string): Promise<boolean> {
   if (order.email_delivery_status === 'sent') return true;
-  if (!email || reiyaBillingMode() === 'sandbox') return false;
-  const keys = ['REIYA_SMTP_HOST', 'REIYA_SMTP_PORT', 'REIYA_SMTP_USER', 'REIYA_SMTP_PASS', 'REIYA_SMTP_FROM'];
-  if (!keys.every(name => process.env[name])) return false;
-  const port = Number(env('REIYA_SMTP_PORT'));
-  if (port !== 465 && port !== 587) return false;
+  if (!email || reiyaBillingMode() !== 'live' || !process.env.RESEND_API_KEY || !process.env.RESEND_FROM_EMAIL) return false;
   const path = 'seisen_reiya_orders?id=eq.' + order.id;
   const claimed = await database<Order[]>(path + '&email_delivery_status=is.null', 'PATCH', { email_delivery_status: 'sending' });
   if (!claimed.length) return false;
-  const transport = nodemailer.createTransport({
-    host: env('REIYA_SMTP_HOST'), port, secure: port === 465, requireTLS: port === 587,
-    auth: { user: env('REIYA_SMTP_USER'), pass: env('REIYA_SMTP_PASS') },
-    tls: { rejectUnauthorized: true }, connectionTimeout: 10000, socketTimeout: 15000,
-  });
   let sent = false;
   try {
-    await transport.sendMail({
-      from: { name: 'Reiya', address: env('REIYA_SMTP_FROM') }, to: email, subject: 'Your Reiya Premium key',
-      text: [
-        'Purchase: ' + order.id, 'Plan: ' + order.plan, 'Premium key: ' + key, '',
-        'Keep this key private. In Reiya, open Premium, paste your key, and select Activate.',
-        'Manage or cancel recurring payments in PayPal. Find your purchases at https://seisen.store/reiya/account.',
-      ].join('\n'),
-    });
-    sent = true;
+    const text = [
+      'Purchase: ' + order.id, 'Plan: ' + order.plan, 'Premium key: ' + key, '',
+      'Keep this key private. In Reiya, open Premium, paste your key, and select Activate.',
+      'Manage or cancel recurring payments in PayPal. Find your purchases at https://seisen.store/reiya/account.',
+    ].join('\n');
+    sent = await new EmailService().sendReiyaPremiumKey(email, text);
   } finally {
-    transport.close();
     await database(path, 'PATCH', { email_delivery_status: sent ? 'sent' : 'failed' }).catch(() => {});
   }
   return sent;

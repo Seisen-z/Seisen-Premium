@@ -2,6 +2,8 @@
 
 The import maps Reiya Premium records into the Seisen Supabase project. It carries purchase and consent history, PayPal subscription IDs, existing license and profile IDs, device allocations, valid desktop sessions, encrypted backups, linked account metadata, and refund requests. Browser sessions expire at the domain boundary. In-flight buyers can recover an existing key through Seisen support using their PayPal purchase details.
 
+The website reuses Seisen’s Supabase, Resend, and PayPal app credentials when configured as described in the [website setup](../README.md#reiya-downloads). Reiya uses its own plan IDs and webhook ID.
+
 The import verifies the existing key pepper and wrapping key against stored encrypted keys. It preserves backup ciphertext and profile IDs, which the Windows app needs to decrypt backups. Refund requests already in progress need review through Seisen support. The legacy records and refund consents remain available to service administrators.
 
 This transfer covers Reiya Premium. The desktop ratings and online presence currently use the legacy Supabase project. Keep that project online until those functions and anonymous installation identities have their own migration.

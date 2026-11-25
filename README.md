@@ -46,9 +46,10 @@ The /reiya tab lists the newest signed Reiya release from this public repository
 
 Reiya checkout, key delivery, activation, backups, renewals, and refund processing use this deployment. For an existing Reiya customer base, follow [the migration runbook](docs/reiya-cutover.md) to preserve keys, subscriptions, and encrypted backups.
 
-1. Apply the Seisen Reiya Premium SQL migration to the Seisen Supabase project. Configure REIYA_SUPABASE_URL and REIYA_SUPABASE_ADMIN_KEY.
-2. Configure REIYA_PREMIUM_KEY_PEPPER and REIYA_PREMIUM_WRAPPING_KEY. Use the existing values when migrating customers. A fresh setup can generate its own values. The wrapping key is 32 bytes encoded as 64 hexadecimal characters.
-3. Configure REIYA_PAYPAL_CLIENT_ID, REIYA_PAYPAL_CLIENT_SECRET, REIYA_PAYPAL_MONTHLY_PLAN_ID, REIYA_PAYPAL_YEARLY_PLAN_ID and REIYA_PAYPAL_SANDBOX. Use the existing PayPal application and monthly and yearly plans for a migration. Set REIYA_PAYPAL_WEBHOOK_ID for https://seisen.store/api/reiya/webhook.
-4. Configure REIYA_SMTP_HOST, REIYA_SMTP_PORT, REIYA_SMTP_USER, REIYA_SMTP_PASS and REIYA_SMTP_FROM for key delivery. REIYA_PREMIUM_CHECKOUT_ENABLED=false pauses new purchases while existing keys and the webhook stay available.
+1. Apply the Reiya Premium SQL migration to the Seisen Supabase project. The service uses the existing SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY. Set both REIYA_SUPABASE_URL and REIYA_SUPABASE_ADMIN_KEY together only when using a separate database.
+2. Set REIYA_PREMIUM_KEY_PEPPER and REIYA_PREMIUM_WRAPPING_KEY. Use the original values when migrating customers. The wrapping key is 32 bytes encoded as 64 hexadecimal characters.
+3. Reiya uses the existing PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, and PAYPAL_SANDBOX if the PayPal app and mode match. If they differ, set REIYA_PAYPAL_CLIENT_ID, REIYA_PAYPAL_CLIENT_SECRET, and REIYA_PAYPAL_SANDBOX together. For existing subscriptions, keep the PayPal app and plan IDs that created them.
+4. Set REIYA_PAYPAL_MONTHLY_PLAN_ID, REIYA_PAYPAL_YEARLY_PLAN_ID, and REIYA_PAYPAL_WEBHOOK_ID. Register the Reiya webhook for https://seisen.store/api/reiya/webhook. Set REIYA_PREMIUM_CHECKOUT_ENABLED=false until the import and PayPal checks pass.
+5. Reiya Premium key emails use Seisen’s existing RESEND_API_KEY and RESEND_FROM_EMAIL. Sandbox purchases deliver the key on the receipt page.
 
 Publish a fresh signed Windows build. The Reiya tab displays its download once that release is available in Seisen-Premium.

@@ -61,19 +61,25 @@ export class EmailService {
   }
 
   // Sends through Resend when configured, otherwise through SMTP.
-  private async deliver(to: string, subject: string, html: string) {
+  private async deliver(to: string, subject: string, content: { html: string } | { text: string }) {
       if (this.resend) {
           const { data, error } = await this.resend.emails.send({
               from: this.fromEmail,
               to,
               subject,
-              html,
+              ...content,
           });
           if (error) throw new Error(error.message);
           return { messageId: data?.id, provider: 'resend' as const };
       }
-      const info = await this.transporter!.sendMail({ from: this.fromEmail, to, subject, html });
+      const info = await this.transporter!.sendMail({ from: this.fromEmail, to, subject, ...content });
       return { messageId: info.messageId, provider: 'smtp' as const };
+  }
+
+  async sendReiyaPremiumKey(to: string, text: string): Promise<boolean> {
+    if (!this.resend || !process.env.RESEND_FROM_EMAIL) return false;
+    await this.deliver(to, 'Your Reiya Premium key', { text });
+    return true;
   }
 
   // Verify connection logic
@@ -361,7 +367,7 @@ export class EmailService {
 
     try {
         console.log('📧 Attempting to send key email...');
-        const info = await this.deliver(to, subject, emailHtml);
+        const info = await this.deliver(to, subject, { html: emailHtml });
 
         console.log(`✅ Email sent via ${info.provider}:`, info.messageId);
         return { success: true, messageId: info.messageId, provider: info.provider };
@@ -409,7 +415,7 @@ export class EmailService {
 
     try {
         console.log(`📧 Sending OTP to ${to}...`);
-        await this.deliver(to, subject, emailHtml);
+        await this.deliver(to, subject, { html: emailHtml });
         console.log('✅ OTP sent successfully');
         return { success: true };
     } catch (error: any) {
